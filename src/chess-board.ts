@@ -809,11 +809,14 @@ export class ChessBoard {
         // TODO validate board in the end of setup.
         const p = this.fieldIdx(col as string, row as string);
         //this.board[p.colIdx][p.rowIdx] = piece;
-        this.setPieceIdx(p.colIdx, p.rowIdx, piece);
+        this.setPieceIdx(p, piece);
     }
 
-    private setPieceIdx(col: number, row: number, piece: piece) {
-        this.board[col as number][row as number] = piece;
+    private setPieceIdx(field:boardFieldIdx, piece: piece) {
+        this.board[field.colIdx][field.rowIdx] = piece;
+    }
+    private removePieceIdx(field:boardFieldIdx) {
+        this.board[field.colIdx][field.rowIdx] = NOPIECE;
     }
 
     fieldIdx(col: string, row: string): boardFieldIdx {

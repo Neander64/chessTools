@@ -3,6 +3,94 @@ import * as chessBoard from './chess-board'
 
 describe('Testing chess-board', () => {
 
+  test('testing pawn moves', () => {
+    var cb = new chessBoard.ChessBoard();
+    cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h3'), chessBoard.strToFieldIdx('h4'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h5'))).toBe(false);
+    cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('h5'))).toBe(false);
+
+    cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h5'))).toBe(true);
+    cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h6'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h6'), chessBoard.strToFieldIdx('h5'))).toBe(true);
+    cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h4'))).toBe(false);
+    cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('h3'))).toBe(false);
+  });
+
+  test('testing castle moves 1', () => {
+    let cb = new chessBoard.ChessBoard();
+    cb.loadFEN(cb.initialBoardFEN);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
+  });
+  test('testing castle moves', () => {
+    let cb = new chessBoard.ChessBoard();
+    cb.loadFEN("7k/8/8/8/8/8/8/4K2R w - b3 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    cb.loadFEN("7k/8/8/8/8/8/8/4K2R w K b3 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
+    cb.loadFEN("7k/8/8/8/8/8/8/4K1BR w K b3 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);
+
+    // all castles possible
+    cb.loadFEN("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(true);
+
+    // Piece in between
+    cb.loadFEN("r3kb1r/8/8/8/8/8/8/R3K1BR w KQkq - 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, false)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(true);
+    cb.loadFEN("rn2k2r/8/8/8/8/8/8/R2QK2R w KQkq - 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(true);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, false)).toBe(false);
+
+    // check in between check
+    cb.loadFEN("r3k2r/8/3Q4/8/8/3q4/8/R3K2R w K b3 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(false);
+    // king is checked
+    cb.loadFEN("r3k2r/8/4Q3/8/8/4q3/8/R3K2R w K b3 4 50");
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short, true)).toBe(false);
+    expect(cb.moveCastle(chessBoard.color.black, chessBoard.castleType.long, true)).toBe(false);
+
+  });
+
   test('testing AttackedFields', () => {
     let cb = new chessBoard.ChessBoard();
 

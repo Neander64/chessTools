@@ -1,5 +1,7 @@
+import { SSL_OP_LEGACY_SERVER_CONNECT } from "constants";
 import { start } from "repl";
 import { resourceLimits } from "worker_threads";
+import { parseResult } from "./lineParser";
 
 
 export const enum pieceKind {
@@ -95,7 +97,7 @@ function pieceToChar(p: piece): string {
     return result;
 }
 
-function charToPiece(pieceStr: string): { valid: boolean, piece: piece } {
+export function charToPiece(pieceStr: string): { valid: boolean, piece: piece } {
 
     switch (pieceStr) {
         case 'R': return { valid: true, piece: whiteRook };
@@ -117,15 +119,56 @@ function charToPiece(pieceStr: string): { valid: boolean, piece: piece } {
     }
 }
 
+export function strToFieldIdx(fieldStr: string): boardFieldIdx {
+    if (fieldStr.length != 2) throw new Error('unexpedted string length for field (should be 2)');
+    // convert chess notation of field (like e4) to index on board
+    const colidx = (fieldStr[0].charCodeAt(0) - 'a'.charCodeAt(0));
+    const rowidx = 8 - parseInt(fieldStr[1], 10)
+    if (colidx < 0 || colidx >= 8) throw new Error('unexpected column');
+    if (rowidx < 0 || rowidx >= 8) throw new Error('unexpected row');
+    return { colIdx: colidx, rowIdx: rowidx };
+}
+
+function fieldIdxToNotation(field: boardFieldIdx): string {
+    // convert internal field representation to normal string representation
+    const cols = 'abcdefgh';
+    let result = cols[field.colIdx] + (8 - field.rowIdx).toString();
+    return result;
+}
+
 type boardFieldIdx = {
     colIdx: number,
     rowIdx: number,
+}
+
+function fieldIdx(colIdx_: number, rowIdx_: number) {
+    return { colIdx: colIdx_, rowIdx: rowIdx_ };
 }
 
 type pieceOnBoard = {
     piece: piece,
     field: boardFieldIdx
 };
+
+
+export enum castleType {
+    short,
+    long
+}
+type moveOnBoardPiece = {
+    pieceOB: pieceOnBoard,
+    target: boardFieldIdx;
+}
+type moveOnBoardPromotion = {
+    promotionPiece: piece;
+}
+type moveOnBoardCastleLong = {
+    pieceOBKing: pieceOnBoard,
+    targetKing: boardFieldIdx;
+    pieceOBRook: pieceOnBoard,
+    targetRook: boardFieldIdx;
+}
+type moveOnBoard = moveOnBoardPiece | moveOnBoardPromotion | moveOnBoardCastleLong;
 
 type attackedBy = {
     field: boardFieldIdx,  // attacked field
@@ -149,6 +192,11 @@ class AttackedFields {
     isAttacked(field: boardFieldIdx): boolean {
         let found = this._fields.find(x => (x.field.colIdx == field.colIdx && x.field.rowIdx == field.rowIdx));
         return (typeof found !== 'undefined');
+    }
+    attackersOn(field: boardFieldIdx): pieceOnBoard[] {
+        let found = this._fields.find(x => (x.field.colIdx == field.colIdx && x.field.rowIdx == field.rowIdx));
+        if (typeof found == 'undefined') return [];
+        return found!.attackingPieces;
     }
     attackedFields(): boardFieldIdx[] {
         let result: boardFieldIdx[] = [];
@@ -402,10 +450,11 @@ export class ChessBoard {
     private halfMoves50: number = 0;
     private moveNumber: number = 1;
 
-    private _blackKingPosition!: boardFieldIdx;
-    private _whiteKingPosition!: boardFieldIdx;
+    private _blackKing!: pieceOnBoard;
+    private _whiteKing!: pieceOnBoard;
     private _emptyBoard: boolean = true;
-    private _attackedFields!: AttackedFields;
+    private _fieldsAttackedByBlack: AttackedFields;
+    private _fieldsAttackedByWhite: AttackedFields;
 
     constructor() {
         // allocate and initialize a empty board
@@ -415,7 +464,8 @@ export class ChessBoard {
                 this.board[col][row] = NOPIECE;
             }
         }
-        this._attackedFields = new AttackedFields();
+        this._fieldsAttackedByBlack = new AttackedFields();
+        this._fieldsAttackedByWhite = new AttackedFields();
         this.clearBoard();
     }
 
@@ -471,19 +521,20 @@ export class ChessBoard {
             let blackPieces = this.currentPiecesOnBoard(color.black);
             let blackKings = blackPieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.black));
             if (blackKings.length != 1) throw new Error('loadFEN(): unexpected number of black kings');
-            this._blackKingPosition = blackKings[0].field;
+            this._blackKing = blackKings[0];
             let blackPawns = blackPieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.black));
             if (blackPawns.length > 8) throw new Error('loadFEN(): too many black pawns');
 
             let whitePieces = this.currentPiecesOnBoard(color.white);
             let whiteKings = whitePieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.white));
-            this._whiteKingPosition = whiteKings[0].field;
             if (whiteKings.length != 1) throw new Error('loadFEN(): unexpected number of white kings');
+            this._whiteKing = whiteKings[0];
             let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white));
             if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns');
 
             // TODO check for mate
             // TODO check for stale mate
+            // TODO check for GameOver
 
             //2. player to move next
             switch (fenTokens[1]) {
@@ -503,7 +554,7 @@ export class ChessBoard {
             this.enPassantPossible = (fenTokens[3] !== '-');
             if (this.enPassantPossible) {
                 if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format');
-                this.enPassantField = this.fieldIdx(fenTokens[3][0], fenTokens[3][1]);
+                this.enPassantField = strToFieldIdx(fenTokens[3]);
             }
 
             //5. number of half-moves since last capture or pawn move
@@ -544,7 +595,7 @@ export class ChessBoard {
         result.push('Possible Castle White O-O:' + (this.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this.canCastleLongWhite ? 'Y' : 'N'));
         result.push('Possible Castle Black O-O:' + (this.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this.canCastleLongBlack ? 'Y' : 'N'));
         if (this.enPassantPossible) {
-            result.push('en passant option at ' + this.fieldNotation(this.enPassantField as boardFieldIdx));
+            result.push('en passant option at ' + fieldIdxToNotation(this.enPassantField as boardFieldIdx));
         }
         result.push('moves without pawn or capture: ' + this.halfMoves50);
         result.push('move number: ' + this.moveNumber);
@@ -552,12 +603,19 @@ export class ChessBoard {
         return result;
     }
 
-    /*private*/move(src: boardFieldIdx, targ: boardFieldIdx, piece: piece) {
-
-    }
-
     peekField(field: boardFieldIdx): piece {
         return this.board[field.colIdx][field.rowIdx];
+    }
+    peekFieldPiece(field_: boardFieldIdx): pieceOnBoard {
+        return { piece: this.peekField({ colIdx: field_.colIdx, rowIdx: field_.rowIdx }), field: field_ };
+    }
+    isFieldEmpty(field: boardFieldIdx): boolean {
+        return this.peekField(field).kind == pieceKind.none;
+    }
+    isPieceOn(field: boardFieldIdx, p: piece) {
+        let _p = this.peekField(field);
+        return _p.kind == p.kind &&
+            (_p.color == p.color);
     }
 
     currentPiecesOnBoard(color_: color): pieceOnBoard[] {
@@ -573,17 +631,16 @@ export class ChessBoard {
         return result;
     }
 
-    getKingField(color_: color): boardFieldIdx {
+    private getKingField(color_: color): boardFieldIdx {
         if (this._emptyBoard) throw new Error('getKing() operation on empty board');
         switch (color_) {
-            case color.black: return this._blackKingPosition;
-            case color.white: return this._whiteKingPosition;
+            case color.black: return this._blackKing.field;
+            case color.white: return this._whiteKing.field;
         }
         //throw new Error('getKing() unexpected color'); // unreachable code :-)
     }
 
-
-    getAttackedFieldsByRook(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByRook(piece: pieceOnBoard): boardFieldIdx[] {
         let rookMoves: boardFieldIdx[] = [];
         let f: boardFieldIdx;
         const rays = [rookRay.ray1, rookRay.ray2, rookRay.ray3, rookRay.ray4];
@@ -597,11 +654,11 @@ export class ChessBoard {
         }
         return rookMoves;
     }
-    getAttackedFieldsByKnight(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByKnight(piece: pieceOnBoard): boardFieldIdx[] {
         let knightMoves = new KnightMovesRaw(piece.field);
         return knightMoves.moves;
     }
-    getAttackedFieldsByBishop(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByBishop(piece: pieceOnBoard): boardFieldIdx[] {
         let bishopMoves: boardFieldIdx[] = [];
         let f: boardFieldIdx;
         const rays = [bishopRay.ray1, bishopRay.ray2, bishopRay.ray3, bishopRay.ray4];
@@ -613,7 +670,7 @@ export class ChessBoard {
                 if (this.peekField(f).kind != pieceKind.none) break;
             }
         }
-        /*
+        /* optional using iterator
         for (const ray of rays) {
             for (f of new BishopRayIt(piece.field, ray)) {
                 bishopMoves.push(f);
@@ -623,7 +680,7 @@ export class ChessBoard {
         */
         return bishopMoves;
     }
-    getAttackedFieldsByQueen(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByQueen(piece: pieceOnBoard): boardFieldIdx[] {
         let queenMoves: boardFieldIdx[] = [];
         let f: boardFieldIdx;
 
@@ -648,7 +705,7 @@ export class ChessBoard {
         }
         return queenMoves;
     }
-    getAttackedFieldsByPawnBlack(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByPawnBlack(piece: pieceOnBoard): boardFieldIdx[] {
         const offsetsPawn = [
             { colOffset: 1, rowOffset: 1 }, { colOffset: -1, rowOffset: 1 }
         ];
@@ -662,7 +719,7 @@ export class ChessBoard {
         }
         return pawnCaptureMoves;
     }
-    getAttackedFieldsByPawnWhite(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByPawnWhite(piece: pieceOnBoard): boardFieldIdx[] {
         const offsetsPawn = [
             { colOffset: 1, rowOffset: -1 }, { colOffset: -1, rowOffset: -1 }
         ];
@@ -676,7 +733,7 @@ export class ChessBoard {
         }
         return pawnCaptureMoves;
     }
-    getAttackedFieldsByKing(piece: pieceOnBoard): boardFieldIdx[] {
+    private getAttackedFieldsByKing(piece: pieceOnBoard): boardFieldIdx[] {
         let kingMoves = new KingMovesRaw(piece.field);
         return kingMoves.moves;
     }
@@ -707,27 +764,96 @@ export class ChessBoard {
     }
 
     getAttackedFields(attackingColor: color): AttackedFields {
-        if (!this._attackedFields.hasData()) {
-            let attackingPieces = this.currentPiecesOnBoard(attackingColor);
-            for (let piece of attackingPieces) {
-                for (let field of this.getAttackedFieldsByPiece(piece)) {
-                    this._attackedFields.add(field, piece);
+        switch (attackingColor) {
+            case color.black:
+                if (!this._fieldsAttackedByBlack.hasData()) {
+                    let attackingPieces = this.currentPiecesOnBoard(attackingColor);
+                    for (let piece of attackingPieces) {
+                        for (let field of this.getAttackedFieldsByPiece(piece)) {
+                            this._fieldsAttackedByBlack.add(field, piece);
+                        }
+                    }
                 }
-            }
+                return this._fieldsAttackedByBlack;
+            case color.white:
+                if (!this._fieldsAttackedByWhite.hasData()) {
+                    let attackingPieces = this.currentPiecesOnBoard(attackingColor);
+                    for (let piece of attackingPieces) {
+                        for (let field of this.getAttackedFieldsByPiece(piece)) {
+                            this._fieldsAttackedByBlack.add(field, piece);
+                        }
+                    }
+                }
+                return this._fieldsAttackedByWhite;
         }
-        return this._attackedFields;
     }
     private clearAttackedFields() {
-        this._attackedFields.clear();
+        this._fieldsAttackedByBlack.clear();
+        this._fieldsAttackedByWhite.clear();
+    }
+
+    getLegalMovesByKing(pieceOB: pieceOnBoard): boardFieldIdx[] {
+        if (pieceOB.piece.kind != pieceKind.King) return [];
+        let color_: color = pieceOB.piece.color!;
+        let kingMoves = new KingMovesRaw(pieceOB.field).moves;
+        let legalMoves: boardFieldIdx[] = [];
+        for (let m of kingMoves) {
+            let p = this.peekField(m);
+            if ((p.kind != pieceKind.none) && (p.color == color_)) continue;
+            if (!this.isPieceAttackedOn(m, otherColor(color_))) legalMoves.push(m);
+        }
+        // TODO hanlde castle
+        // castle, if possible
+        // not in check, not to be moved over checks and into check
+        //
+        return legalMoves;
+    }
+
+    getLegalMovesByBlackKing(): boardFieldIdx[] {
+        return this.getLegalMovesByKing(this._blackKing);
+    }
+    getLegalMovesByWhiteKing(): boardFieldIdx[] {
+        return this.getLegalMovesByKing(this._whiteKing);
     }
 
     isPieceAttackedOn(field: boardFieldIdx, attackingColor: color): boolean {
         return this.getAttackedFields(attackingColor).isAttacked(field);
     }
+    getAttackersOn(field: boardFieldIdx, attackingColor: color): pieceOnBoard[] {
+        return this.getAttackedFields(attackingColor).attackersOn(field);
+    }
 
     isCheck(color_: color): boolean {
         if (this._emptyBoard) return false;
         return this.isPieceAttackedOn(this.getKingField(color_), otherColor(color_));
+    }
+    isMate(color_: color): boolean {
+        if (!this.isCheck(color_)) return false;
+        let kingMoves = new KingMovesRaw(this.getKingField(color_));
+        for (let m of kingMoves.moves) {
+            let p = this.peekField(m);
+            if ((p.kind != pieceKind.none) && (p.color == color_)) continue;
+            if (!this.isPieceAttackedOn(m, otherColor(color_))) return false;
+        }
+        //TODO check if attackers can be captured.
+        return true;
+    }
+    isStaleMate(): boolean {
+        // TODO
+        // nothing to move except king
+        // not check
+        // no legal move for king
+        return false;
+    }
+    checkFiftyMovesRule(): boolean {
+        return this.halfMoves50 > 100;
+    }
+    isGameOver() {
+        // TODO
+        //return this.isMate();
+        // isStaleMate()
+        // fiftyMovesRule()
+        // notSufficientMaterial
     }
 
     /*
@@ -735,14 +861,14 @@ export class ChessBoard {
         if (source == target) return false; // TODO value comparision
         if (piece_ != piece.whiteRook && piece_ != piece.blackRook && piece_ != piece.whiteQueen && piece_ != piece.blackQueen) return false;
         if (this.peekField(source) != piece_) return false;
-
+    
         // check nothing in-between
         if (source.colIdx == target.colIdx) {
             for (let i = source.rowIdx; i != target.rowIdx; i += Math.sign(source.rowIdx - target.rowIdx)) {
                 if (this.peekField({ colIdx: source.colIdx, rowIdx: i }) != piece.none) return false;
             }
         }
-
+    
         //TODO: moving away is not a check
         return (source.colIdx == target.colIdx) || (source.rowIdx == target.rowIdx);
     }
@@ -750,29 +876,29 @@ export class ChessBoard {
         if (source == target) return false; // TODO value comparision
         if (piece_ != piece.whiteBishop && piece_ != piece.blackBishop && piece_ != piece.whiteQueen && piece_ != piece.blackQueen) return false;
         if (this.peekField(source) != piece_) return false;
-
+    
         // TODO: check nothing in-between
-
+    
         //TODO: moving away is not a check
-
+    
         return Math.abs(source.colIdx - target.colIdx) == Math.abs(source.rowIdx - target.rowIdx);
     }
     isPossibleQueenMove(source: boardFieldIdx, target: boardFieldIdx, piece_: piece): boolean {
         if (source == target) return false; // TODO value comparision
         if (piece_ != piece.whiteQueen && piece_ != piece.blackQueen) return false;
         if (this.peekField(source) != piece_) return false;
-
+    
         //TODO: moving away is not a check
-
+    
         return this.isPossibleRookMove(source, target, piece_) || this.isPossibleBishopMove(source, target, piece_);
     }
     isPossibleKnightMove(source: boardFieldIdx, target: boardFieldIdx, piece_: piece): boolean {
         if (source == target) return false; // TODO value comparision
         if (piece_ != piece.whiteKnight && piece_ != piece.blackKnight) return false;
         if (this.peekField(source) != piece_) return false;
-
+    
         //TODO: moving away is not a check
-
+    
         return ((Math.abs(source.rowIdx - target.rowIdx) == 2 && Math.abs(source.colIdx - target.colIdx) == 1) ||
             (Math.abs(source.rowIdx - target.rowIdx) == 1 && Math.abs(source.colIdx - target.colIdx) == 2));
     }
@@ -798,41 +924,221 @@ export class ChessBoard {
         // TODO: target is not in check
         return Math.abs(source.colIdx - target.colIdx) <= 1 && Math.abs(source.rowIdx - target.rowIdx) <= 1;
     }
-
+    
     // TODO isPossibleCastle..
-
+    
     */
 
+    performMovePiece(pieceOB: pieceOnBoard, target: boardFieldIdx): boolean {
+        this.setPiece(pieceOB.piece, target);
+        this.removePiece(pieceOB.field);
+        return true;
+    }
+    performMovePawn(source: boardFieldIdx, target: boardFieldIdx, promotionPiece: pieceKind = pieceKind.none): boolean {
+        // TODO game over already?
+        let _enPassantPossible: boolean = false;
+        let _enPassantField: boardFieldIdx | undefined;
+        let _isCapture: boolean = false;
+        let _isPromotion: boolean = false;
 
-    setPiece(col: string, row: string, piece: piece) {
-        // placement of pieces to set-up a board.
-        // TODO validate board in the end of setup.
-        const p = this.fieldIdx(col as string, row as string);
-        //this.board[p.colIdx][p.rowIdx] = piece;
-        this.setPieceIdx(p, piece);
+        let p = this.peekField(source);
+        if (p.kind != pieceKind.Pawn) return false;
+        if (this.nextMoveBy != p.color) return false;
+        switch (p.color) {
+            case color.black: // row ++
+                if (target.colIdx == source.colIdx) { // forward move
+                    if (source.rowIdx == 1 && (target.rowIdx - source.rowIdx == 2)) { // e.p. possible
+                        _enPassantField = { colIdx: source.colIdx, rowIdx: source.rowIdx + 1 };
+                        if (!this.isFieldEmpty(_enPassantField)) return false;
+                        if (!this.isFieldEmpty(target)) return false;
+                        _enPassantPossible = true;
+                    }
+                    else if (target.rowIdx - source.rowIdx == 1) { // move
+                        if (!this.isFieldEmpty(target)) return false;
+                        if (target.rowIdx == 7) {
+                            _isPromotion = true;
+                        }
+                    }
+                    else return false;
+                }
+                else if (Math.abs(source.colIdx - source.rowIdx) == 1) { // capture
+                    if (target.rowIdx - source.rowIdx == 1) {
+                        if (this.isFieldEmpty(target)) return false;
+                        if (target.rowIdx == 7) {
+                            _isPromotion = true;
+                        }
+                        _isCapture = true;
+                    }
+                }
+                else return false;
+                break;
+            case color.white: // row --
+                if (target.colIdx == source.colIdx) { // forward move
+                    if (source.rowIdx == 6 && (source.rowIdx - target.rowIdx == 2)) { // e.p. possible
+                        _enPassantField = { colIdx: source.colIdx, rowIdx: source.rowIdx - 1 };
+                        if (!this.isFieldEmpty(_enPassantField)) return false;
+                        if (!this.isFieldEmpty(target)) return false;
+                        _enPassantPossible = true;
+                    }
+                    else if (source.rowIdx - target.rowIdx == 1) { // move
+                        if (!this.isFieldEmpty(target)) return false;
+                        if (target.rowIdx == 0) {
+                            _isPromotion = true;
+                        }
+                    }
+                    else return false;
+                }
+                else if (Math.abs(source.colIdx - source.rowIdx) == 1) { // capture
+                    if (source.rowIdx - target.rowIdx == 1) {
+                        if (this.isFieldEmpty(target)) return false;
+                        if (target.rowIdx == 0) {
+                            _isPromotion = true;
+                        }
+                        _isCapture = true;
+                    }
+                }
+                else return false;
+                break;
+        }
+        if (_enPassantPossible) {
+            this.enPassantPossible = true;
+            this.enPassantField = _enPassantField;
+        }
+        if (_isPromotion)
+            this.setPiece({ color: p.color, kind: promotionPiece }, target);
+        else
+            this.setPiece(p, target);
+        this.removePiece(source);
+        // TODO can't be check after move, be prepared to revoke 
+        this.halfMoves50 = 0;
+        if (this.nextMoveBy == color.white) this.moveNumber++;
+        this.clearAttackedFields();
+
+        return true;
+    }
+    moveCastle(color_: color, type_: castleType, validateOnly: boolean = false): boolean {
+        // TODO game over already?
+        // TODO color should only be necessary if in validationMode
+        let king: piece;
+        let rook: piece;
+        let rowIdx_: number;
+        let colIdx_: number;
+        let kingTarget: boardFieldIdx;
+        let kingSource: boardFieldIdx;
+        let rookTarget: boardFieldIdx;
+        let rookSource: boardFieldIdx;
+
+        if (!validateOnly && this.nextMoveBy != color_) return false;
+
+        switch (color_) {
+            case color.black:
+                king = blackKing;
+                rook = blackRook;
+                rowIdx_ = 0;
+                switch (type_) {
+                    case castleType.short:
+                        if (!this.canCastleShortBlack) return false; // throw new Error('illegal move');
+                        kingSource = { colIdx: 4, rowIdx: rowIdx_ };
+                        kingTarget = { colIdx: 6, rowIdx: rowIdx_ };
+                        rookSource = { colIdx: 7, rowIdx: rowIdx_ };
+                        rookTarget = { colIdx: 5, rowIdx: rowIdx_ };
+                        if (!this.isPieceOn(kingSource, blackKing)) return false;
+                        if (!this.isPieceOn(rookSource, blackRook)) return false;
+                        for (colIdx_ = 5; colIdx_ < 7; colIdx_++) { // any pieces in between?
+                            if (!this.isFieldEmpty(fieldIdx(colIdx_, rowIdx_))) return false;
+                        }
+                        for (colIdx_ = 4; colIdx_ <= 6; colIdx_++) { // any check on path of king fields
+                            if (this.isPieceAttackedOn(fieldIdx(colIdx_, rowIdx_), otherColor(color_))) return false;
+                        }
+                        if (!validateOnly) this.canCastleShortBlack = false;
+                        break;
+                    case castleType.long:
+                        if (!this.canCastleLongBlack) return false; // throw new Error('illegal move');
+                        kingSource = { colIdx: 4, rowIdx: rowIdx_ };
+                        kingTarget = { colIdx: 2, rowIdx: rowIdx_ };
+                        rookSource = { colIdx: 0, rowIdx: rowIdx_ };
+                        rookTarget = { colIdx: 3, rowIdx: rowIdx_ };
+                        if (!this.isPieceOn(kingSource, blackKing)) return false;
+                        if (!this.isPieceOn(rookSource, blackRook)) return false;
+                        for (colIdx_ = 1; colIdx_ < 4; colIdx_++) { // any pieces in between?
+                            if (!this.isFieldEmpty(fieldIdx(colIdx_, rowIdx_))) return false;
+                        }
+                        for (colIdx_ = 2; colIdx_ < 4; colIdx_++) { // any check on path of king fields
+                            if (this.isPieceAttackedOn(fieldIdx(colIdx_, rowIdx_), otherColor(color_))) return false;
+                        }
+                        if (!validateOnly) this.canCastleLongBlack = false;
+                        break;
+                }
+                break;
+            case color.white:
+                king = whiteKing;
+                rook = whiteRook;
+                rowIdx_ = 7;
+                switch (type_) {
+                    case castleType.short:
+                        if (!this.canCastleShortWhite) return false; // throw new Error('illegal move');
+                        kingSource = { colIdx: 4, rowIdx: rowIdx_ };
+                        kingTarget = { colIdx: 6, rowIdx: rowIdx_ };
+                        rookSource = { colIdx: 7, rowIdx: rowIdx_ };
+                        rookTarget = { colIdx: 5, rowIdx: rowIdx_ };
+                        kingSource = { colIdx: 4, rowIdx: rowIdx_ };
+                        kingTarget = { colIdx: 6, rowIdx: rowIdx_ };
+                        rookSource = { colIdx: 7, rowIdx: rowIdx_ };
+                        rookTarget = { colIdx: 5, rowIdx: rowIdx_ };
+                        if (!this.isPieceOn(kingSource, whiteKing)) return false;
+                        if (!this.isPieceOn(rookSource, whiteRook)) return false;
+                        for (colIdx_ = 5; colIdx_ < 7; colIdx_++) { // any pieces in between?
+                            if (!this.isFieldEmpty(fieldIdx(colIdx_, rowIdx_))) return false;
+                        }
+                        for (colIdx_ = 4; colIdx_ <= 6; colIdx_++) { // any check on path of king fields
+                            if (this.isPieceAttackedOn(fieldIdx(colIdx_, rowIdx_), otherColor(color_))) return false;
+                        }
+                        if (!validateOnly) this.canCastleShortWhite = false;
+                        break;
+                    case castleType.long:
+                        if (!this.canCastleLongWhite) return false; // throw new Error('illegal move');
+                        kingSource = { colIdx: 4, rowIdx: rowIdx_ };
+                        kingTarget = { colIdx: 2, rowIdx: rowIdx_ };
+                        rookSource = { colIdx: 0, rowIdx: rowIdx_ };
+                        rookTarget = { colIdx: 3, rowIdx: rowIdx_ };
+                        if (!this.isPieceOn(kingSource, whiteKing)) return false;
+                        if (!this.isPieceOn(rookSource, whiteRook)) return false;
+                        for (colIdx_ = 1; colIdx_ < 4; colIdx_++) { // any pieces in between?
+                            if (!this.isFieldEmpty(fieldIdx(colIdx_, rowIdx_))) return false;
+                        }
+                        for (colIdx_ = 2; colIdx_ < 4; colIdx_++) { // any check on path of king fields
+                            if (this.isPieceAttackedOn(fieldIdx(colIdx_, rowIdx_), otherColor(color_))) return false;
+                        }
+                        if (!validateOnly) this.canCastleLongWhite = false;
+                        break;
+                }
+                break;
+        }
+        if (!validateOnly) {
+            this.setPiece(king, kingTarget);
+            this.removePiece(kingSource);
+            this.setPiece(rook, rookTarget);
+            this.removePiece(rookSource);
+            this.halfMoves50++;
+            this.enPassantPossible = false;
+            this.enPassantField = undefined;
+            // next move
+            this.nextMoveBy = otherColor(this.nextMoveBy);
+            if (this.nextMoveBy == color.white) this.moveNumber++;
+            this.clearAttackedFields();
+            // post move evaluation
+            // TODO is check / is Mate
+            // TODO isGameOver()
+            // TODO add move to move list
+        }
+        return true;
     }
 
-    private setPieceIdx(field:boardFieldIdx, piece: piece) {
-        this.board[field.colIdx][field.rowIdx] = piece;
+    private setPiece(piece_: piece, field: boardFieldIdx) {
+        this.board[field.colIdx][field.rowIdx] = piece_;
     }
-    private removePieceIdx(field:boardFieldIdx) {
+    private removePiece(field: boardFieldIdx) {
         this.board[field.colIdx][field.rowIdx] = NOPIECE;
-    }
-
-    fieldIdx(col: string, row: string): boardFieldIdx {
-        // convert chess notation of field (like e4) to index on board
-        const colidx = (col[0].charCodeAt(0) - 'a'.charCodeAt(0));
-        const rowidx = 8 - parseInt(row[0], 10)
-        if (colidx < 0 || colidx >= 8) throw new Error('unexpected column');
-        if (rowidx < 0 || rowidx >= 8) throw new Error('unexpected row');
-        return { colIdx: colidx, rowIdx: rowidx };
-    }
-
-    private fieldNotation(field: boardFieldIdx): string {
-        // convert internal field representation to normal string representation
-        const cols = 'abcdefgh';
-        let result = cols[field.colIdx] + (8 - field.rowIdx).toString();
-        return result;
     }
 
 }

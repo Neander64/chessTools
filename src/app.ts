@@ -13,10 +13,21 @@ import * as chessBoard from "./chess-board"
 
 var cb = new chessBoard.ChessBoard();
 //cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq - 4 8");
-cb.loadFEN(cb.initialBoardFEN);
-//cb.loadFEN("7k/8/8/2pb4/8/8/8/7K b - - 4 50");
+//cb.loadFEN(cb.initialBoardFEN);
+//cb._movePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('e2')), chessBoard.strToFieldIdx('e4'));
+//cb._movePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('e7')), chessBoard.strToFieldIdx('e5'));
+
+//cb._moveWithPromotion(cb.peekFieldPiece(chessBoard.strToFieldIdx('d7')), chessBoard.strToFieldIdx('d8'), chessBoard.charToPiece('Q').piece);
+//cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short);
+
+//cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
 //cb.setPiece('e', '5', chessBoard.piece.whitePawn);
+cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
 console.log(cb.toASCII());
+//console.log(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, false));
+console.log(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4')));
+console.log(cb.toASCII());
+
 //console.log(cb.field('h', '8'));
 //console.log(cb.isPossibleKingMove(cb.fieldIdx('e', '7'), cb.fieldIdx('e', '8')));
 //let cpb = cb.currentPiecesOnBoard(chessBoard.color.white);
@@ -24,10 +35,13 @@ console.log(cb.toASCII());
 
 //let it = new chessBoard.KnightMovesRaw({ colIdx: 0, rowIdx: 0 });
 //console.log(it.moves);
-let source = cb.fieldIdx('f', '8');
-let target = cb.fieldIdx('h', '2');
-console.log(cb.getAttackedFields(chessBoard.color.black).attackedFields());
-console.log(cb.isCheck(chessBoard.color.white));
+//let source = cb.fieldIdx('f', '8');
+//let target = cb.fieldIdx('h', '2');
+//console.log(cb.getAttackedFields(chessBoard.color.black).attackedFields());
+//console.log(cb.isMate(chessBoard.color.white));
+//console.log(target,cb.attackersOn(target,chessBoard.color.black));
+//console.log(cb.getLegalMovesByWhiteKing())
+//console.log(cb.getLegalMovesByBlackKing())
 
 /*
 let ray = chessBoard.isOffsetRookLike(source, target);

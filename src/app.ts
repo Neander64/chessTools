@@ -11,7 +11,7 @@ import * as chessBoard from "./chess-board"
 //console.log(JSON.stringify(args));
 
 
-var cb = new chessBoard.ChessBoard();
+var cb = new chessBoard.ChessBoard("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
 //cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq - 4 8");
 //cb.loadFEN(cb.initialBoardFEN);
 //cb._movePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('e2')), chessBoard.strToFieldIdx('e4'));
@@ -20,13 +20,22 @@ var cb = new chessBoard.ChessBoard();
 //cb._moveWithPromotion(cb.peekFieldPiece(chessBoard.strToFieldIdx('d7')), chessBoard.strToFieldIdx('d8'), chessBoard.charToPiece('Q').piece);
 //cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short);
 
-//cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
+cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
 //cb.setPiece('e', '5', chessBoard.piece.whitePawn);
-cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
-console.log(cb.toASCII());
+//cb.loadFEN("k7/8/8/8/6p1/8/7P/K7 w K - 4 50");
+//cb.loadFEN("k7/8/8/8/8/p7/P7/K7 w K - 4 50");
+//cb.loadFEN("k7/8/8/8/7p/8/6P1/K7 w K - 4 50");
+//cb.loadFEN("k7/8/8/8/7p/8/6P1/K7 w K - 4 50");
+//cb.loadFEN("k7/8/6P1/8/7N/8/8/K7 w K - 4 50");
+//cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+//console.log(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g1')));
+
+console.log(cb.toASCII())
+console.log(cb.getFEN())
 //console.log(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, false));
-console.log(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4')));
-console.log(cb.toASCII());
+//console.log(cb.performMovePawn(chessBoard.strToFieldIdx('g2'), chessBoard.strToFieldIdx('g4')));
+//console.log(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('g3')));
+//console.log(cb.toASCII());
 
 //console.log(cb.field('h', '8'));
 //console.log(cb.isPossibleKingMove(cb.fieldIdx('e', '7'), cb.fieldIdx('e', '8')));

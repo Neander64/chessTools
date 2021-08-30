@@ -3,13 +3,167 @@ import * as chessBoard from './chess-board'
 
 describe('Testing chess-board', () => {
 
+  test('testing FEN creation', () => {
+    var cb = new chessBoard.ChessBoard()
+    cb.loadFEN(cb.initialBoardFEN)
+    expect(cb.getFEN()).toBe(cb.initialBoardFEN)
+
+    let t1 = "k7/8/6P1/8/6R1/8/8/K7 w K - 4 50"
+    cb.loadFEN(t1)
+    expect(cb.getFEN()).toBe(t1)
+
+    let t2 = "k7/8/6P1/8/6R1/8/8/K7 b Kq d3 4 5"
+    cb.loadFEN(t2)
+    expect(cb.getFEN()).toBe(t2)
+
+  });
+
+  test('testing Rook moves', () => {
+    var cb = new chessBoard.ChessBoard();
+    // moves
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g1'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g8'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('a4'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h4'))).toBe(true);
+
+    // illegal
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('a1'))).toBe(false);
+
+    // move blocked
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g8'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g7'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g6'))).toBe(false);
+
+    // capture
+    cb.loadFEN("k7/8/6p1/8/6R1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
+
+  });
+
+  test('testing Queen moves', () => {
+    var cb = new chessBoard.ChessBoard();
+    // Bishop like moves
+    // moves
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h3'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h5'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('d1'))).toBe(true);
+
+    // illegal move
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('f1'))).toBe(false);
+
+    // move blocked
+    cb.loadFEN("k7/3p4/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(false);
+    cb.loadFEN("k7/3P4/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(false);
+
+    // capture
+    cb.loadFEN("k7/3p4/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('d7'))).toBe(true);
+
+    // Rook like moves
+    // moves
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g1'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g8'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('a4'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h4'))).toBe(true);
+
+    // illegal
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('a1'))).toBe(false);
+
+    // move blocked
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g8'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g7'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g6'))).toBe(false);
+
+    // capture
+    cb.loadFEN("k7/8/6p1/8/6Q1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
+
+
+  });
+
+  test('testing bishop moves', () => {
+    var cb = new chessBoard.ChessBoard();
+    // moves
+    cb.loadFEN("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h3'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('h5'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(true);
+    cb.loadFEN("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('d1'))).toBe(true);
+
+    // illegal move
+    cb.loadFEN("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('f1'))).toBe(false);
+
+    // move blocked
+    cb.loadFEN("k7/3p4/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(false);
+    cb.loadFEN("k7/3P4/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('c8'))).toBe(false);
+
+    // capture
+    cb.loadFEN("k7/3p4/6P1/8/6B1/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('d7'))).toBe(true);
+  });
+
+
+  test('testing knight moves', () => {
+    var cb = new chessBoard.ChessBoard();
+    // moves
+    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g2'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f3'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f5'))).toBe(true);
+    // illegal move
+    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f4'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(false);
+    // capture
+    cb.loadFEN("k7/8/6p1/8/7N/8/8/K7 w K - 4 50");
+    expect(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
+
+  });
+
+
   test('testing pawn moves', () => {
     var cb = new chessBoard.ChessBoard();
+    // moves
     cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4'))).toBe(true);
     cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'))).toBe(true);
-    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h3'), chessBoard.strToFieldIdx('h4'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h3'), chessBoard.strToFieldIdx('h4'))).toBe(false);
     cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h5'))).toBe(false);
     cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
@@ -19,11 +173,63 @@ describe('Testing chess-board', () => {
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h5'))).toBe(true);
     cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h6'))).toBe(true);
-    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h6'), chessBoard.strToFieldIdx('h5'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h6'), chessBoard.strToFieldIdx('h5'))).toBe(false);
     cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h4'))).toBe(false);
     cb.loadFEN("k7/7p/8/8/8/8/8/K7 b K - 4 50");
     expect(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('h3'))).toBe(false);
+
+    // blocked
+    cb.loadFEN("k7/8/8/8/8/7p/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'))).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4'))).toBe(false);
+    cb.loadFEN("k7/8/8/8/8/p7/P7/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('a2'), chessBoard.strToFieldIdx('a3'))).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('a2'), chessBoard.strToFieldIdx('a4'))).toBe(false);
+    cb.loadFEN("k7/8/8/8/7p/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7p/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4'))).toBe(false);
+    cb.loadFEN("k7/8/8/7p/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'))).toBe(true);
+    cb.loadFEN("k7/8/8/7p/8/8/7P/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h4'))).toBe(true);
+
+    // captures
+    cb.loadFEN(cb.initialBoardFEN);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('e2'), chessBoard.strToFieldIdx('e4'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('d7'), chessBoard.strToFieldIdx('d5'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('e4'), chessBoard.strToFieldIdx('d5'))).toBe(true);
+
+    // e.p.
+    cb.loadFEN("k7/8/8/8/6Pp/8/8/K7 b K g3 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('g3'))).toBe(true);
+
+    cb.loadFEN("k7/8/8/8/7p/8/6P1/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('g2'), chessBoard.strToFieldIdx('g4'))).toBe(true);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('g3'))).toBe(true);
+
+    // promotion
+    cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h8'), chessBoard.charToPiece('Q').piece.kind)).toBe(true);
+    cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h8'))).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h8'), chessBoard.charToPiece('P').piece.kind)).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('h8'), chessBoard.charToPiece('K').piece.kind)).toBe(false);
+
+    // promotion with capture
+    cb.loadFEN("k6b/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'), chessBoard.charToPiece('Q').piece.kind)).toBe(false);
+    cb.loadFEN("k5b1/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'), chessBoard.charToPiece('Q').piece.kind)).toBe(true);
+    cb.loadFEN("k5b1/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'), chessBoard.charToPiece('P').piece.kind)).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'), chessBoard.charToPiece('K').piece.kind)).toBe(false);
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'))).toBe(false);
+
+    cb.loadFEN("k5B1/7P/8/8/8/8/8/K7 w K - 4 50");
+    expect(cb.performMovePawn(chessBoard.strToFieldIdx('h7'), chessBoard.strToFieldIdx('g8'), chessBoard.charToPiece('Q').piece.kind)).toBe(false);
+
   });
 
   test('testing castle moves 1', () => {
@@ -145,7 +351,15 @@ Array [
   },
   Object {
     "colIdx": 2,
-    "rowIdx": 3,
+    "rowIdx": 2,
+  },
+  Object {
+    "colIdx": 1,
+    "rowIdx": 1,
+  },
+  Object {
+    "colIdx": 0,
+    "rowIdx": 0,
   },
   Object {
     "colIdx": 4,
@@ -185,16 +399,6 @@ AttackedFields {
           "piece": Object {
             "color": "Black",
             "kind": 0,
-          },
-        },
-        Object {
-          "field": Object {
-            "colIdx": 2,
-            "rowIdx": 0,
-          },
-          "piece": Object {
-            "color": "Black",
-            "kind": 2,
           },
         },
       ],
@@ -365,16 +569,6 @@ AttackedFields {
             "kind": 3,
           },
         },
-        Object {
-          "field": Object {
-            "colIdx": 5,
-            "rowIdx": 0,
-          },
-          "piece": Object {
-            "color": "Black",
-            "kind": 2,
-          },
-        },
       ],
       "field": Object {
         "colIdx": 4,
@@ -383,16 +577,6 @@ AttackedFields {
     },
     Object {
       "attackingPieces": Array [
-        Object {
-          "field": Object {
-            "colIdx": 3,
-            "rowIdx": 0,
-          },
-          "piece": Object {
-            "color": "Black",
-            "kind": 3,
-          },
-        },
         Object {
           "field": Object {
             "colIdx": 3,

@@ -11,7 +11,19 @@ import * as chessBoard from "./chess-board"
 //console.log(JSON.stringify(args));
 
 
-var cb = new chessBoard.ChessBoard("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
+var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq e3 4 8");
+//cb.loadFEN(cb.initialBoardFEN);
+cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50")
+
+console.log(cb.move('h8=Q'))
+console.log(cb.toASCII())
+//console.log(cb.getFEN())
+//cb.loadFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5n2/PPPP1PPP/RnBQKB1R w KQkq - 2 3")
+//console.log(cb.move('Bb5'))
+//console.log(cb.move("e2e4"))
+//console.log(cb.move("ee5"))
+//console.log(cb.move("N1f3"))
+
 //cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq - 4 8");
 //cb.loadFEN(cb.initialBoardFEN);
 //cb._movePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('e2')), chessBoard.strToFieldIdx('e4'));
@@ -20,7 +32,7 @@ var cb = new chessBoard.ChessBoard("k7/8/6P1/8/6B1/8/8/K7 w K - 4 50");
 //cb._moveWithPromotion(cb.peekFieldPiece(chessBoard.strToFieldIdx('d7')), chessBoard.strToFieldIdx('d8'), chessBoard.charToPiece('Q').piece);
 //cb.moveCastle(chessBoard.color.black, chessBoard.castleType.short);
 
-cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
+//cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
 //cb.setPiece('e', '5', chessBoard.piece.whitePawn);
 //cb.loadFEN("k7/8/8/8/6p1/8/7P/K7 w K - 4 50");
 //cb.loadFEN("k7/8/8/8/8/p7/P7/K7 w K - 4 50");
@@ -30,8 +42,22 @@ cb.loadFEN("7k/8/8/2p1b3/8/8/8/7K b - b3 4 50");
 //cb.loadFEN("k7/8/6P1/8/6Q1/8/8/K7 w K - 4 50");
 //console.log(cb.performMovePiece(cb.peekFieldPiece(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g1')));
 
+/*
 console.log(cb.toASCII())
 console.log(cb.getFEN())
+console.log(cb.move(chessBoard.strToFieldIdx('e5'), chessBoard.strToFieldIdx('a1')))
+//console.log(cb.move(chessBoard.strToFieldIdx('h1'), chessBoard.strToFieldIdx('h2')))
+console.log(cb.move(chessBoard.strToFieldIdx('h1'), chessBoard.strToFieldIdx('h2')))
+console.log(cb.move(chessBoard.strToFieldIdx('a1'), chessBoard.strToFieldIdx('e5')))
+console.log(cb.move(chessBoard.strToFieldIdx('h2'), chessBoard.strToFieldIdx('h3'), { validateOnly: true }))
+console.log(cb.toASCII())
+console.log(cb.getFEN())
+*/
+/*
+cb.loadFEN("7k/8/8/2p1b3/8/7K/8/8 w - - 7 52");
+console.log(cb.toASCII())
+console.log(cb.isCheck(chessBoard.color.white))
+*/
 //console.log(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, false));
 //console.log(cb.performMovePawn(chessBoard.strToFieldIdx('g2'), chessBoard.strToFieldIdx('g4')));
 //console.log(cb.performMovePawn(chessBoard.strToFieldIdx('h4'), chessBoard.strToFieldIdx('g3')));

@@ -303,7 +303,7 @@ export class parseChessable {
                         lineTokens.push({ key: Token.Novelty, value: '' });
                     }
                     else {
-                        console.log('WRN: possible novelity indicator ignored (Knight or N?)');
+                        //console.log('WRN: possible novelity indicator ignored (Knight or N?)');
                     }
                 }
             }

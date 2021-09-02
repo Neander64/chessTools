@@ -552,6 +552,7 @@ describe('Testing chess-board', () => {
 
   });
 
+  /*
   test('testing AttackedFields', () => {
     let cb = new chessBoard.ChessBoard();
 
@@ -1204,7 +1205,7 @@ AttackedFields {
 }
 `);
   });
-
+*/
   test('testing FEN', () => {
     let cb = new chessBoard.ChessBoard();
     cb.loadFEN(cb.initialBoardFEN);

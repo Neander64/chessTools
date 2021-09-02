@@ -125,7 +125,7 @@ function pieceToChar(p: Piece): string {
     return result;
 }
 
-export function charToPiece(pieceStr: string): { valid: boolean, piece: Piece } {
+export function charFENToPiece(pieceStr: string): { valid: boolean, piece: Piece } {
 
     switch (pieceStr) {
         case 'R': return { valid: true, piece: Piece.whiteRook() }
@@ -146,7 +146,7 @@ export function charToPiece(pieceStr: string): { valid: boolean, piece: Piece } 
             return { valid: false, piece: Piece.none() }
     }
 }
-function moveCharToPiece(pieceStr: string, color_: color): { valid: boolean, piece: Piece } {
+function charPGNToPiece(pieceStr: string, color_: color): { valid: boolean, piece: Piece } {
 
     switch (pieceStr) {
         case 'R': return { valid: true, piece: (color_ == color.black) ? Piece.blackRook() : Piece.whiteRook() }
@@ -201,37 +201,45 @@ type boardFieldIdx = {
 }
 
 type fieldOffset = {
-    colOffset: number,
-    rowOffset: number
+    dCol: number,
+    dRow: number
 }
 const offsets = {
-    N: { colOffset: 0, rowOffset: -1 },
-    W: { colOffset: 1, rowOffset: 0 },
-    S: { colOffset: 0, rowOffset: 1 },
-    E: { colOffset: -1, rowOffset: 0 },
-    NW: { colOffset: 1, rowOffset: -1 },
-    WS: { colOffset: 1, rowOffset: 1 },
-    SE: { colOffset: -1, rowOffset: 1 },
-    EN: { colOffset: -1, rowOffset: -1 }
+    N: { dCol: 0, dRow: -1 },
+    W: { dCol: 1, dRow: 0 },
+    S: { dCol: 0, dRow: 1 },
+    E: { dCol: -1, dRow: 0 },
+    NW: { dCol: 1, dRow: -1 },
+    SW: { dCol: 1, dRow: 1 },
+    SE: { dCol: -1, dRow: 1 },
+    NE: { dCol: -1, dRow: -1 },
+    //--- Knight moves
+    NNE: { dCol: -1, dRow: -2 },
+    NNW: { dCol: 1, dRow: -2 },
+    SSE: { dCol: -1, dRow: 2 },
+    SSW: { dCol: 1, dRow: 2 },
+    WWN: { dCol: 2, dRow: -1 },
+    WWS: { dCol: 2, dRow: 1 },
+    EEN: { dCol: -2, dRow: -1 },
+    EES: { dCol: -2, dRow: 1 },
 }
-function shiftField(field: boardFieldIdx, offset: fieldOffset) {
-    return { colIdx: field.colIdx + offset.colOffset, rowIdx: field.rowIdx + offset.rowOffset }
+function shiftField(field: boardFieldIdx, offset: fieldOffset, factor: number = 1) {
+    return { colIdx: field.colIdx + offset.dCol * factor, rowIdx: field.rowIdx + offset.dRow * factor }
 }
-
 function boardFieldsAreEqual(f1: boardFieldIdx, f2: boardFieldIdx): boolean {
     return f1.colIdx == f2.colIdx && f1.rowIdx == f2.rowIdx
 }
-
 function fieldIdx(colIdx_: number, rowIdx_: number) {
     return { colIdx: colIdx_, rowIdx: rowIdx_ }
+}
+function isFieldOnBoard(field: boardFieldIdx) {
+    return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8)
 }
 
 type pieceOnBoard = {
     piece: Piece,
     field: boardFieldIdx
 };
-
-
 
 type moveOnBoard = {
     pieceOB: pieceOnBoard,
@@ -285,32 +293,27 @@ class AttackedFields {
     }
 }
 
-function isFieldOnBoard(field: boardFieldIdx) {
-    return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8)
-}
-
-export const enum bishopRay { // 1-2,3-4 are opposites
-    ray1 = 1,
-    ray2,
-    ray3,
-    ray4,
+const enum bishopRay { // 1-2,3-4 are opposites
+    SW = 'SE',
+    NE = 'NE',
+    NW = 'NW',
+    SE = 'SE',
 }
 class BishopMovesRaw {
-    moves_ray1: boardFieldIdx[]
-    moves_ray2: boardFieldIdx[]
-    moves_ray3: boardFieldIdx[]
-    moves_ray4: boardFieldIdx[]
+    moves_SW: boardFieldIdx[]
+    moves_NE: boardFieldIdx[]
+    moves_NW: boardFieldIdx[]
+    moves_SE: boardFieldIdx[]
     constructor(startField: boardFieldIdx) {
-        this.moves_ray1 = this.generateRay(startField, 1, 1)
-        this.moves_ray2 = this.generateRay(startField, -1, -1)
-        this.moves_ray3 = this.generateRay(startField, 1, -1)
-        this.moves_ray4 = this.generateRay(startField, -1, 1)
+        this.moves_SW = this.generateRay(startField, offsets.SW)
+        this.moves_NE = this.generateRay(startField, offsets.NE)
+        this.moves_NW = this.generateRay(startField, offsets.NW)
+        this.moves_SE = this.generateRay(startField, offsets.SE)
     }
-    private generateRay(startField: boardFieldIdx, colOffset: number, rowOffset: number): boardFieldIdx[] {
+    private generateRay(startField: boardFieldIdx, offset: fieldOffset): boardFieldIdx[] {
         let moves: boardFieldIdx[] = []
-        //for (let i = startField.colIdx + colOffset; i < 8; i++) 
         for (let i = 1; i < 8; i++) {
-            let newField = { colIdx: startField.colIdx + colOffset * i, rowIdx: startField.rowIdx + rowOffset * i }
+            let newField = shiftField(startField, offset, i)
             if (isFieldOnBoard(newField)) {
                 moves.push(newField)
             }
@@ -320,12 +323,12 @@ class BishopMovesRaw {
     }
     getRay(ray: bishopRay): boardFieldIdx[] {
         switch (ray) {
-            case bishopRay.ray1: return this.moves_ray1
-            case bishopRay.ray2: return this.moves_ray2
-            case bishopRay.ray3: return this.moves_ray3
-            case bishopRay.ray4: return this.moves_ray4
+            case bishopRay.SW: return this.moves_SW
+            case bishopRay.NE: return this.moves_NE
+            case bishopRay.NW: return this.moves_NW
+            case bishopRay.SE: return this.moves_SE
         }
-        //return []; // unreachable
+        return []; // unreachable
     }
 }
 /* optional implementation with iterator
@@ -361,49 +364,48 @@ export class BishopRayIt implements IterableIterator<boardFieldIdx> {
     }
 }
 */
-export function isOffsetBishopLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: bishopRay } {
+function isOffsetBishopLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: bishopRay } {
     if (Math.abs(source.rowIdx - target.rowIdx) == Math.abs(source.colIdx - target.colIdx)) {
         if (source.colIdx > target.colIdx) {
             if (source.rowIdx > target.rowIdx)  // - -
-                return { valid: true, ray: bishopRay.ray2 }
+                return { valid: true, ray: bishopRay.NE }
             else                                // - +
-                return { valid: true, ray: bishopRay.ray4 }
+                return { valid: true, ray: bishopRay.SE }
         }
         else {
             if (source.rowIdx > target.rowIdx)  // + -
-                return { valid: true, ray: bishopRay.ray3 }
+                return { valid: true, ray: bishopRay.NW }
             else                                // + +
-                return { valid: true, ray: bishopRay.ray1 }
+                return { valid: true, ray: bishopRay.SW }
         }
     }
     return { valid: false };
 }
 
 
-export const enum rookRay {// 1-2,3-4 are opposites
-    ray1 = 1,
-    ray2,
-    ray3,
-    ray4,
+const enum rookRay {// 1-2,3-4 are opposites
+    W = 'W',
+    E = 'E',
+    S = 'S',
+    N = 'N',
 }
 
 class RookMovesRaw {
-    moves_ray1: boardFieldIdx[]
-    moves_ray2: boardFieldIdx[]
-    moves_ray3: boardFieldIdx[]
-    moves_ray4: boardFieldIdx[]
+    moves_W: boardFieldIdx[]
+    moves_E: boardFieldIdx[]
+    moves_S: boardFieldIdx[]
+    moves_N: boardFieldIdx[]
     constructor(startField: boardFieldIdx) {
-        this.moves_ray1 = this.generateRay(startField, 1, 0)
-        this.moves_ray2 = this.generateRay(startField, -1, 0)
-        this.moves_ray3 = this.generateRay(startField, 0, 1)
-        this.moves_ray4 = this.generateRay(startField, 0, -1)
+        this.moves_W = this.generateRay(startField, offsets.W)
+        this.moves_E = this.generateRay(startField, offsets.E)
+        this.moves_S = this.generateRay(startField, offsets.S)
+        this.moves_N = this.generateRay(startField, offsets.N)
 
     }
-    private generateRay(startField: boardFieldIdx, colOffset: number, rowOffset: number): boardFieldIdx[] {
+    private generateRay(startField: boardFieldIdx, offset: fieldOffset): boardFieldIdx[] {
         let moves: boardFieldIdx[] = []
-        //for (let i = startField.colIdx + colOffset; i < 8; i++) 
         for (let i = 1; i < 8; i++) {
-            let newField = { colIdx: startField.colIdx + colOffset * i, rowIdx: startField.rowIdx + rowOffset * i }
+            let newField = shiftField(startField, offset, i)
             if (isFieldOnBoard(newField)) {
                 moves.push(newField)
             }
@@ -413,10 +415,10 @@ class RookMovesRaw {
     }
     getRay(ray: rookRay): boardFieldIdx[] {
         switch (ray) {
-            case rookRay.ray1: return this.moves_ray1
-            case rookRay.ray2: return this.moves_ray2
-            case rookRay.ray3: return this.moves_ray3
-            case rookRay.ray4: return this.moves_ray4
+            case rookRay.W: return this.moves_W
+            case rookRay.E: return this.moves_E
+            case rookRay.S: return this.moves_S
+            case rookRay.N: return this.moves_N
         }
         //return []; // unreachable
     }
@@ -453,25 +455,25 @@ export class RookRayIt implements IterableIterator<boardFieldIdx> {
     }
 }
 */
-export function isOffsetRookLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: rookRay } {
+function isOffsetRookLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: rookRay } {
     if ((source.rowIdx == target.rowIdx) || (source.colIdx == target.colIdx)) {
         if (source.colIdx == target.colIdx) {
             if (source.rowIdx < target.rowIdx)
-                return { valid: true, ray: rookRay.ray3 } // 0 +
+                return { valid: true, ray: rookRay.S } // 0 +
             else
-                return { valid: true, ray: rookRay.ray4 } // 0 -
+                return { valid: true, ray: rookRay.N } // 0 -
         }
         else { // source.rowIdx == target.rowIdx
             if (source.colIdx < target.colIdx)
-                return { valid: true, ray: rookRay.ray1 } // + 0
+                return { valid: true, ray: rookRay.W } // + 0
             else
-                return { valid: true, ray: rookRay.ray2 } // - 0
+                return { valid: true, ray: rookRay.E } // - 0
         }
     }
     return { valid: false }
 }
 
-export enum castleType {
+enum castleType {
     short,
     long
 }
@@ -491,23 +493,23 @@ type castleData = {
     kingPathCols: { start: number, end: number }
     betweenPathCols: { start: number, end: number }
 }
-export class KingMovesRaw {
+class KingMovesRaw {
     moves: boardFieldIdx[]
 
     constructor(startField: boardFieldIdx) {
         const offsetsKing = [
-            offsets.EN,
+            offsets.NE,
             offsets.N,
             offsets.NW,
             offsets.E,
             offsets.W,
             offsets.SE,
             offsets.S,
-            offsets.WS,
+            offsets.SW,
         ];
         this.moves = [];
         for (const f of offsetsKing) {
-            let newField = { colIdx: startField.colIdx + f.colOffset, rowIdx: startField.rowIdx + f.rowOffset }
+            let newField = shiftField(startField, f)
             if (isFieldOnBoard(newField)) {
                 this.moves.push(newField)
             }
@@ -531,15 +533,15 @@ export class KingMovesRaw {
     }
 }
 
-export class KnightMovesRaw {
+class KnightMovesRaw {
     moves: boardFieldIdx[]
 
     constructor(startField: boardFieldIdx) {
         const offsetsKnight = [
-            { colOffset: -1, rowOffset: -2 }, { colOffset: 1, rowOffset: -2 },
-            { colOffset: -2, rowOffset: -1 }, { colOffset: 2, rowOffset: -1 },
-            { colOffset: -2, rowOffset: 1 }, { colOffset: 2, rowOffset: 1 },
-            { colOffset: -1, rowOffset: 2 }, { colOffset: 1, rowOffset: 2 },
+            offsets.NNE, offsets.NNW,
+            offsets.SSE, offsets.SSW,
+            offsets.WWN, offsets.WWS,
+            offsets.EEN, offsets.EES
         ];
         this.moves = []
         for (const f of offsetsKnight) {
@@ -632,7 +634,7 @@ export class ChessBoard {
                 for (let p = 0; p < fenRow.length; p++) {
                     let digit = parseInt(fenRow[p], 10)
                     if (isNaN(digit)) { // it's a piece
-                        let pResult = charToPiece(fenRow[p])
+                        let pResult = charFENToPiece(fenRow[p])
                         if (!pResult.valid) throw new Error('loadFEN(): unexpected piece')
                         if (colIdx >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
                         this.board[colIdx++][rowIdx] = pResult.piece
@@ -865,7 +867,7 @@ export class ChessBoard {
         //TODO handle pins, pinned pieces don't attack (albeit they can check)
         let rookMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
-        const rays = [rookRay.ray1, rookRay.ray2, rookRay.ray3, rookRay.ray4]
+        const rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
         let rookMovesRaw = new RookMovesRaw(piece.field)
         for (const ray of rays) {
             let moveRay = rookMovesRaw.getRay(ray)
@@ -885,7 +887,7 @@ export class ChessBoard {
         //TODO handle pins
         let bishopMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
-        const rays = [bishopRay.ray1, bishopRay.ray2, bishopRay.ray3, bishopRay.ray4]
+        const rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
         let bishopMovesRaw = new BishopMovesRaw(piece.field)
         for (const ray of rays) {
             let moveRay = bishopMovesRaw.getRay(ray)
@@ -909,7 +911,7 @@ export class ChessBoard {
         let queenMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
 
-        const raysR = [rookRay.ray1, rookRay.ray2, rookRay.ray3, rookRay.ray4]
+        const raysR = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
         let rookMovesRaw = new RookMovesRaw(piece.field)
         for (const ray of raysR) {
             let moveRay = rookMovesRaw.getRay(ray)
@@ -919,7 +921,7 @@ export class ChessBoard {
             }
         }
 
-        const raysB = [bishopRay.ray1, bishopRay.ray2, bishopRay.ray3, bishopRay.ray4]
+        const raysB = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
         let bishopMovesRaw = new BishopMovesRaw(piece.field)
         for (const ray of raysB) {
             let moveRay = bishopMovesRaw.getRay(ray)
@@ -932,7 +934,7 @@ export class ChessBoard {
     }
     private getAttackedFieldsByPawnBlack(piece: pieceOnBoard): boardFieldIdx[] {
         //TODO handle pins
-        const offsetsPawn = [offsets.WS, offsets.SE];
+        const offsetsPawn = [offsets.SW, offsets.SE];
         //        const offsetsPawn = [{ colOffset: 1, rowOffset: 1 }, { colOffset: -1, rowOffset: 1 }];
         let pawnCaptureMoves: boardFieldIdx[] = [];
         const startField = piece.field;
@@ -947,12 +949,12 @@ export class ChessBoard {
     }
     private getAttackedFieldsByPawnWhite(piece: pieceOnBoard): boardFieldIdx[] {
         //TODO handle pins
-        const offsetsPawn = [offsets.NW, offsets.EN]
+        const offsetsPawn = [offsets.NW, offsets.NE]
         //        const offsetsPawn = [{ colOffset: 1, rowOffset: -1 }, { colOffset: -1, rowOffset: -1 }]
         let pawnCaptureMoves: boardFieldIdx[] = []
         const startField = piece.field
         for (const f of offsetsPawn) {
-            let newField = { colIdx: startField.colIdx + f.colOffset, rowIdx: startField.rowIdx + f.rowOffset }
+            let newField = shiftField(startField, f) // { colIdx: startField.colIdx + f.colOffset, rowIdx: startField.rowIdx + f.rowOffset }
             if (isFieldOnBoard(newField)) {
                 pawnCaptureMoves.push(newField)
             }
@@ -1072,8 +1074,33 @@ export class ChessBoard {
         // no legal move for king
         return false
     }
-    private checkFiftyMovesRule(): boolean {
-        return this.data.halfMoves50 > 100;
+    private check50MovesRule(): boolean {
+        // no pawn has moven and no capture for 50 Moves
+        // game maybe continued if the player does not claim draw.
+        return this.data.halfMoves50 > 100
+    }
+    private check75MovesRule(): boolean {
+        // no pawn has moven and no capture for 75 Moves
+        // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw (unless the last move is mate)
+        return this.data.halfMoves50 > 100
+    }
+    private treefoldRepetition(): boolean {
+        // 3 identical position (same player to move, same castle rights, same enpassant options, same moves available) each time as the current board
+        // game maybe continued if the player does not claim draw.
+        return false
+    }
+    private fivefoldRepetition(): boolean {
+        // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw after the 5th positional repetion
+        return false
+    }
+    private drawByDeadPosition(): boolean { // insufficient material
+        // no mate possible
+        // K vs K
+        // K vs K+B
+        // K vs K+N
+        // K vs K+N+N (option)
+        // K+B vs K+B, with Bishops on same color
+        return false
     }
     private isGameOver(): boolean {
         // TODO
@@ -1087,16 +1114,12 @@ export class ChessBoard {
     }
 
     move(move: string): boolean {
-        // allowed formats for move (SAN like)
-        // 'Nxf5'
-        // 'Ndxf5'
-        // 'Ndf5'
-        // 'R1xd1'
-        // 'R1d1'
-        // 'R1d1+'
-        // 'R1d1#'
-        // 'e8=N'
+        // allow SAN like formats (not very strict as long as it is parsable, it'll be processed)
         // Strip additional information
+
+        // TODO turn off caste option if a rook is captured
+        // TODO use Zobrist Hashing to store positon in History, see https://www.chessprogramming.org/Zobrist_Hashing
+
         let moveCleanedUp = move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
         if (moveCleanedUp === CASTLE_SHORT) {
             return this.moveCastle(this.data.nextMoveBy, castleType.short)
@@ -1117,7 +1140,7 @@ export class ChessBoard {
                 var from = matches[2]
                 var to = matches[3]
                 var promotion = matches[4]
-                let { valid: validPiece, piece: piece_ } = moveCharToPiece(piece, this.data.nextMoveBy)
+                let { valid: validPiece, piece: piece_ } = charPGNToPiece(piece, this.data.nextMoveBy)
                 if (!validPiece) { // maybe a pawn
                     piece_ = (this.data.nextMoveBy == color.black) ? Piece.blackPawn() : Piece.whitePawn()
                 }
@@ -1126,7 +1149,7 @@ export class ChessBoard {
                 if (!target) return false
                 let promotionPiece_: Piece = Piece.none()
                 if (!validPiece /* is a pawn */ && promotion) {
-                    let { valid: validPiecePromo, piece: promotionPieceIn } = charToPiece(promotion);
+                    let { valid: validPiecePromo, piece: promotionPieceIn } = charFENToPiece(promotion);
                     if (!validPiecePromo || (validPiecePromo && !isLegalPromotionPiece(promotionPieceIn.kind)))
                         return false
                     promotionPiece_ = promotionPieceIn
@@ -1203,7 +1226,7 @@ export class ChessBoard {
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
-                        field = shiftField(target, offsets.EN)
+                        field = shiftField(target, offsets.NE)
                         if (isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
@@ -1230,7 +1253,7 @@ export class ChessBoard {
                                 }
                             }
                         }
-                        field = shiftField(target, offsets.WS)
+                        field = shiftField(target, offsets.SW)
                         if (isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)

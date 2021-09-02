@@ -12,11 +12,12 @@ import * as chessBoard from "./chess-board"
 
 
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq e3 4 8");
-//cb.loadFEN(cb.initialBoardFEN);
-cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50")
+cb.loadFEN(cb.initialBoardFEN);
+//cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50")
 
-console.log(cb.move('h8=Q'))
-console.log(cb.toASCII())
+//console.log(cb.move('h8=Q'))
+//console.log(cb.toASCII())
+console.log(cb.currentPieceSpectrum())
 //console.log(cb.getFEN())
 //cb.loadFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5n2/PPPP1PPP/RnBQKB1R w KQkq - 2 3")
 //console.log(cb.move('Bb5'))

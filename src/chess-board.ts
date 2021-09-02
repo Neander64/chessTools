@@ -161,6 +161,29 @@ function charPGNToPiece(pieceStr: string, color_: color): { valid: boolean, piec
     }
 }
 
+type pieceStat = {
+    black: {
+        rooks: number,
+        knights: number,
+        bishops: number,
+        queens: number,
+        kings: number,
+        pawns: number,
+        total: number,
+        materialEvaluaton: number,
+    },
+    white: {
+        rooks: number,
+        knights: number,
+        bishops: number,
+        queens: number,
+        kings: number,
+        pawns: number,
+        total: number
+        materialEvaluaton: number,
+    }
+    total: number
+}
 
 export function strToFieldIdx(fieldStr: string): boardFieldIdx {
     if (fieldStr.length != 2)
@@ -557,6 +580,21 @@ class PawnMoves {
     
 }
 */
+
+export const enum GameResult {
+    white_wins = "1-0",
+    black_wins = "0-1",
+    draw = "1/2-1/2",
+    none = "*"
+}
+function gameResult(r: GameResult): string {
+    switch (r) {
+        case GameResult.white_wins: return "1-0"
+        case GameResult.black_wins: return "0-1"
+        case GameResult.draw: return "1/2-1/2"
+        case GameResult.none: return "*"
+    }
+}
 export type ChessBoardData = {
     nextMoveBy: color
     canCastleShortWhite: boolean
@@ -568,6 +606,7 @@ export type ChessBoardData = {
     halfMoves50: number
     moveNumber: number
     gameOver: boolean // meaning: no further moves are allowed.
+    gameResult: GameResult
 }
 
 export class ChessBoard {
@@ -615,6 +654,7 @@ export class ChessBoard {
             halfMoves50: 0,
             moveNumber: 1,
             gameOver: true,
+            gameResult: GameResult.none
         }
         this.clearAttackedFields()
     }
@@ -662,10 +702,6 @@ export class ChessBoard {
             //this._whiteKing = whiteKings[0]
             let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white))
             if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns')
-
-            // TODO check for mate
-            // TODO check for stale mate
-            // TODO check for GameOver
 
             //2. player to move next
             switch (fenTokens[1]) {
@@ -787,6 +823,7 @@ export class ChessBoard {
         result.push('moves without pawn or capture: ' + this.data.halfMoves50)
         result.push('move number: ' + this.data.moveNumber)
         //TODO add gameOver status
+        result.push('Game Result: ' + gameResult(this.data.gameResult))
         return result
     }
 
@@ -854,6 +891,86 @@ export class ChessBoard {
             }
         }
         return result
+    }
+
+    currentPieceSpectrum(): pieceStat {
+        let result: pieceStat = {
+            black: { rooks: 0, knights: 0, bishops: 0, queens: 0, kings: 0, pawns: 0, total: 0, materialEvaluaton: 0 },
+            white: { rooks: 0, knights: 0, bishops: 0, queens: 0, kings: 0, pawns: 0, total: 0, materialEvaluaton: 0 },
+            total: 0
+        }
+        const evaluation = { // Centipawns, Larry Kaufman 2012
+            rooks: 525, knights: 350, bishops: 350, queens: 1000, kings: 10000, pawns: 100
+        }
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                let p = this.peekField({ colIdx: c, rowIdx: r })
+                if (p.isPiece) {
+                    switch (p.color) {
+                        case color.black:
+                            switch (p.kind) {
+                                case pieceKind.Rook:
+                                    result.black.rooks++
+                                    result.black.materialEvaluaton += evaluation.rooks
+                                    break
+                                case pieceKind.Knight:
+                                    result.black.knights++
+                                    result.black.materialEvaluaton += evaluation.knights
+                                    break
+                                case pieceKind.Bishop:
+                                    result.black.bishops++
+                                    result.black.materialEvaluaton += evaluation.bishops
+                                    break
+                                case pieceKind.Queen:
+                                    result.black.queens++
+                                    result.black.materialEvaluaton += evaluation.queens
+                                    break
+                                case pieceKind.King:
+                                    result.black.kings++
+                                    result.black.materialEvaluaton += evaluation.kings
+                                    break
+                                case pieceKind.Pawn:
+                                    result.black.pawns++
+                                    result.black.materialEvaluaton += evaluation.pawns
+                                    break
+                            }
+                            result.black.total++
+                            break
+                        case color.white:
+                            switch (p.kind) {
+                                case pieceKind.Rook:
+                                    result.white.rooks++
+                                    result.white.materialEvaluaton += evaluation.rooks
+                                    break
+                                case pieceKind.Knight:
+                                    result.white.knights++
+                                    result.white.materialEvaluaton += evaluation.knights
+                                    break
+                                case pieceKind.Bishop:
+                                    result.white.bishops++
+                                    result.white.materialEvaluaton += evaluation.bishops
+                                    break
+                                case pieceKind.Queen:
+                                    result.white.queens++
+                                    result.white.materialEvaluaton += evaluation.queens
+                                    break
+                                case pieceKind.King:
+                                    result.white.kings++
+                                    result.white.materialEvaluaton += evaluation.kings
+                                    break
+                                case pieceKind.Pawn:
+                                    result.white.pawns++
+                                    result.white.materialEvaluaton += evaluation.pawns
+                                    break
+                            }
+                            result.white.total++
+                            break
+                    }
+                    result.total++
+                }
+            }
+        }
+        return result;
     }
 
     private getKingField(color_: color): boardFieldIdx {
@@ -1094,23 +1211,44 @@ export class ChessBoard {
         return false
     }
     private drawByDeadPosition(): boolean { // insufficient material
-        // no mate possible
+        let spec = this.currentPieceSpectrum()
         // K vs K
-        // K vs K+B
-        // K vs K+N
-        // K vs K+N+N (option)
-        // K+B vs K+B, with Bishops on same color
+        if (spec.total == 2) return true;
+        if (spec.total == 3) {
+            // K vs K+B
+            if (spec.black.bishops == 1 || spec.white.bishops == 1) return true;
+            // K vs K+N
+            if (spec.black.knights == 1 || spec.white.knights == 1) return true;
+        }
+        if (spec.black.total == 2 && spec.white.total == 2) {
+            // K+B vs K+B, with Bishops on same color
+            if (spec.black.bishops == 1 && spec.white.bishops == 1) {
+                return true;
+
+            }
+        }
+        // TODO add check funtion for : almost certain draws
+        // K vs K+N+N
+        // K+N vs K+N
+        // K+B vs K+N
+        // K+B vs K+N+N
+        // K+B vs K+N+B
+        // K+B+N vs K+R
+        // ...
+        // rule of thumb: Side without pawns has to have +4 pawnUnits material to win
         return false
     }
-    private isGameOver(): boolean {
+    isGameOver(): boolean {
         // TODO
         //return this.isMate();
         // isStaleMate()
         // fiftyMovesRule()
-        // notSufficientMaterial
-
         // checkThreefoldRepetiton()
-        return false
+        if (this.drawByDeadPosition()) {
+            this.data.gameResult = GameResult.draw
+            return true;
+        }
+        return false// this.
     }
 
     move(move: string): boolean {
@@ -1119,6 +1257,8 @@ export class ChessBoard {
 
         // TODO turn off caste option if a rook is captured
         // TODO use Zobrist Hashing to store positon in History, see https://www.chessprogramming.org/Zobrist_Hashing
+
+        if (this.data.gameOver) return false // no moves on a finished game
 
         let moveCleanedUp = move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
         if (moveCleanedUp === CASTLE_SHORT) {
@@ -1298,7 +1438,6 @@ export class ChessBoard {
     }
 
     private performMovePiece(pieceOB: pieceOnBoard, target: boardFieldIdx, validateOnly: boolean = false): boolean {
-        if (this.data.gameOver) return false
         let _source = pieceOB.field
         let _piece = pieceOB.piece
         let _isCapture = false
@@ -1414,11 +1553,11 @@ export class ChessBoard {
             this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
             if (this.data.nextMoveBy == color.white) this.data.moveNumber++
             this.clearAttackedFields()
+            this.data.gameOver = this.isGameOver()
         }
         return true
     }
     private performMovePawn(source: boardFieldIdx, target: boardFieldIdx, promotionPiece: pieceKind = pieceKind.none, validateOnly: boolean = false): boolean {
-        if (this.data.gameOver) return false
         let _enPassantPossible: boolean = false
         let _enPassantField: boardFieldIdx | undefined
         let _isCapture: boolean = false
@@ -1556,11 +1695,11 @@ export class ChessBoard {
             this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
             if (this.data.nextMoveBy == color.white) this.data.moveNumber++
             this.clearAttackedFields()
+            this.data.gameOver = this.isGameOver()
         }
         return true
     }
     private moveCastle(color_: color, type_: castleType, validateOnly: boolean = false): boolean {
-        if (this.data.gameOver) return false
         let colIdx_: number
 
         if (!validateOnly && this.data.nextMoveBy != color_) return false
@@ -1591,10 +1730,9 @@ export class ChessBoard {
             this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
             if (this.data.nextMoveBy == color.white) this.data.moveNumber++
             this.clearAttackedFields()
+            this.data.gameOver = this.isGameOver()
             // post move evaluation
             // TODO is check / is Mate
-            // TODO isGameOver()
-            // TODO add move to move list
         }
         return true
     }

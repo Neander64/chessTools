@@ -18,6 +18,44 @@ describe('Testing chess-board', () => {
 
   });
 
+  test('testing piece spectrum', () => {
+    var cb = new chessBoard.ChessBoard()
+    cb.loadFEN(cb.initialBoardFEN)
+    expect(cb.isGameOver()).toBe(false)
+    ///    cb.loadFEN("k7/8/8/8/8/8/8/K7 w - - 0 50")
+    //    expect(cb.isGameOver()).toBe(true)
+  });
+
+  test('testing piece spectrum', () => {
+    var cb = new chessBoard.ChessBoard()
+    cb.loadFEN(cb.initialBoardFEN)
+    expect(cb.currentPieceSpectrum()).toMatchInlineSnapshot(`
+Object {
+  "black": Object {
+    "bishops": 2,
+    "kings": 1,
+    "knights": 2,
+    "materialEvaluaton": 14250,
+    "pawns": 8,
+    "queens": 1,
+    "rooks": 2,
+    "total": 16,
+  },
+  "total": 32,
+  "white": Object {
+    "bishops": 2,
+    "kings": 1,
+    "knights": 2,
+    "materialEvaluaton": 14250,
+    "pawns": 8,
+    "queens": 1,
+    "rooks": 2,
+    "total": 16,
+  },
+}
+`)
+  });
+
   test('testing moves', () => {
     var cb = new chessBoard.ChessBoard()
     cb.loadFEN(cb.initialBoardFEN)
@@ -285,29 +323,25 @@ describe('Testing chess-board', () => {
     var cb = new chessBoard.ChessBoard();
     // moves
     cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
+    expect(cb.move('Nh4g6')).toBe(false) // dead draw position
+
+    cb.loadFEN("k7/8/8/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Nh4g6')).toBe(true)
-    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g2'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Ng2')).toBe(true)
-    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
+    cb.loadFEN("k7/8/8/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Nf3')).toBe(true)
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f3'))).toBe(true);
-    cb.loadFEN("k7/8/8/8/7n/8/8/K7 b K - 4 50");
+    cb.loadFEN("k7/8/8/8/7n/8/P7/K7 b K - 4 50");
     expect(cb.move('Nf3')).toBe(true)
-    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f5'))).toBe(true);
+    cb.loadFEN("k7/8/8/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Nf5')).toBe(true)
     // illegal move
-    cb.loadFEN("k7/8/8/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('f4'))).toBe(false);
+    cb.loadFEN("k7/8/8/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Nh4f4')).toBe(false)
-    cb.loadFEN("k7/8/6P1/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(false);
+    cb.loadFEN("k7/8/6P1/8/7N/8/P7/K7 w K - 4 50");
     expect(cb.move('Ng6')).toBe(false)
     // capture
     cb.loadFEN("k7/8/6p1/8/7N/8/8/K7 w K - 4 50");
-    //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('h4')), chessBoard.strToFieldIdx('g6'))).toBe(true);
     expect(cb.move('Ng6')).toBe(true)
     cb.loadFEN("k7/8/6p1/8/7N/8/8/K7 w K - 4 50");
     expect(cb.move('Nxg6')).toBe(true)
@@ -1234,6 +1268,7 @@ Array [
   "Possible Castle Black O-O:Y, O-O-O:Y",
   "moves without pawn or capture: 0",
   "move number: 1",
+  "Game Result: *",
 ]
 `);
 
@@ -1263,6 +1298,7 @@ Array [
   "Possible Castle Black O-O:Y, O-O-O:Y",
   "moves without pawn or capture: 1",
   "move number: 8",
+  "Game Result: *",
 ]
 `);
 
@@ -1293,6 +1329,7 @@ Array [
   "Possible Castle Black O-O:Y, O-O-O:Y",
   "moves without pawn or capture: 4",
   "move number: 8",
+  "Game Result: *",
 ]
 `);
 
@@ -1323,6 +1360,7 @@ Array [
   "en passant option at e3",
   "moves without pawn or capture: 4",
   "move number: 8",
+  "Game Result: *",
 ]
 `);
 
@@ -1368,6 +1406,7 @@ Array [
   "Possible Castle Black O-O:N, O-O-O:N",
   "moves without pawn or capture: 0",
   "move number: 1",
+  "Game Result: *",
 ]
 `);
   });

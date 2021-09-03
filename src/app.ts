@@ -13,11 +13,23 @@ import * as chessBoard from "./chess-board"
 
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq e3 4 8");
 cb.loadFEN(cb.initialBoardFEN);
+//cb.loadFEN("8/8/8/7R/pkp5/Pn6/1P6/K7 b - - 0 100")
+//cb.loadFEN("5rk1/5p1p/5B2/8/8/8/8/K5R1 b - - 0 100")
+cb.loadFEN("5rk1/5p1p/5p1B/8/8/8/8/K6R w - - 0 100")
+//console.log(cb.isPieceAttackedOn({ colIdx: 4, rowIdx: 2 }, chessBoard.color.white))
+//console.log(chessBoard.fieldIdxArrToNotation(cb.getAttackedFields(chessBoard.color.white).attackedFields()))
+console.log(cb.data)
+console.log(cb.toASCII())
+console.log(cb.isCheck())
+console.log(cb.isMate())
+console.log(cb.isGameOver())
+//console.log(cb.toASCII())
+//console.log(cb.getAttackersOn({ colIdx: 7, rowIdx: 1 }, chessBoard.color.white))
 //cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50")
 
 //console.log(cb.move('h8=Q'))
 //console.log(cb.toASCII())
-console.log(cb.currentPieceSpectrum())
+//console.log(cb.currentPieceSpectrum())
 //console.log(cb.getFEN())
 //cb.loadFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5n2/PPPP1PPP/RnBQKB1R w KQkq - 2 3")
 //console.log(cb.move('Bb5'))

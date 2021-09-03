@@ -18,12 +18,311 @@ describe('Testing chess-board', () => {
 
   });
 
-  test('testing piece spectrum', () => {
+  test('testing game over', () => {
     var cb = new chessBoard.ChessBoard()
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.isGameOver()).toBe(false)
-    ///    cb.loadFEN("k7/8/8/8/8/8/8/K7 w - - 0 50")
-    //    expect(cb.isGameOver()).toBe(true)
+
+    cb.loadFEN("k7/8/8/8/8/8/8/K7 w - - 0 50")
+    expect(cb.isGameOver()).toBe(true)
+
+    cb.loadFEN("8/8/8/7R/pkp5/Pn6/1P6/K7 b - - 0 100") // black is mate, but can capture the white king first
+    expect(cb.isGameOver()).toBe(true)
+
+    cb.loadFEN("k7/p7/8/8/8/8/P7/K7 w - - 50 100")
+    expect(cb.isGameOver()).toBe(false)
+    cb.loadFEN("k7/p7/8/8/8/8/P7/K7 w - - 151 200")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(true)
+
+    // see https://en.wikipedia.org/wiki/Checkmate_pattern
+    // Anastasia mate
+    cb.loadFEN("8/4N1pk/8/7R/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Anderssen's mate
+    cb.loadFEN("6kR/6P1/5K2/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Arabian mate
+    cb.loadFEN("7k/7R/5N2/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Back-rank mate
+    cb.loadFEN("3R2k1/5ppp/8/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Balestra mate
+    cb.loadFEN("6k1/8/4B2Q/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Bishop and Knight
+    cb.loadFEN("7k/8/5BKN/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Blackburn
+    cb.loadFEN("5rk1/7B/8/6N1/8/8/1B6/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+    cb.loadFEN("7k/5B2/8/6N1/8/8/1B6/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Blind swine
+    cb.loadFEN("5rk1/1R2R1pp/8/8/8/8/8/K7 w - - 0 100")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Rxg7+')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Kh8')).toBe(true)
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Rxh7+')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Kg8')).toBe(true)
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Rbg7#')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Boden's
+    cb.loadFEN("2kr4/3p4/B7/8/5B2/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Corner
+    cb.loadFEN("7k/5N1p/8/8/8/8/8/K5R1 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Damiano
+    cb.loadFEN("5k2/5Q2/6B1/8/8/8/8/K5R1 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+    cb.loadFEN("5rk1/6pQ/6P1/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Double bishop
+    cb.loadFEN("7k/7p/8/3B4/8/2B5/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+    cb.loadFEN("5bk1/7p/8/3B4/8/2B5/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Double knight
+    cb.loadFEN("1kn5/ppp5/4NN2/8/8/8/8/K7 w - - 0 100")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Nd7+')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.move('Ka8')).toBe(true)
+    expect(cb.move('Nc7#')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Dovetail
+    cb.loadFEN("8/8/1Q6/8/6pk/5q2/8/6K1 w - - 0 100")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Qh6')).toBe(true)
+    expect(cb.move('Kg3')).toBe(true)
+    expect(cb.move('Qh2#')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    //Epaulette
+    cb.loadFEN("3rkr2/7Q/4K3/8/8/8/8/8 w - - 0 100")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Qe7')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Greco
+    cb.loadFEN("7k/6p1/8/7Q/2B5/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Hook
+    cb.loadFEN("4R3/4kp2/5N2/4P3/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Kill box
+    cb.loadFEN("8/8/R7/k7/2Q5/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // King 2 Bisphos
+    cb.loadFEN("7k/8/5NNK/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Ladder
+    cb.loadFEN("R5k1/1R6/8/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+    cb.loadFEN("Q5k1/1R6/8/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Legal
+    cb.loadFEN("3q1b2/4kB2/3p4/3NN3/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+    cb.loadFEN("3q1b2/4kB2/3p4/4N1B1/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Lolli
+    cb.loadFEN("6k1/5pQ1/5Pp1/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Max Lange
+    cb.loadFEN("6Q1/5Bpk/7p/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Mayet
+    cb.loadFEN("6kR/5p2/8/8/8/8/1B6/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Opera
+    cb.loadFEN("3Rk3/5p2/8/6B1/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Pawn, David an Goliath
+    cb.loadFEN("8/8/8/7R/pkp5/Pn6/1P6/1K6 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Pillsbury
+    cb.loadFEN("5rk1/5p1p/5p1B/8/8/8/8/K6R w - - 0 100")
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Rg1+')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Kh8')).toBe(true)
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Bg7')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Kg8')).toBe(true)
+    expect(cb.isCheck()).toBe(false)
+    expect(cb.isMate()).toBe(false)
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Bxf6#')).toBe(true)
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Queen mate
+    cb.loadFEN("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Réti
+    cb.loadFEN("1nbB4/1pk5/2p5/8/8/8/8/K2R4 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Rook, Box
+    cb.loadFEN("R2k4/8/3K4/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Smothered
+    cb.loadFEN("6rk/5Npp/8/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Suffocation
+    cb.loadFEN("5rk1/4Np1p/8/8/8/2B5/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Swallow
+    cb.loadFEN("3r1r2/4k3/R3Q3/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Triangle
+    cb.loadFEN("3R4/4kp2/3Q4/8/8/8/8/K7 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
+
+    // Vukovic
+    cb.loadFEN("4k3/4R3/4NK2/8/8/8/8/8 b - - 0 100")
+    expect(cb.isCheck()).toBe(true)
+    expect(cb.isMate()).toBe(true)
+    expect(cb.isGameOver()).toBe(true)
   });
 
   test('testing piece spectrum', () => {
@@ -142,14 +441,14 @@ Object {
     cb.loadFEN("k7/8/8/8/6R1/8/8/K7 w K - 4 50");
     //expect(cb.performMovePiece(cb.peekFieldPieceOB(chessBoard.strToFieldIdx('g4')), chessBoard.strToFieldIdx('g8'))).toBe(true);
     expect(cb.move('Rg8')).toBe(true)
-    cb.loadFEN("kR6/8/8/8/6R1/8/8/K7 w K - 4 50");
+    cb.loadFEN("1R6/k7/8/8/6R1/8/8/K7 w K - 4 50");
     expect(cb.move('Rg8')).toBe(false)
     expect(cb.move('R1g8')).toBe(false)
     expect(cb.move('Rgg8')).toBe(true)
-    cb.loadFEN("kR6/8/8/8/6R1/8/8/K7 w K - 4 50");
+    cb.loadFEN("1R6/k7/8/8/6R1/8/8/K7 w K - 4 50");
     expect(cb.move('R1g8')).toBe(false)
     expect(cb.move('Rbg8')).toBe(true)
-    cb.loadFEN("kR6/8/8/8/6R1/8/8/K7 w K - 4 50");
+    cb.loadFEN("1R6/k7/8/8/6R1/8/8/K7 w K - 4 50");
     expect(cb.move('Rb2g8')).toBe(false)
     expect(cb.move('Rb8g8')).toBe(true)
 
@@ -499,19 +798,19 @@ Object {
   });
   test('testing castle moves', () => {
     let cb = new chessBoard.ChessBoard();
-    cb.loadFEN("7k/8/8/8/8/8/8/4K2R w - b3 4 50");
+    cb.loadFEN("4k3/8/8/8/8/8/8/4K2R w - b3 4 50");
     expect(cb.move('O-O')).toBe(false)
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
-    cb.loadFEN("7k/8/8/8/8/8/8/R3K2R w K b3 4 50");
+    cb.loadFEN("4k3/8/8/8/8/8/8/R3K2R w K b3 4 50");
     expect(cb.move('O-O-O')).toBe(false)
     expect(cb.move('O-O')).toBe(true)
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(true);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(true);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.long, true)).toBe(false);
-    cb.loadFEN("7k/8/8/8/8/8/8/4K1BR w K b3 4 50");
+    cb.loadFEN("4k3/8/8/8/8/8/8/4K1BR w K b3 4 50");
     expect(cb.move('O-O')).toBe(false)
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short, true)).toBe(false);
     //expect(cb.moveCastle(chessBoard.color.white, chessBoard.castleType.short)).toBe(false);

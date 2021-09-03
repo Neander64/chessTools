@@ -217,6 +217,11 @@ function fieldIdxToNotation(field: boardFieldIdx): string {
     let result = cols[field.colIdx] + (8 - field.rowIdx).toString()
     return result
 }
+export function fieldIdxArrToNotation(fields: boardFieldIdx[]): string[] {
+    let result: string[] = []
+    for (let f of fields) result.push(fieldIdxToNotation(f))
+    return result
+}
 
 type boardFieldIdx = {
     colIdx: number,
@@ -317,7 +322,7 @@ class AttackedFields {
 }
 
 const enum bishopRay { // 1-2,3-4 are opposites
-    SW = 'SE',
+    SW = 'SW',
     NE = 'NE',
     NW = 'NW',
     SE = 'SE',
@@ -443,7 +448,7 @@ class RookMovesRaw {
             case rookRay.S: return this.moves_S
             case rookRay.N: return this.moves_N
         }
-        //return []; // unreachable
+        return []; // unreachable
     }
 }
 /* optional implementation with iterator
@@ -607,6 +612,8 @@ export type ChessBoardData = {
     moveNumber: number
     gameOver: boolean // meaning: no further moves are allowed.
     gameResult: GameResult
+    drawPossible50MovesRule: boolean
+    drawPossibleThreefoldRepetion: boolean
 }
 
 export class ChessBoard {
@@ -615,7 +622,7 @@ export class ChessBoard {
 
     private board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
     private history: moveOnBoard[] = []
-    private data!: ChessBoardData
+    /*private*/ data!: ChessBoardData
 
     private _emptyBoard: boolean = true
     private _fieldsAttackedByBlack: AttackedFields
@@ -633,6 +640,14 @@ export class ChessBoard {
         this._fieldsAttackedByWhite = new AttackedFields()
         this.clearBoard()
         if (fen) this.loadFEN(fen);
+    }
+    private setBoard(board: Piece[][]) {
+        for (let col = 0; col < 8; col++) {
+            for (let row = 0; row < 8; row++) {
+                this.board[col][row] = board[col][row]
+            }
+        }
+        this._emptyBoard = false
     }
 
     clearBoard() {
@@ -654,14 +669,16 @@ export class ChessBoard {
             halfMoves50: 0,
             moveNumber: 1,
             gameOver: true,
-            gameResult: GameResult.none
+            gameResult: GameResult.none,
+            drawPossible50MovesRule: false,
+            drawPossibleThreefoldRepetion: false,
         }
         this.clearAttackedFields()
     }
 
     loadFEN(fen: string) {
         try {
-            this.clearAttackedFields()
+            this.clearBoard()
             let fenTokens = fen.split(/\s+/)
             if (fenTokens.length !== 6) throw new Error('loadFEN(): unexpected number of FEN-token')
             //1. piece positions
@@ -680,8 +697,8 @@ export class ChessBoard {
                         this.board[colIdx++][rowIdx] = pResult.piece
                     }
                     else {
-                        if (digit <= 0 || digit > 8) throw new Error('loadFEN(): unexpected digit in position')
-                        while (digit > 0) {
+                        if (digit <= 0 || digit > 8 - colIdx) throw new Error('loadFEN(): unexpected digit in position')
+                        while (digit > 0 && colIdx < 8) {
                             this.board[colIdx++][rowIdx] = Piece.none()
                             digit--
                         }
@@ -723,6 +740,7 @@ export class ChessBoard {
                 if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
                 this.data.enPassantField = strToFieldIdx(fenTokens[3])
             }
+            else this.data.enPassantField = undefined
 
             //5. number of half-moves since last capture or pawn move
             this.data.halfMoves50 = parseInt(fenTokens[4], 10)
@@ -981,7 +999,6 @@ export class ChessBoard {
     }
 
     private getAttackedFieldsByRook(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins, pinned pieces don't attack (albeit they can check)
         let rookMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
         const rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
@@ -996,12 +1013,10 @@ export class ChessBoard {
         return rookMoves;
     }
     private getAttackedFieldsByKnight(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins
         let knightMoves = new KnightMovesRaw(piece.field)
         return knightMoves.moves
     }
     private getAttackedFieldsByBishop(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins
         let bishopMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
         const rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
@@ -1024,7 +1039,6 @@ export class ChessBoard {
         return bishopMoves
     }
     private getAttackedFieldsByQueen(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins
         let queenMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
 
@@ -1050,14 +1064,11 @@ export class ChessBoard {
         return queenMoves
     }
     private getAttackedFieldsByPawnBlack(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins
         const offsetsPawn = [offsets.SW, offsets.SE];
-        //        const offsetsPawn = [{ colOffset: 1, rowOffset: 1 }, { colOffset: -1, rowOffset: 1 }];
         let pawnCaptureMoves: boardFieldIdx[] = [];
         const startField = piece.field;
         for (const f of offsetsPawn) {
             let newField = shiftField(startField, f)
-            //            let newField = { colIdx: startField.colIdx + f.colOffset, rowIdx: startField.rowIdx + f.rowOffset };
             if (isFieldOnBoard(newField)) {
                 pawnCaptureMoves.push(newField);
             }
@@ -1065,13 +1076,11 @@ export class ChessBoard {
         return pawnCaptureMoves;
     }
     private getAttackedFieldsByPawnWhite(piece: pieceOnBoard): boardFieldIdx[] {
-        //TODO handle pins
         const offsetsPawn = [offsets.NW, offsets.NE]
-        //        const offsetsPawn = [{ colOffset: 1, rowOffset: -1 }, { colOffset: -1, rowOffset: -1 }]
         let pawnCaptureMoves: boardFieldIdx[] = []
         const startField = piece.field
         for (const f of offsetsPawn) {
-            let newField = shiftField(startField, f) // { colIdx: startField.colIdx + f.colOffset, rowIdx: startField.rowIdx + f.rowOffset }
+            let newField = shiftField(startField, f)
             if (isFieldOnBoard(newField)) {
                 pawnCaptureMoves.push(newField)
             }
@@ -1126,7 +1135,7 @@ export class ChessBoard {
                     let attackingPieces = this.currentPiecesOnBoard(attackingColor)
                     for (let piece of attackingPieces) {
                         for (let field of this.getAttackedFieldsByPiece(piece)) {
-                            this._fieldsAttackedByBlack.add(field, piece)
+                            this._fieldsAttackedByWhite.add(field, piece)
                         }
                     }
                 }
@@ -1137,30 +1146,6 @@ export class ChessBoard {
         this._fieldsAttackedByBlack.clear()
         this._fieldsAttackedByWhite.clear()
     }
-    /*
-        getLegalMovesByKing(pieceOB: pieceOnBoard): boardFieldIdx[] {
-            if (pieceOB.piece.kind != pieceKind.King) return [];
-            let color_: color = pieceOB.piece.color!;
-            let kingMoves = new KingMovesRaw(pieceOB.field).moves;
-            let legalMoves: boardFieldIdx[] = [];
-            for (let m of kingMoves) {
-                let p = this.peekField(m);
-                if ((p.kind != pieceKind.none) && (p.color == color_)) continue;
-                if (!this.isPieceAttackedOn(m, otherColor(color_))) legalMoves.push(m);
-            }
-            // TODO hanlde castle
-            // castle, if possible
-            // not in check, not to be moved over checks and into check
-            //
-            return legalMoves;
-        }
-        getLegalMovesByBlackKing(): boardFieldIdx[] {
-            return this.getLegalMovesByKing(this._blackKing);
-        }
-        getLegalMovesByWhiteKing(): boardFieldIdx[] {
-            return this.getLegalMovesByKing(this._whiteKing);
-    }
-    */
 
     isPieceAttackedOn(field: boardFieldIdx, attackingColor: color): boolean {
         return this.getAttackedFields(attackingColor).isAttacked(field)
@@ -1169,19 +1154,50 @@ export class ChessBoard {
         return this.getAttackedFields(attackingColor).attackersOn(field)
     }
 
-    isCheck(color_: color): boolean {
-        if (this._emptyBoard) return false
-        return this.isPieceAttackedOn(this.getKingField(color_), otherColor(color_))
+    setWinningColor(color_: color) {
+        switch (color_) {
+            case color.black:
+                this.data.gameResult = GameResult.black_wins
+                break
+            case color.white:
+                this.data.gameResult = GameResult.white_wins
+                break
+        }
     }
-    private isMate(color_: color): boolean {
-        if (!this.isCheck(color_)) return false
-        let kingMoves = new KingMovesRaw(this.getKingField(color_))
+    isCheck(): boolean {
+        return this.isPieceAttackedOn(this.getKingField(this.data.nextMoveBy), otherColor(this.data.nextMoveBy))
+    }
+    isMate(): boolean {
+        let color = this.data.nextMoveBy
+        //if (!this.isCheck(color_)) return false
+        let kingField = this.getKingField(color)
+        // check if the King can move unattacked
+        let tmpBoard = new ChessBoard()
+        tmpBoard.setBoard(this.board)
+        tmpBoard.removePiece(kingField) // avoid the king blocking checks by itself
+        let kingMoves = new KingMovesRaw(kingField)
         for (let m of kingMoves.moves) {
             let p = this.peekField(m)
-            if ((p.kind != pieceKind.none) && (p.color == color_)) continue
-            if (!this.isPieceAttackedOn(m, otherColor(color_))) return false
+            if (p.isPiece && p.color == color) continue // field is block by own piece
+            if (!tmpBoard.isPieceAttackedOn(m, otherColor(color))) {
+                return false // could move here
+            }
         }
-        //TODO check if attackers can be captured.
+        let attackers = this.getAttackersOn(kingField, otherColor(color))
+        if (attackers.length == 0) return false // no check
+        if (attackers.length > 1) return true // double check
+        // check if attackers can be captured.
+        let attackersAttackers = this.getAttackersOn(attackers[0].field, color)
+        if (attackersAttackers.length > 0) {
+            if (attackersAttackers.length == 1) {
+                if (attackersAttackers[0].piece.kind == pieceKind.King) {
+                    // so if the king is the only one attacking that checking piece, it must be protected
+                    if (!this.isPieceAttackedOn(attackers[0].field, color)) return false
+                }
+                else return false;
+            }
+            else return false // attacker could be captured
+        }
         return true
     }
     private isStaleMate(): boolean {
@@ -1194,14 +1210,14 @@ export class ChessBoard {
     private check50MovesRule(): boolean {
         // no pawn has moven and no capture for 50 Moves
         // game maybe continued if the player does not claim draw.
-        return this.data.halfMoves50 > 100
+        return this.data.halfMoves50 > 50 * 2
     }
     private check75MovesRule(): boolean {
         // no pawn has moven and no capture for 75 Moves
         // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw (unless the last move is mate)
-        return this.data.halfMoves50 > 100
+        return this.data.halfMoves50 > 75 * 2
     }
-    private treefoldRepetition(): boolean {
+    private threefoldRepetition(): boolean {
         // 3 identical position (same player to move, same castle rights, same enpassant options, same moves available) each time as the current board
         // game maybe continued if the player does not claim draw.
         return false
@@ -1239,14 +1255,37 @@ export class ChessBoard {
         return false
     }
     isGameOver(): boolean {
-        // TODO
-        //return this.isMate();
-        // isStaleMate()
-        // fiftyMovesRule()
-        // checkThreefoldRepetiton()
+        let color_ = this.data.nextMoveBy
+        let kingField = this.getKingField(otherColor(color_))
+        if (this.isPieceAttackedOn(kingField, color_)) { // we have the move and it's already check. NOPE
+            this.setWinningColor(color_)
+            return true
+        }
+        if (this.isMate()) {
+            this.setWinningColor(otherColor(color_))
+            return true
+        }
+        if (this.isStaleMate()) {
+            this.data.gameResult = GameResult.draw
+            return true
+        }
         if (this.drawByDeadPosition()) {
             this.data.gameResult = GameResult.draw
-            return true;
+            return true
+        }
+        if (this.check50MovesRule()) {
+            this.data.drawPossible50MovesRule = true
+        }
+        if (this.check75MovesRule()) { // FIDE
+            this.data.gameResult = GameResult.draw
+            return true
+        }
+        if (this.threefoldRepetition()) {
+            this.data.drawPossibleThreefoldRepetion = true
+        }
+        if (this.fivefoldRepetition()) { // FIDE
+            this.data.gameResult = GameResult.draw
+            return true
         }
         return false// this.
     }
@@ -1531,10 +1570,11 @@ export class ChessBoard {
         }
 
         // check if checked after move (i.e. was a pin)
-        let tmpBoard = new ChessBoard(this.getFEN())
+        let tmpBoard = new ChessBoard()
+        tmpBoard.setBoard(this.board)
         tmpBoard.setPiece(pieceOB.piece, target)
         tmpBoard.removePiece(_source)
-        if (tmpBoard.isCheck(this.data.nextMoveBy)) return false
+        if (tmpBoard.isCheck()) return false
 
         // set the move
         if (!validateOnly) {
@@ -1640,7 +1680,8 @@ export class ChessBoard {
         }
 
         // check if checked after move (i.e. was a pin)
-        let tmpBoard = new ChessBoard(this.getFEN())
+        let tmpBoard = new ChessBoard()
+        tmpBoard.setBoard(this.board)
         if (_isPromotion)
             tmpBoard.setPiece(Piece.getPiece(promotionPiece, p.color), target)
         else
@@ -1656,7 +1697,7 @@ export class ChessBoard {
                     break
             }
         }
-        if (tmpBoard.isCheck(this.data.nextMoveBy)) return false;
+        if (tmpBoard.isCheck()) return false;
 
         // validation complete, perform move
         if (!validateOnly) {

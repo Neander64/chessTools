@@ -11,18 +11,21 @@ import * as chessBoard from "./chess-board"
 //console.log(JSON.stringify(args));
 
 
-var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq e3 4 8");
+var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
 cb.loadFEN(cb.initialBoardFEN);
+cb.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1")
+console.log(cb.toASCII())
+console.log(cb.getLegalMoves())
+console.log(cb.move('Rh4'))
 //cb.loadFEN("8/8/8/7R/pkp5/Pn6/1P6/K7 b - - 0 100")
 //cb.loadFEN("5rk1/5p1p/5B2/8/8/8/8/K5R1 b - - 0 100")
-cb.loadFEN("5rk1/5p1p/5p1B/8/8/8/8/K6R w - - 0 100")
+//cb.loadFEN("5rk1/5p1p/5p1B/8/8/8/8/K6R w - - 0 100")
 //console.log(cb.isPieceAttackedOn({ colIdx: 4, rowIdx: 2 }, chessBoard.color.white))
 //console.log(chessBoard.fieldIdxArrToNotation(cb.getAttackedFields(chessBoard.color.white).attackedFields()))
-console.log(cb.data)
-console.log(cb.toASCII())
-console.log(cb.isCheck())
-console.log(cb.isMate())
-console.log(cb.isGameOver())
+// console.log(cb.data)
+// console.log(cb.isCheck())
+// console.log(cb.isMate())
+// console.log(cb.isGameOver())
 //console.log(cb.toASCII())
 //console.log(cb.getAttackersOn({ colIdx: 7, rowIdx: 1 }, chessBoard.color.white))
 //cb.loadFEN("k7/7P/8/8/8/8/8/K7 w K - 4 50")

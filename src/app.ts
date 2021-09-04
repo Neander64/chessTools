@@ -10,13 +10,133 @@ import * as chessBoard from "./chess-board"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
 cb.loadFEN(cb.initialBoardFEN);
-cb.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1")
-console.log(cb.toASCII())
-console.log(cb.getLegalMoves())
-console.log(cb.move('Rh4'))
+
+let b = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple)
+//console.log(b)
+for (let x of b)
+    console.log(x.toString(2).padStart(10, '0'))
+console.log(b.length)
+
+let b2 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLike)
+//console.log(b2)
+for (let x of b2)
+    console.log(x.toString(2).padStart(32, '0'))
+console.log(b2.length)
+
+let b3 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLong)
+//console.log(b2)
+for (let x of b3)
+    console.log(x.toString(2).padStart(32, '0'))
+console.log(b3.length)
+
+/*
+let sourceValues: number[] = []
+// bValues.push((piece.R << 6) | field.a1)
+// bValues.push((piece.N << 6) | field.b1)
+// bValues.push((piece.B << 6) | field.c1)
+// bValues.push((piece.Q << 6) | field.d1)
+// bValues.push((piece.K << 6) | field.e1)
+sourceValues.push(0x3ff)
+sourceValues.push(0x00)
+sourceValues.push(0x3ff)
+sourceValues.push(0x00)
+sourceValues.push(0x3ff)
+sourceValues.push(0x00)
+sourceValues.push(0x3ff)
+sourceValues.push(0x00)
+sourceValues.push(0x3ff)
+
+const bitLenSource = 10
+for (let x of sourceValues)
+    console.log(x.toString(2).padStart(bitLenSource, '0'))
+
+const bytesPerTarget = 4
+const bitLenTarget = bytesPerTarget * 8
+const byteLenTarget = Math.ceil((sourceValues.length * bitLenSource) / bitLenTarget) * bytesPerTarget
+console.log("Source length", sourceValues.length, bitLenSource, bitLenTarget)
+console.log("byteLenTarget: ", byteLenTarget)
+let dataTarget = new ArrayBuffer(byteLenTarget)
+let view = new DataView(dataTarget)
+
+let pos = 0
+let leftVal = 0x00
+let rightVal = 0x00
+let availableBits = bitLenTarget
+let nextTargetVal = 0x00
+let leftOverSource = 0
+let hasData = false
+for (let x of sourceValues) {
+    let leftOverTarget = availableBits - bitLenSource
+    console.log("source value", x, leftOverTarget)
+    if (leftOverTarget >= 0) {
+        nextTargetVal |= (x << leftOverTarget)
+        availableBits = leftOverTarget
+        hasData = true
+    }
+    else {
+        leftOverSource = bitLenSource - availableBits
+        leftVal = x >> leftOverSource
+        rightVal = x ^ (leftVal << leftOverSource)
+        nextTargetVal |= leftVal
+        availableBits = 0
+        hasData = true
+    }
+    if (availableBits == 0) {
+        console.log("writing: ", nextTargetVal.toString(2).padStart(bitLenTarget, '0'), pos * bytesPerTarget)
+        view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
+        nextTargetVal = 0x00
+        availableBits = bitLenTarget
+        if (leftOverSource > 0) {
+            availableBits = bitLenTarget - leftOverSource
+            nextTargetVal |= rightVal << availableBits
+            leftOverSource = 0
+            hasData = true
+        }
+    }
+}
+if (hasData) {
+    console.log("writing: ", nextTargetVal.toString(2).padStart(bitLenTarget, '0'), pos * bytesPerTarget)
+    view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
+}
+
+console.log("Uint16 written: ", pos)
+for (let i = 0; i < byteLenTarget / bytesPerTarget; i++) {
+    let r = view.getUint32(i * bytesPerTarget)
+    console.log(r.toString(2).padStart(bitLenTarget, '0'), i * bytesPerTarget)
+}
+*/
+/*
+const data = new Uint16Array(bValues)
+bValues.forEach(x => console.log(x, x.toString(2), x.toString(16)))
+console.log(data)
+console.log(data.length)
+console.log(data.byteLength, data.BYTES_PER_ELEMENT)
+*/
+// (6pieces + color + field(64)) * 32 (ordered white, r,n,b,q,k,p, black ...) = (4+6) * 32 bit = 40 Byte
+// 0b0010 : R
+// 0b0100 : N
+// 0b0110 : B
+// 0b1000 : Q
+// 0b1010 : K
+// 0b1100 : P
+// 0b0011 : r
+// 0b0101 : n
+// 0b0111 : b
+// 0b1001 : q
+// 0b1011 : k
+// 0b1101 : p
+// Fields: 6 bit
+// 0b
+
+
+// var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
+// cb.loadFEN(cb.initialBoardFEN);
+// cb.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1")
+// console.log(cb.toASCII())
+// console.log(cb.getLegalMoves())
+// console.log(cb.move('Rh4'))
 //cb.loadFEN("8/8/8/7R/pkp5/Pn6/1P6/K7 b - - 0 100")
 //cb.loadFEN("5rk1/5p1p/5B2/8/8/8/8/K5R1 b - - 0 100")
 //cb.loadFEN("5rk1/5p1p/5p1B/8/8/8/8/K6R w - - 0 100")

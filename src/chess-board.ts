@@ -1,4 +1,227 @@
-import { off } from "process";
+import { assert } from "console"
+
+const pieceKey = {
+    R: 0b0001,
+    N: 0b0010,
+    B: 0b0011,
+    Q: 0b0100,
+    K: 0b0101,
+    P: 0b0110,
+
+    r: 0b0111,
+    n: 0b1000,
+    b: 0b1001,
+    q: 0b1010,
+    k: 0b1011,
+    p: 0b1100,
+
+    // R: 0b00001,
+    // N: 0b00010,
+    // B: 0b00011,
+    // Q: 0b00100,
+    // K: 0b00101,
+    // P: 0b00110,
+    // r: 0b00111,
+    // n: 0b01000,
+    // b: 0b01001,
+    // q: 0b01010,
+    // k: 0b01011,
+    // p: 0b01100,
+    // 1: 0b10001,
+    // 2: 0b10010,
+    // 3: 0b10011,
+    // 4: 0b10100,
+    // 5: 0b10101,
+    // 6: 0b10110,
+    // 7: 0b10111,
+    // 8: 0b11000,
+    none: 0b1111,
+}
+
+export enum encodeType {
+    Simple,
+    BoardLike,
+    FENlike,
+    FENlikeLong
+}
+export class EncodedPositionKey {
+    // encoding board to Uint32 Array that can be used as compact key
+    //   6 kinds of piece + color : 4 Bit
+    // + 64 field : 7 Bit
+    // max 32 pieces, i.e. 32*10 Bit = 320 Bit (max) = 40 Byte : 20 Uint16 : 10 Uint32
+    // + Flags (15 bit):
+    //  Castle rights 4 bit
+    //  white to move 1 bit
+    //  en passant possible 1 bit
+    //  en passant field 7 bit
+    // meaning we can store any position with 42 Byte : 21 Uint16 : 11 Uint32 )
+    // this version allows re-construktion of the board from key
+    // with a little space left (wasted bits on pieces and in the Flags), I think, this is a pretty good compression.
+    // yet, ...
+
+    // alternative like FEN compressed (no delimiter or space)
+    //  piece: 4 Bit (max 32*4=128 Bit)
+    //  empty Fields (1..8): 3 Bit (max 32*3 = 96 Bit)
+    //  Flags: 15 Bit
+    // totals (max 239 Bit : 30 Byte : 15 Uint16 : 8 Uint32)
+    // this version doesn't allow re-construktion of the board from key (unless piece and empty field values are disjunct)
+
+    // 3rd Version:
+    // piece+emptynumber could be encoded together with 5 Bit * (max) 64 = 320+15 Bit = 42 Byte, to be re-constructable
+    // I think, normally the representation is much shorter, max is rare (max is a very spread piece placement, not like a real game)
+    // 
+
+    static encodeField(colIdx: number, rowIdx: number): number {
+        return rowIdx * 8 + colIdx /* 0..63 */
+    }
+    static encodeFieldIdx(f: boardFieldIdx): number {
+        return f.rowIdx * 8 + f.colIdx /* 0..63 */
+    }
+    static readonly IS_WHITE_MOVE = 0b0000000000000001
+    static readonly KINGSIDE_CASTLE_WHITE = 0b0000000000000010
+    static readonly QUEENSIDE_CASTLE_WHITE = 0b0000000000000100
+    static readonly KINGSIDE_CASTLE_BLACK = 0b0000000000001000
+    static readonly QUEENSIDE_CASTLE_BLACK = 0b000000000010000
+    static readonly ENPASSANT = 0b000000000100000
+    static makeFlags(cbData: ChessBoardData): number {
+        let result = 0x00
+        if (cbData.nextMoveBy == color.white) result |= this.IS_WHITE_MOVE
+        if (cbData.canCastleShortWhite) result |= this.KINGSIDE_CASTLE_WHITE
+        if (cbData.canCastleLongWhite) result |= this.QUEENSIDE_CASTLE_WHITE
+        if (cbData.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
+        if (cbData.canCastleLongBlack) result |= this.QUEENSIDE_CASTLE_BLACK
+        if (cbData.enPassantPossible) {
+            result |= EncodedPositionKey.ENPASSANT
+            if (cbData.enPassantField)
+                result |= (this.encodeFieldIdx(cbData.enPassantField) << 6)
+        }
+        return result
+    }
+    static isEqual(k1: number[], k2: number[]): boolean {
+        // compare keys
+        if (k1.length != k2.length) return false
+        for (let i = 0; i < k1.length; i++)
+            if (k1[i] != k2[i]) return false
+        return true
+    }
+
+    static encodeBoard(board_: Piece[][], cbData: ChessBoardData, encodeType_: encodeType): number[] {
+        let header = this.makeFlags(cbData)
+        switch (encodeType_) {
+            case encodeType.Simple:
+                return this.encodeBoard_simple(board_, header)
+            case encodeType.BoardLike:
+                return this.encodeBoard_BoardLike(board_, header)
+            case encodeType.FENlike:
+                return this.encodeBoard_FENLike(board_, header)
+            case encodeType.FENlikeLong:
+                return this.encodeBoard_FENLikeLong(board_, header)
+        }
+    }
+
+    private static encodeBoard_simple(board_: Piece[][], header: number): number[] {
+        let result: number[] = []
+        for (let row = 0; row < 8; row++)
+            for (let col = 0; col < 8; col++) {
+                let p = board_[col][row]
+                if (p.isPiece)
+                    result.push((p.key << 6) | this.encodeField(row, col))
+            }
+        result.push(header)
+        return result
+    }
+    private static encodeBoard_BoardLike(board_: Piece[][], header: number): number[] {
+        let result: number[] = []
+        for (let row = 0; row < 8; row++)
+            for (let col = 0; col < 8; col++) {
+                let p = board_[col][row]
+                if (p.isPiece)
+                    result.push((p.key << 6) | this.encodeField(row, col))
+            }
+        result = this.compress(result, 10) // 4:key + 6:field
+        result.push(header)
+        return result
+    }
+    private static encodeBoard_FENLike(board_: Piece[][], header: number): number[] {
+        throw new Error("not implemented, yet")
+        let result: number[] = []
+        return result
+    }
+    private static encodeBoard_FENLikeLong(board_: Piece[][], header: number): number[] {
+        let result: number[] = []
+        for (let row = 0; row < 8; row++) {
+            let emptyCount = 0
+            for (let col = 0; col < 8; col++) {
+                let p = board_[col][row]
+                if (p.isPiece) {
+                    if (emptyCount > 0) {
+                        result.push(emptyCount | 0b10000)
+                        emptyCount = 0
+                    }
+                    result.push(p.key)
+                }
+                else emptyCount++
+            }
+            if (emptyCount > 0)
+                result.push(emptyCount | 0b10000)
+        }
+        result = this.compress(result, 5) // count || piece : 5 Bit
+        result.push(header)
+        return result
+    }
+
+    private static compress(sourceValues: number[], bitLenSource: number): number[] {
+        let result: number[] = []
+        const bytesPerTarget = 4 // 2 if Uint16
+        const bitLenTarget = bytesPerTarget * 8
+        assert(bitLenTarget > bitLenSource) // sorry, doesn't work that way
+        const byteLenTarget = Math.ceil((sourceValues.length * bitLenSource) / bitLenTarget) * bytesPerTarget
+        let dataTarget = new ArrayBuffer(byteLenTarget)
+        let view = new DataView(dataTarget)
+        let pos = 0
+        let leftVal = 0x00
+        let rightVal = 0x00
+        let availableBits = bitLenTarget
+        let nextTargetVal = 0x00
+        let leftOverSource = 0
+        let hasData = false
+        for (let x of sourceValues) {
+            let leftOverTarget = availableBits - bitLenSource
+            if (leftOverTarget >= 0) {
+                nextTargetVal |= (x << leftOverTarget)
+                availableBits = leftOverTarget
+                hasData = true
+            }
+            else {
+                leftOverSource = bitLenSource - availableBits
+                leftVal = x >> leftOverSource
+                rightVal = x ^ (leftVal << leftOverSource)
+                nextTargetVal |= leftVal
+                availableBits = 0
+                hasData = true
+            }
+            if (availableBits == 0) {
+                view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
+                nextTargetVal = 0x00
+                availableBits = bitLenTarget
+                hasData = false
+                if (leftOverSource > 0) {
+                    availableBits = bitLenTarget - leftOverSource
+                    nextTargetVal |= rightVal << availableBits
+                    leftOverSource = 0
+                    hasData = true
+                }
+            }
+        }
+        if (hasData) {
+            view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
+        }
+        for (let i = 0; i < byteLenTarget / bytesPerTarget; i++)
+            result.push(view.getUint32(i * bytesPerTarget))
+
+        return result
+    }
+}
 
 export const enum pieceKind {
     Rook,
@@ -32,9 +255,12 @@ function otherColor(color_: color) {
 export class Piece {
     private _kind: pieceKind
     private _color?: color
-    constructor(kind_: pieceKind, color_?: color) {
+    private _key: number // encoding kind & color -- value of pieceKey
+
+    constructor(kind_: pieceKind, key: number, color_?: color) {
         this._kind = kind_
         this._color = color_
+        this._key = key
     }
     get kind() { return this._kind }
     get color() { return this._color }
@@ -42,20 +268,21 @@ export class Piece {
     get isEmpty() { return this._kind === pieceKind.none }
     get isPiece() { return this._kind !== pieceKind.none }
     same(p: Piece) { return this._kind == p.kind && this._color == p.color }
+    get key() { return this._key }
 
-    private static _none = new Piece(pieceKind.none)
-    private static _blackRook = new Piece(pieceKind.Rook, color.black)
-    private static _blackKnight = new Piece(pieceKind.Knight, color.black)
-    private static _blackBishop = new Piece(pieceKind.Bishop, color.black)
-    private static _blackQueen = new Piece(pieceKind.Queen, color.black)
-    private static _blackKing = new Piece(pieceKind.King, color.black)
-    private static _blackPawn = new Piece(pieceKind.Pawn, color.black)
-    private static _whiteRook = new Piece(pieceKind.Rook, color.white)
-    private static _whiteKnight = new Piece(pieceKind.Knight, color.white)
-    private static _whiteBishop = new Piece(pieceKind.Bishop, color.white)
-    private static _whiteQueen = new Piece(pieceKind.Queen, color.white)
-    private static _whiteKing = new Piece(pieceKind.King, color.white)
-    private static _whitePawn = new Piece(pieceKind.Pawn, color.white)
+    private static _none = new Piece(pieceKind.none, pieceKey.none)
+    private static _blackRook = new Piece(pieceKind.Rook, pieceKey.r, color.black)
+    private static _blackKnight = new Piece(pieceKind.Knight, pieceKey.n, color.black)
+    private static _blackBishop = new Piece(pieceKind.Bishop, pieceKey.b, color.black)
+    private static _blackQueen = new Piece(pieceKind.Queen, pieceKey.q, color.black)
+    private static _blackKing = new Piece(pieceKind.King, pieceKey.k, color.black)
+    private static _blackPawn = new Piece(pieceKind.Pawn, pieceKey.p, color.black)
+    private static _whiteRook = new Piece(pieceKind.Rook, pieceKey.R, color.white)
+    private static _whiteKnight = new Piece(pieceKind.Knight, pieceKey.N, color.white)
+    private static _whiteBishop = new Piece(pieceKind.Bishop, pieceKey.B, color.white)
+    private static _whiteQueen = new Piece(pieceKind.Queen, pieceKey.Q, color.white)
+    private static _whiteKing = new Piece(pieceKind.King, pieceKey.K, color.white)
+    private static _whitePawn = new Piece(pieceKind.Pawn, pieceKey.P, color.white)
     static none() { return Piece._none }
     static blackRook() { return Piece._blackRook }
     static blackKnight() { return Piece._blackKnight }
@@ -674,7 +901,7 @@ export class ChessBoard {
 
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
-    private board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
+    private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
     private history: moveOnBoard[] = []
     /*private*/ data!: ChessBoardData
 
@@ -685,9 +912,9 @@ export class ChessBoard {
     constructor(fen?: string) {
         // allocate and initialize a empty board
         for (let col = 0; col < 8; col++) {
-            this.board[col] = []
+            this._board[col] = []
             for (let row = 0; row < 8; row++) {
-                this.board[col][row] = Piece.none()
+                this._board[col][row] = Piece.none()
             }
         }
         this._fieldsAttackedByBlack = new AttackedFields()
@@ -698,17 +925,20 @@ export class ChessBoard {
     private setBoard(board: Piece[][]) {
         for (let col = 0; col < 8; col++) {
             for (let row = 0; row < 8; row++) {
-                this.board[col][row] = board[col][row]
+                this._board[col][row] = board[col][row]
             }
         }
         this._emptyBoard = false
+    }
+    get board(): Piece[][] {
+        return this._board
     }
 
     clearBoard() {
         this._emptyBoard = true
         for (let col = 0; col < 8; col++) {
             for (let row = 0; row < 8; row++) {
-                this.board[col][row] = Piece.none()
+                this._board[col][row] = Piece.none()
             }
         }
         this.history = []
@@ -748,12 +978,12 @@ export class ChessBoard {
                         let pResult = charFENToPiece(fenRow[p])
                         if (!pResult.valid) throw new Error('loadFEN(): unexpected piece')
                         if (colIdx >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
-                        this.board[colIdx++][rowIdx] = pResult.piece
+                        this._board[colIdx++][rowIdx] = pResult.piece
                     }
                     else {
                         if (digit <= 0 || digit > 8 - colIdx) throw new Error('loadFEN(): unexpected digit in position')
                         while (digit > 0 && colIdx < 8) {
-                            this.board[colIdx++][rowIdx] = Piece.none()
+                            this._board[colIdx++][rowIdx] = Piece.none()
                             digit--
                         }
                     }
@@ -821,14 +1051,14 @@ export class ChessBoard {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (this.board[col][row].isEmpty)
+                if (this._board[col][row].isEmpty)
                     emptyCount++
                 else {
                     if (emptyCount > 0) {
                         fen += emptyCount
-                        emptyCount = 0;
+                        emptyCount = 0
                     }
-                    fen += pieceToChar(this.board[col][row])
+                    fen += pieceToChar(this._board[col][row])
                 }
             }
             if (emptyCount > 0)
@@ -880,7 +1110,7 @@ export class ChessBoard {
             //for (let row = 7; row >= 0; row--) { // as Black
             let line = "| "
             for (let col = 0; col < 8; col++) {
-                line += pieceToChar(this.board[col][row]) + (col < 7 ? ' | ' : ' |')
+                line += pieceToChar(this._board[col][row]) + (col < 7 ? ' | ' : ' |')
             }
             result.push(line)
             result.push(' -------------------------------')
@@ -900,7 +1130,7 @@ export class ChessBoard {
     }
 
     peekField(field: boardFieldIdx): Piece {
-        return this.board[field.colIdx][field.rowIdx]
+        return this._board[field.colIdx][field.rowIdx]
     }
     peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard {
         return { piece: this.peekField(field_), field: field_ }
@@ -1110,6 +1340,7 @@ export class ChessBoard {
         return queenMoves
     }
     private getAttackedFieldsByPawnBlack(pieceOB_: pieceOnBoard): boardFieldIdx[] {
+        //TODO refactoring by using PawnMovesRaw class
         const offsetsPawn = [offsets.SW, offsets.SE];
         let pawnCaptureMoves: boardFieldIdx[] = [];
         const startField = pieceOB_.field;
@@ -1122,6 +1353,7 @@ export class ChessBoard {
         return pawnCaptureMoves;
     }
     private getAttackedFieldsByPawnWhite(pieceOB_: pieceOnBoard): boardFieldIdx[] {
+        //TODO refactoring by using PawnMovesRaw class
         const offsetsPawn = [offsets.NW, offsets.NE]
         let pawnCaptureMoves: boardFieldIdx[] = []
         const startField = pieceOB_.field
@@ -1202,7 +1434,7 @@ export class ChessBoard {
 
     isCheckAfterMove(move_: moveOnBoard): boolean {
         let tmpBoard = new ChessBoard()
-        tmpBoard.setBoard(this.board)
+        tmpBoard.setBoard(this._board)
         tmpBoard.setPiece(move_.pieceOB.piece, move_.target)
         tmpBoard.removePiece(move_.pieceOB.field)
         // TODO move capture logic here
@@ -1369,7 +1601,7 @@ export class ChessBoard {
         let kingField = this.getKingField(color)
         // check if the King can move unattacked
         let tmpBoard = new ChessBoard()
-        tmpBoard.setBoard(this.board)
+        tmpBoard.setBoard(this._board)
         tmpBoard.removePiece(kingField) // avoid the king blocking checks by itself
         let kingMoves = new KingMovesRaw(kingField)
         for (let m of kingMoves.moves) {
@@ -1432,6 +1664,7 @@ export class ChessBoard {
         if (spec.black.total == 2 && spec.white.total == 2) {
             // K+B vs K+B, with Bishops on same color
             if (spec.black.bishops == 1 && spec.white.bishops == 1) {
+                //TODO: check if both have the same color
                 return true;
 
             }
@@ -1765,7 +1998,7 @@ export class ChessBoard {
         // check if checked after move (i.e. was a pin)
         // TODO use isCheckAfterMove()
         let tmpBoard = new ChessBoard()
-        tmpBoard.setBoard(this.board)
+        tmpBoard.setBoard(this._board)
         tmpBoard.setPiece(pieceOB.piece, target)
         tmpBoard.removePiece(_source)
         if (tmpBoard.isCheck()) return undefined
@@ -1876,7 +2109,7 @@ export class ChessBoard {
 
         // check if checked after move (i.e. was a pin)
         let tmpBoard = new ChessBoard()
-        tmpBoard.setBoard(this.board)
+        tmpBoard.setBoard(this._board)
         if (_isPromotion)
             tmpBoard.setPiece(Piece.getPiece(promotionPiece, p.color), target)
         else
@@ -1988,10 +2221,10 @@ export class ChessBoard {
     //TODO doMove, undoMove using moveOnBoard structure
 
     private setPiece(piece_: Piece, field: boardFieldIdx) {
-        this.board[field.colIdx][field.rowIdx] = piece_
+        this._board[field.colIdx][field.rowIdx] = piece_
     }
     private removePiece(field: boardFieldIdx) {
-        this.board[field.colIdx][field.rowIdx] = Piece.none()
+        this._board[field.colIdx][field.rowIdx] = Piece.none()
     }
 
 }

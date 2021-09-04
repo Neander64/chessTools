@@ -18,6 +18,112 @@ describe('Testing chess-board', () => {
 
   });
 
+  test('encode Board', () => {
+    var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
+    cb.loadFEN(cb.initialBoardFEN);
+
+    let b = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple)
+    expect(b).toMatchInlineSnapshot(`
+Array [
+  448,
+  520,
+  592,
+  664,
+  736,
+  616,
+  560,
+  504,
+  769,
+  777,
+  785,
+  793,
+  801,
+  809,
+  817,
+  825,
+  390,
+  398,
+  406,
+  414,
+  422,
+  430,
+  438,
+  446,
+  71,
+  143,
+  215,
+  287,
+  359,
+  239,
+  183,
+  127,
+  31,
+]
+`)
+
+    let b2 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLike)
+    expect(b2).toMatchInlineSnapshot(`
+Array [
+  1881180482,
+  2562205320,
+  3254304880,
+  2621905352,
+  1922877241,
+  1637410393,
+  2657721062,
+  3653112264,
+  4082966361,
+  3472022655,
+  31,
+]
+`)
+
+    let b3 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLong)
+    expect(b3).toMatchInlineSnapshot(`
+Array [
+  974300581,
+  123934918,
+  831309361,
+  2199438897,
+  2355136612,
+  683937792,
+  31,
+]
+`)
+
+    cb.loadFEN("8/8/1Q6/8/6pk/5q2/8/6K1 w - - 0 100")
+    let b4 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple)
+    expect(b4).toMatchInlineSnapshot(`
+Array [
+  266,
+  820,
+  764,
+  685,
+  375,
+  1,
+]
+`)
+    let b5 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLike)
+    expect(b5).toMatchInlineSnapshot(`
+Array [
+  1119046642,
+  2908602368,
+  1,
+]
+`)
+    let b6 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLong)
+    expect(b6).toMatchInlineSnapshot(`
+Array [
+  3324136290,
+  3428668716,
+  1487994880,
+  1,
+]
+`)
+
+  });
+
+
   test('testing game over', () => {
     var cb = new chessBoard.ChessBoard()
     cb.loadFEN(cb.initialBoardFEN)

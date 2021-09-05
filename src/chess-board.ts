@@ -1,48 +1,16 @@
 import { assert } from "console"
+import { type } from "os"
 
-const pieceKey = {
-    R: 0b0001,
-    N: 0b0010,
-    B: 0b0011,
-    Q: 0b0100,
-    K: 0b0101,
-    P: 0b0110,
-
-    r: 0b0111,
-    n: 0b1000,
-    b: 0b1001,
-    q: 0b1010,
-    k: 0b1011,
-    p: 0b1100,
-
-    // R: 0b00001,
-    // N: 0b00010,
-    // B: 0b00011,
-    // Q: 0b00100,
-    // K: 0b00101,
-    // P: 0b00110,
-    // r: 0b00111,
-    // n: 0b01000,
-    // b: 0b01001,
-    // q: 0b01010,
-    // k: 0b01011,
-    // p: 0b01100,
-    // 1: 0b10001,
-    // 2: 0b10010,
-    // 3: 0b10011,
-    // 4: 0b10100,
-    // 5: 0b10101,
-    // 6: 0b10110,
-    // 7: 0b10111,
-    // 8: 0b11000,
-    none: 0b1111,
-}
+// TODO split into several files
 
 export enum encodeType {
     Simple,
     BoardLike,
-    FENlike,
-    FENlikeLong
+    //FENlike,
+    FENlikeLong,
+    BoardLikeBigInt,
+    FENlikeBigInt,
+    FENlikeLongBigInt,
 }
 export class EncodedPositionKey {
     // encoding board to Uint32 Array that can be used as compact key
@@ -71,6 +39,44 @@ export class EncodedPositionKey {
     // I think, normally the representation is much shorter, max is rare (max is a very spread piece placement, not like a real game)
     // 
 
+    static readonly pieceKey = {
+        R: 0b0001,
+        N: 0b0010,
+        B: 0b0011,
+        Q: 0b0100,
+        K: 0b0101,
+        P: 0b0110,
+
+        r: 0b0111,
+        n: 0b1000,
+        b: 0b1001,
+        q: 0b1010,
+        k: 0b1011,
+        p: 0b1100,
+
+        // R: 0b00001,
+        // N: 0b00010,
+        // B: 0b00011,
+        // Q: 0b00100,
+        // K: 0b00101,
+        // P: 0b00110,
+        // r: 0b00111,
+        // n: 0b01000,
+        // b: 0b01001,
+        // q: 0b01010,
+        // k: 0b01011,
+        // p: 0b01100,
+        // 1: 0b10001,
+        // 2: 0b10010,
+        // 3: 0b10011,
+        // 4: 0b10100,
+        // 5: 0b10101,
+        // 6: 0b10110,
+        // 7: 0b10111,
+        // 8: 0b11000,
+        none: 0b1111,
+    }
+
     static encodeField(colIdx: number, rowIdx: number): number {
         return rowIdx * 8 + colIdx /* 0..63 */
     }
@@ -84,7 +90,7 @@ export class EncodedPositionKey {
     static readonly QUEENSIDE_CASTLE_BLACK = 0b000000000010000
     static readonly ENPASSANT = 0b000000000100000
     static makeFlags(cbData: ChessBoardData): number {
-        let result = 0x00
+        let result = 0x0000
         if (cbData.nextMoveBy == color.white) result |= this.IS_WHITE_MOVE
         if (cbData.canCastleShortWhite) result |= this.KINGSIDE_CASTLE_WHITE
         if (cbData.canCastleLongWhite) result |= this.QUEENSIDE_CASTLE_WHITE
@@ -97,7 +103,7 @@ export class EncodedPositionKey {
         }
         return result
     }
-    static isEqual(k1: number[], k2: number[]): boolean {
+    static numArrAreEqual(k1: number[], k2: number[]): boolean {
         // compare keys
         if (k1.length != k2.length) return false
         for (let i = 0; i < k1.length; i++)
@@ -105,18 +111,65 @@ export class EncodedPositionKey {
         return true
     }
 
-    static encodeBoard(board_: Piece[][], cbData: ChessBoardData, encodeType_: encodeType): number[] {
+    static encodeBoard(board_: Piece[][], cbData: ChessBoardData, encodeType_: encodeType): number[] | BigInt {
         let header = this.makeFlags(cbData)
         switch (encodeType_) {
             case encodeType.Simple:
                 return this.encodeBoard_simple(board_, header)
             case encodeType.BoardLike:
                 return this.encodeBoard_BoardLike(board_, header)
-            case encodeType.FENlike:
-                return this.encodeBoard_FENLike(board_, header)
+            // case encodeType.FENlike:
+            //     return this.encodeBoard_FENLike(board_, header)
             case encodeType.FENlikeLong:
                 return this.encodeBoard_FENLikeLong(board_, header)
+            case encodeType.BoardLikeBigInt:
+                return this.encodeBoard_BoardLike_BigInt(board_, header)
+            case encodeType.FENlikeBigInt:
+                return this.encodeBoard_FENLike_BigInt(board_, header)
+            case encodeType.FENlikeLongBigInt:
+                return this.encodeBoard_FENLikeLong_BigInt(board_, header)
         }
+    }
+    private static encodeBoard_BoardLike_BigInt(board_: Piece[][], header: number): BigInt {
+        // TODO I feel like there is an error with the first Bits comparing the result with the array values
+        let result = 1n // adding 1 Bit to avoid cutting leading zeros
+        for (let row = 0; row < 8; row++)
+            for (let col = 0; col < 8; col++) {
+                let p = board_[col][row]
+                if (p.isPiece) {
+                    let b = BigInt((p.key << 6) | this.encodeField(row, col))
+                    result = (result << 11n) | b
+                }
+            }
+        result = (result << 15n) + BigInt(header)
+        return result
+    }
+    private static encodeBoard_FENLike_BigInt(board_: Piece[][], header: number): BigInt {
+        // TODO Impementation, issue it's not fix length, requires to generalize compress
+        throw new Error("not implemented, yet")
+        let result = 1n // adding 1 Bit to avoid cutting leading zeros
+        return result
+    }
+    private static encodeBoard_FENLikeLong_BigInt(board_: Piece[][], header: number): BigInt {
+        let result = 1n // adding 1 Bit to avoid cutting leading zeros
+        for (let row = 0; row < 8; row++) {
+            let emptyCount = 0
+            for (let col = 0; col < 8; col++) {
+                let p = board_[col][row]
+                if (p.isPiece) {
+                    if (emptyCount > 0) {
+                        result = (result << 5n) | BigInt(emptyCount | 0b10000)
+                        emptyCount = 0
+                    }
+                    result = (result << 5n) + BigInt(p.key)
+                }
+                else emptyCount++
+            }
+            if (emptyCount > 0)
+                result = (result << 5n) | BigInt(emptyCount | 0b10000)
+        }
+        result = (result << 15n) | BigInt(header)
+        return result
     }
 
     private static encodeBoard_simple(board_: Piece[][], header: number): number[] {
@@ -142,11 +195,12 @@ export class EncodedPositionKey {
         result.push(header)
         return result
     }
-    private static encodeBoard_FENLike(board_: Piece[][], header: number): number[] {
-        throw new Error("not implemented, yet")
-        let result: number[] = []
-        return result
-    }
+    // private static encodeBoard_FENLike(board_: Piece[][], header: number): number[] {
+    //     // TODO Impementation, issue it's not fix length, requires to generalize compress
+    //     throw new Error("not implemented, yet")
+    //     let result: number[] = []
+    //     return result
+    // }
     private static encodeBoard_FENLikeLong(board_: Piece[][], header: number): number[] {
         let result: number[] = []
         for (let row = 0; row < 8; row++) {
@@ -169,8 +223,8 @@ export class EncodedPositionKey {
         result.push(header)
         return result
     }
-
     private static compress(sourceValues: number[], bitLenSource: number): number[] {
+        // TODO other precisions like set/getBigUint64()
         let result: number[] = []
         const bytesPerTarget = 4 // 2 if Uint16
         const bitLenTarget = bytesPerTarget * 8
@@ -216,9 +270,12 @@ export class EncodedPositionKey {
         if (hasData) {
             view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
         }
-        for (let i = 0; i < byteLenTarget / bytesPerTarget; i++)
-            result.push(view.getUint32(i * bytesPerTarget))
-
+        //let bigNumResult = 0n
+        for (let i = 0; i < byteLenTarget / bytesPerTarget; i++) {
+            let v = view.getUint32(i * bytesPerTarget)
+            //bigNumResult = (bigNumResult << BigInt(bytesPerTarget * 8)) + BigInt(v)
+            result.push(v)
+        }
         return result
     }
 }
@@ -232,7 +289,16 @@ export const enum pieceKind {
     Pawn,
     none,
 }
-
+const pieceKindPGN = new Map<number, string>([
+    // map piece to string, usage: pieceKindPGN.get(p /*:pieceKind*/)
+    [pieceKind.Rook, 'R'],
+    [pieceKind.Knight, 'N'],
+    [pieceKind.Bishop, 'B'],
+    [pieceKind.Queen, 'Q'],
+    [pieceKind.King, 'K'],
+    [pieceKind.Pawn, 'P'],
+    [pieceKind.none, ' '],
+])
 function isLegalPromotionPiece(kind_: pieceKind): boolean {
     return kind_ != pieceKind.none && kind_ != pieceKind.Pawn && kind_ != pieceKind.King
 }
@@ -244,14 +310,20 @@ export const enum color {
 function colorStr(color_: color) {
     return color_.toString()
 }
-
 function otherColor(color_: color) {
     switch (color_) {
         case color.black: return color.white
         case color.white: return color.black;
     }
 }
-
+/*
+function doForColor(color_: color, blackFct: () => void, whiteFct: () => void) {
+    switch (color_) {
+        case color.black: blackFct(); break
+        case color.white: whiteFct(); break
+    }
+}
+*/
 export class Piece {
     private _kind: pieceKind
     private _color?: color
@@ -270,19 +342,19 @@ export class Piece {
     same(p: Piece) { return this._kind == p.kind && this._color == p.color }
     get key() { return this._key }
 
-    private static _none = new Piece(pieceKind.none, pieceKey.none)
-    private static _blackRook = new Piece(pieceKind.Rook, pieceKey.r, color.black)
-    private static _blackKnight = new Piece(pieceKind.Knight, pieceKey.n, color.black)
-    private static _blackBishop = new Piece(pieceKind.Bishop, pieceKey.b, color.black)
-    private static _blackQueen = new Piece(pieceKind.Queen, pieceKey.q, color.black)
-    private static _blackKing = new Piece(pieceKind.King, pieceKey.k, color.black)
-    private static _blackPawn = new Piece(pieceKind.Pawn, pieceKey.p, color.black)
-    private static _whiteRook = new Piece(pieceKind.Rook, pieceKey.R, color.white)
-    private static _whiteKnight = new Piece(pieceKind.Knight, pieceKey.N, color.white)
-    private static _whiteBishop = new Piece(pieceKind.Bishop, pieceKey.B, color.white)
-    private static _whiteQueen = new Piece(pieceKind.Queen, pieceKey.Q, color.white)
-    private static _whiteKing = new Piece(pieceKind.King, pieceKey.K, color.white)
-    private static _whitePawn = new Piece(pieceKind.Pawn, pieceKey.P, color.white)
+    private static _none = new Piece(pieceKind.none, EncodedPositionKey.pieceKey.none)
+    private static _blackRook = new Piece(pieceKind.Rook, EncodedPositionKey.pieceKey.r, color.black)
+    private static _blackKnight = new Piece(pieceKind.Knight, EncodedPositionKey.pieceKey.n, color.black)
+    private static _blackBishop = new Piece(pieceKind.Bishop, EncodedPositionKey.pieceKey.b, color.black)
+    private static _blackQueen = new Piece(pieceKind.Queen, EncodedPositionKey.pieceKey.q, color.black)
+    private static _blackKing = new Piece(pieceKind.King, EncodedPositionKey.pieceKey.k, color.black)
+    private static _blackPawn = new Piece(pieceKind.Pawn, EncodedPositionKey.pieceKey.p, color.black)
+    private static _whiteRook = new Piece(pieceKind.Rook, EncodedPositionKey.pieceKey.R, color.white)
+    private static _whiteKnight = new Piece(pieceKind.Knight, EncodedPositionKey.pieceKey.N, color.white)
+    private static _whiteBishop = new Piece(pieceKind.Bishop, EncodedPositionKey.pieceKey.B, color.white)
+    private static _whiteQueen = new Piece(pieceKind.Queen, EncodedPositionKey.pieceKey.Q, color.white)
+    private static _whiteKing = new Piece(pieceKind.King, EncodedPositionKey.pieceKey.K, color.white)
+    private static _whitePawn = new Piece(pieceKind.Pawn, EncodedPositionKey.pieceKey.P, color.white)
     static none() { return Piece._none }
     static blackRook() { return Piece._blackRook }
     static blackKnight() { return Piece._blackKnight }
@@ -323,7 +395,12 @@ export class Piece {
 }
 
 function pieceToChar(p: Piece): string {
-    let result = '';
+    let result = pieceKindPGN.get(p.kind) || ' '
+    if (p.isPiece) {
+        if (p.color == color.black) result = result.toLocaleLowerCase()
+        //doForColor(p.color!, () => { result = _kindStr!.toLocaleLowerCase() }, () => result = _kindStr!.toUpperCase())
+    }
+    /*
     switch (p.kind) {
         case pieceKind.Rook:
             if (p.color == color.white) result = 'R'
@@ -353,6 +430,7 @@ function pieceToChar(p: Piece): string {
             result = ' ';
             break;
     }
+    */
     return result;
 }
 
@@ -500,7 +578,7 @@ type pieceOnBoard = {
     field: boardFieldIdx
 };
 
-type moveOnBoard = {
+type moveOnBoard = { // Data to do/undo moves
     pieceOB: pieceOnBoard,
     target: boardFieldIdx,
     // pawn promotion
@@ -510,6 +588,9 @@ type moveOnBoard = {
     targetRook?: boardFieldIdx,
     // captured/replaced Piece
     pieceCaptured?: pieceOnBoard,
+
+    // position key to check for move repetition
+    boardKey?: /*number[] |*/ BigInt,
 };
 
 type attackedBy = {
@@ -736,10 +817,6 @@ enum castleType {
     short,
     long
 }
-const CASTLE_SHORT = 'O-O'
-const CASTLE_LONG = 'O-O-O'
-const KING_TARGET_COL_CASTLE_SHORT = 6
-const KING_TARGET_COL_CASTLE_LONG = 2
 
 type castleData = {
     kingSource: boardFieldIdx
@@ -753,6 +830,11 @@ type castleData = {
     betweenPathCols: { start: number, end: number }
 }
 class KingMovesRaw {
+    static readonly CASTLE_SHORT_STR = 'O-O'
+    static readonly CASTLE_LONG_STR = 'O-O-O'
+    static readonly kingsTargetColCastleShort = 6
+    static readonly kingsTargetColCastleLong = 2
+
     moves: boardFieldIdx[]
 
     constructor(startField: boardFieldIdx) {
@@ -902,8 +984,8 @@ export class ChessBoard {
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
     private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
-    private history: moveOnBoard[] = []
-    /*private*/ data!: ChessBoardData
+    private _history: moveOnBoard[] = []
+    private _data!: ChessBoardData
 
     private _emptyBoard: boolean = true
     private _fieldsAttackedByBlack: AttackedFields
@@ -933,6 +1015,13 @@ export class ChessBoard {
     get board(): Piece[][] {
         return this._board
     }
+    get data(): ChessBoardData {
+        return this._data
+    }
+    private addMoveToHistory(move_: moveOnBoard) {
+        move_.boardKey = EncodedPositionKey.encodeBoard(this.board, this.data, encodeType.FENlikeLongBigInt) as BigInt
+        this._history.push(move_)
+    }
 
     clearBoard() {
         this._emptyBoard = true
@@ -941,8 +1030,8 @@ export class ChessBoard {
                 this._board[col][row] = Piece.none()
             }
         }
-        this.history = []
-        this.data = {
+        this._history = []
+        this._data = {
             nextMoveBy: color.white,
             canCastleShortWhite: false,
             canCastleLongWhite: false,
@@ -1006,37 +1095,37 @@ export class ChessBoard {
 
             //2. player to move next
             switch (fenTokens[1]) {
-                case 'w': this.data.nextMoveBy = color.white; break
-                case 'b': this.data.nextMoveBy = color.black; break
+                case 'w': this._data.nextMoveBy = color.white; break
+                case 'b': this._data.nextMoveBy = color.black; break
                 default: throw new Error('loadFEN(): illegal player to move')
             }
 
             //3. castle options
-            this.data.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
-            this.data.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
-            this.data.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
-            this.data.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
+            this._data.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
+            this._data.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
+            this._data.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
+            this._data.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
             // TODO check if none specified must be '-' (strict mode)
 
             //4. en passant
-            this.data.enPassantPossible = (fenTokens[3] !== '-')
-            if (this.data.enPassantPossible) {
+            this._data.enPassantPossible = (fenTokens[3] !== '-')
+            if (this._data.enPassantPossible) {
                 if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
-                this.data.enPassantField = strToFieldIdx(fenTokens[3])
+                this._data.enPassantField = strToFieldIdx(fenTokens[3])
             }
-            else this.data.enPassantField = undefined
+            else this._data.enPassantField = undefined
 
             //5. number of half-moves since last capture or pawn move
-            this.data.halfMoves50 = parseInt(fenTokens[4], 10)
-            if (isNaN(this.data.halfMoves50)) throw new Error('loadFEN(): number of half-moves NAN')
+            this._data.halfMoves50 = parseInt(fenTokens[4], 10)
+            if (isNaN(this._data.halfMoves50)) throw new Error('loadFEN(): number of half-moves NAN')
 
             //6. next move number
-            this.data.moveNumber = parseInt(fenTokens[5], 10)
-            if (isNaN(this.data.moveNumber)) throw new Error('loadFEN(): moveNumber NAN')
-            if (this.data.moveNumber <= 0) throw new Error('loadFEN(): moveNumber negative/zero')
+            this._data.moveNumber = parseInt(fenTokens[5], 10)
+            if (isNaN(this._data.moveNumber)) throw new Error('loadFEN(): moveNumber NAN')
+            if (this._data.moveNumber <= 0) throw new Error('loadFEN(): moveNumber negative/zero')
 
             this._emptyBoard = false
-            this.data.gameOver = this.isGameOver()
+            this._data.gameOver = this.isGameOver()
         }
         catch (err) {
             this.clearBoard();
@@ -1068,35 +1157,35 @@ export class ChessBoard {
         fen += ' '
 
         //2. player to move next
-        switch (this.data.nextMoveBy) {
+        switch (this._data.nextMoveBy) {
             case color.black: fen += 'b'; break
             case color.white: fen += 'w'
         }
         fen += ' '
 
         //3. castle options
-        if (!this.data.canCastleLongBlack && !this.data.canCastleShortBlack && !this.data.canCastleLongWhite && !this.data.canCastleShortWhite)
+        if (!this._data.canCastleLongBlack && !this._data.canCastleShortBlack && !this._data.canCastleLongWhite && !this._data.canCastleShortWhite)
             fen += '-'
         else {
-            if (this.data.canCastleShortWhite) fen += 'K'
-            if (this.data.canCastleLongWhite) fen += 'Q'
-            if (this.data.canCastleShortBlack) fen += 'k'
-            if (this.data.canCastleLongBlack) fen += 'q'
+            if (this._data.canCastleShortWhite) fen += 'K'
+            if (this._data.canCastleLongWhite) fen += 'Q'
+            if (this._data.canCastleShortBlack) fen += 'k'
+            if (this._data.canCastleLongBlack) fen += 'q'
         }
         fen += ' '
 
         //4. en passant
-        if (!this.data.enPassantPossible)
+        if (!this._data.enPassantPossible)
             fen += '-'
         else
-            fen += fieldIdxToNotation(this.data.enPassantField!)
+            fen += fieldIdxToNotation(this._data.enPassantField!)
         fen += ' '
 
         //5. number of half-moves since last capture or pawn move
-        fen += this.data.halfMoves50 + ' '
+        fen += this._data.halfMoves50 + ' '
 
         //6. next move number
-        fen += this.data.moveNumber
+        fen += this._data.moveNumber
 
         return fen
     }
@@ -1116,16 +1205,16 @@ export class ChessBoard {
             result.push(' -------------------------------')
         }
 
-        result.push('next move color: ' + colorStr(this.data.nextMoveBy))
-        result.push('Possible Castle White O-O:' + (this.data.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this.data.canCastleLongWhite ? 'Y' : 'N'))
-        result.push('Possible Castle Black O-O:' + (this.data.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this.data.canCastleLongBlack ? 'Y' : 'N'))
-        if (this.data.enPassantPossible) {
-            result.push('en passant option at ' + fieldIdxToNotation(this.data.enPassantField!))
+        result.push('next move color: ' + colorStr(this._data.nextMoveBy))
+        result.push('Possible Castle White O-O:' + (this._data.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this._data.canCastleLongWhite ? 'Y' : 'N'))
+        result.push('Possible Castle Black O-O:' + (this._data.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this._data.canCastleLongBlack ? 'Y' : 'N'))
+        if (this._data.enPassantPossible) {
+            result.push('en passant option at ' + fieldIdxToNotation(this._data.enPassantField!))
         }
-        result.push('moves without pawn or capture: ' + this.data.halfMoves50)
-        result.push('move number: ' + this.data.moveNumber)
+        result.push('moves without pawn or capture: ' + this._data.halfMoves50)
+        result.push('move number: ' + this._data.moveNumber)
         //TODO add gameOver status
-        result.push('Game Result: ' + gameResult(this.data.gameResult))
+        result.push('Game Result: ' + gameResult(this._data.gameResult))
         return result
     }
 
@@ -1153,16 +1242,16 @@ export class ChessBoard {
             case color.black:
                 switch (type_) {
                     case castleType.short:
-                        return this.data.canCastleShortBlack
+                        return this._data.canCastleShortBlack
                     case castleType.long:
-                        return this.data.canCastleLongBlack
+                        return this._data.canCastleLongBlack
                 }
             case color.white:
                 switch (type_) {
                     case castleType.short:
-                        return this.data.canCastleShortWhite
+                        return this._data.canCastleShortWhite
                     case castleType.long:
-                        return this.data.canCastleLongWhite
+                        return this._data.canCastleLongWhite
                 }
         }
     }
@@ -1575,7 +1664,7 @@ export class ChessBoard {
     }
     getLegalMoves(): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let movingPieces = this.currentPiecesOnBoard(this.data.nextMoveBy)
+        let movingPieces = this.currentPiecesOnBoard(this._data.nextMoveBy)
         for (let piece_ of movingPieces) {
             result = result.concat(this.getLegalMovesOfPiece(piece_))
         }
@@ -1585,18 +1674,18 @@ export class ChessBoard {
     setWinningColor(color_: color) {
         switch (color_) {
             case color.black:
-                this.data.gameResult = GameResult.black_wins
+                this._data.gameResult = GameResult.black_wins
                 break
             case color.white:
-                this.data.gameResult = GameResult.white_wins
+                this._data.gameResult = GameResult.white_wins
                 break
         }
     }
     isCheck(): boolean {
-        return this.isPieceAttackedOn(this.getKingField(this.data.nextMoveBy), otherColor(this.data.nextMoveBy))
+        return this.isPieceAttackedOn(this.getKingField(this._data.nextMoveBy), otherColor(this._data.nextMoveBy))
     }
     isMate(): boolean {
-        let color = this.data.nextMoveBy
+        let color = this._data.nextMoveBy
         //if (!this.isCheck(color_)) return false
         let kingField = this.getKingField(color)
         // check if the King can move unattacked
@@ -1626,6 +1715,7 @@ export class ChessBoard {
             }
             else return false // attacker could be captured
         }
+        //TODO handle:  moving something in between 
         return true
     }
     private isStaleMate(): boolean {
@@ -1635,20 +1725,43 @@ export class ChessBoard {
     private check50MovesRule(): boolean {
         // no pawn has moven and no capture for 50 Moves
         // game maybe continued if the player does not claim draw.
-        return this.data.halfMoves50 >= 50 * 2
+        return this._data.halfMoves50 >= 50 * 2
     }
     private check75MovesRule(): boolean {
         // no pawn has moven and no capture for 75 Moves
         // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw (unless the last move is mate)
-        return this.data.halfMoves50 >= 75 * 2
+        return this._data.halfMoves50 >= 75 * 2
     }
     private threefoldRepetition(): boolean {
         // 3 identical position (same player to move, same castle rights, same enpassant options, same moves available) each time as the current board
         // game maybe continued if the player does not claim draw.
+        // TODO: This could be done, when inserting a new move (i.e. store repetition count there)
+        let positionCount: { key: BigInt, count: number }[] = []
+        for (let m of this._history) {
+            let found = positionCount.find(x => x.key == m.boardKey)
+            if (found) {
+                found.count++
+                if (found.count >= 3) return true
+            }
+            else {
+                positionCount.push({ key: m.boardKey!, count: 1 })
+            }
+        }
         return false
     }
     private fivefoldRepetition(): boolean {
         // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw after the 5th positional repetion
+        let positionCount: { key: BigInt, count: number }[] = []
+        for (let m of this._history) {
+            let found = positionCount.find(x => x.key == m.boardKey)
+            if (found) {
+                found.count++
+                if (found.count >= 5) return true
+            }
+            else {
+                positionCount.push({ key: m.boardKey!, count: 1 })
+            }
+        }
         return false
     }
     private drawByDeadPosition(): boolean { // insufficient material
@@ -1681,7 +1794,7 @@ export class ChessBoard {
         return false
     }
     isGameOver(): boolean {
-        let color_ = this.data.nextMoveBy
+        let color_ = this._data.nextMoveBy
         let kingField = this.getKingField(otherColor(color_))
         if (this.isPieceAttackedOn(kingField, color_)) { // we have the move and it's already check. NOPE, we consider this as finished
             this.setWinningColor(color_)
@@ -1692,25 +1805,25 @@ export class ChessBoard {
             return true
         }
         if (this.isStaleMate()) {
-            this.data.gameResult = GameResult.draw
+            this._data.gameResult = GameResult.draw
             return true
         }
         if (this.drawByDeadPosition()) {
-            this.data.gameResult = GameResult.draw
+            this._data.gameResult = GameResult.draw
             return true
         }
         if (this.check50MovesRule()) {
-            this.data.drawPossible50MovesRule = true
+            this._data.drawPossible50MovesRule = true
         }
         if (this.check75MovesRule()) { // FIDE: is forced draw
-            this.data.gameResult = GameResult.draw
+            this._data.gameResult = GameResult.draw
             return true
         }
         if (this.threefoldRepetition()) {
-            this.data.drawPossibleThreefoldRepetion = true
+            this._data.drawPossibleThreefoldRepetion = true
         }
         if (this.fivefoldRepetition()) { // FIDE: is forced draw
-            this.data.gameResult = GameResult.draw
+            this._data.gameResult = GameResult.draw
             return true
         }
         return false// this.
@@ -1723,14 +1836,14 @@ export class ChessBoard {
         // TODO turn off caste option if a rook is captured
         // TODO use Zobrist Hashing to store positon in History, see https://www.chessprogramming.org/Zobrist_Hashing
 
-        if (this.data.gameOver) return false // no moves on a finished game
+        if (this._data.gameOver) return false // no moves on a finished game
 
         let moveCleanedUp = move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
-        if (moveCleanedUp === CASTLE_SHORT) {
-            return this.moveCastle(this.data.nextMoveBy, castleType.short) !== undefined
+        if (moveCleanedUp === KingMovesRaw.CASTLE_SHORT_STR) {
+            return this.moveCastle(this._data.nextMoveBy, castleType.short) !== undefined
         }
-        else if (moveCleanedUp === CASTLE_LONG) {
-            return this.moveCastle(this.data.nextMoveBy, castleType.long) !== undefined
+        else if (moveCleanedUp === KingMovesRaw.CASTLE_LONG_STR) {
+            return this.moveCastle(this._data.nextMoveBy, castleType.long) !== undefined
         } else {
             var matches = moveCleanedUp.match(
                 /([PNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([QRBN])?/
@@ -1745,9 +1858,9 @@ export class ChessBoard {
                 var from = matches[2]
                 var to = matches[3]
                 var promotion = matches[4]
-                let { valid: validPiece, piece: piece_ } = charPGNToPiece(piece, this.data.nextMoveBy)
+                let { valid: validPiece, piece: piece_ } = charPGNToPiece(piece, this._data.nextMoveBy)
                 if (!validPiece) { // maybe a pawn
-                    piece_ = (this.data.nextMoveBy == color.black) ? Piece.blackPawn() : Piece.whitePawn()
+                    piece_ = (this._data.nextMoveBy == color.black) ? Piece.blackPawn() : Piece.whitePawn()
                 }
                 if (!to) return false
                 let target = strToFieldIdxQuiet(to)
@@ -1793,7 +1906,7 @@ export class ChessBoard {
             case pieceKind.Bishop:
             case pieceKind.Queen:
             case pieceKind.King:
-                let candidates = this.currentKindOfPiecesOnBoard(this.data.nextMoveBy, piece_.kind)
+                let candidates = this.currentKindOfPiecesOnBoard(this._data.nextMoveBy, piece_.kind)
                 let targetingPieces: pieceOnBoard[] = []
                 for (let p of candidates) {
                     if (this.performMovePiece(p, target, /*validateOnly=*/true)) {
@@ -1810,7 +1923,7 @@ export class ChessBoard {
                 let targetingP: pieceOnBoard[] = []
                 let field: boardFieldIdx
                 let p: pieceOnBoard
-                switch (this.data.nextMoveBy) {
+                switch (this._data.nextMoveBy) {
                     case color.black:
                         field = shiftField(target, offsets.N)
                         if (isFieldOnBoard(field)) {
@@ -1892,9 +2005,9 @@ export class ChessBoard {
         let sourcePieceOB = this.peekFieldPieceOB(source)
         if (sourcePieceOB.piece.kind == pieceKind.none) return undefined
         if (sourcePieceOB.piece.kind == pieceKind.King && Math.abs(target.colIdx - source.colIdx) == 2) { // castle
-            if (target.colIdx == KING_TARGET_COL_CASTLE_SHORT)
+            if (target.colIdx == KingMovesRaw.kingsTargetColCastleShort)
                 return this.moveCastle(sourcePieceOB.piece.color!, castleType.short, validateOnly)
-            else if (target.colIdx == KING_TARGET_COL_CASTLE_LONG)
+            else if (target.colIdx == KingMovesRaw.kingsTargetColCastleLong)
                 return this.moveCastle(sourcePieceOB.piece.color!, castleType.long, validateOnly)
             else return undefined;
         }
@@ -1909,7 +2022,7 @@ export class ChessBoard {
 
         switch (_piece.kind) {
             case pieceKind.Bishop:
-                if (this.data.nextMoveBy != _piece.color) return undefined
+                if (this._data.nextMoveBy != _piece.color) return undefined
                 let bishopLike = isOffsetBishopLike(_source, target)
                 if (!bishopLike.valid) return undefined;
                 let bishopMovesRaw = new BishopMovesRaw(_source)
@@ -1922,7 +2035,7 @@ export class ChessBoard {
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
                 break
             case pieceKind.Knight:
-                if (this.data.nextMoveBy != _piece.color) return undefined
+                if (this._data.nextMoveBy != _piece.color) return undefined
                 let knightMoves = new KnightMovesRaw(_source)
                 let found = knightMoves.moves.find(x => boardFieldsAreEqual(x, target))
                 if (typeof found === 'undefined') return undefined
@@ -1930,7 +2043,7 @@ export class ChessBoard {
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
                 break
             case pieceKind.Rook:
-                if (this.data.nextMoveBy != _piece.color) return undefined
+                if (this._data.nextMoveBy != _piece.color) return undefined
                 let rookLike = isOffsetRookLike(_source, target)
                 if (!rookLike.valid) return undefined;
                 let rookMovesRaw = new RookMovesRaw(_source)
@@ -1942,15 +2055,15 @@ export class ChessBoard {
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
                 if (!validateOnly) {
-                    if (_source.colIdx == 7 && _piece.color == color.white) this.data.canCastleShortWhite = false;
-                    if (_source.colIdx == 0 && _piece.color == color.white) this.data.canCastleLongWhite = false;
-                    if (_source.colIdx == 7 && _piece.color == color.black) this.data.canCastleShortBlack = false;
-                    if (_source.colIdx == 0 && _piece.color == color.black) this.data.canCastleLongBlack = false;
+                    if (_source.colIdx == 7 && _piece.color == color.white) this._data.canCastleShortWhite = false;
+                    if (_source.colIdx == 0 && _piece.color == color.white) this._data.canCastleLongWhite = false;
+                    if (_source.colIdx == 7 && _piece.color == color.black) this._data.canCastleShortBlack = false;
+                    if (_source.colIdx == 0 && _piece.color == color.black) this._data.canCastleLongBlack = false;
                 }
 
                 break;
             case pieceKind.Queen:
-                if (this.data.nextMoveBy != _piece.color) return undefined
+                if (this._data.nextMoveBy != _piece.color) return undefined
                 let bishopLikeQ = isOffsetBishopLike(_source, target)
                 if (bishopLikeQ.valid) {
                     let bishopMovesRawQ = new BishopMovesRaw(_source)
@@ -1978,17 +2091,17 @@ export class ChessBoard {
                 }
                 break;
             case pieceKind.King: // no castle here
-                if (this.data.nextMoveBy != _piece.color) return undefined
+                if (this._data.nextMoveBy != _piece.color) return undefined
                 let kingMovesRaw = new KingMovesRaw(_source)
                 let legalKingMove = kingMovesRaw.moves.find(x => boardFieldsAreEqual(x, target))
                 if (typeof legalKingMove === 'undefined') return undefined
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
                 if (!validateOnly) {
-                    this.data.canCastleShortWhite = false;
-                    this.data.canCastleLongWhite = false;
-                    this.data.canCastleShortBlack = false;
-                    this.data.canCastleLongBlack = false;
+                    this._data.canCastleShortWhite = false;
+                    this._data.canCastleLongWhite = false;
+                    this._data.canCastleShortBlack = false;
+                    this._data.canCastleLongBlack = false;
                 }
                 break;
             default:
@@ -2011,17 +2124,18 @@ export class ChessBoard {
         if (!validateOnly) {
             this.setPiece(pieceOB.piece, target)
             this.removePiece(_source)
-            this.history.push(move)
-            this.data.enPassantPossible = false;
-            this.data.enPassantField = undefined
+            //this._history.push(move)
+            this.addMoveToHistory(move)
+            this._data.enPassantPossible = false;
+            this._data.enPassantField = undefined
             if (_isCapture)
-                this.data.halfMoves50 = 0
+                this._data.halfMoves50 = 0
             else
-                this.data.halfMoves50++
-            this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
-            if (this.data.nextMoveBy == color.white) this.data.moveNumber++
+                this._data.halfMoves50++
+            this._data.nextMoveBy = otherColor(this._data.nextMoveBy)
+            if (this._data.nextMoveBy == color.white) this._data.moveNumber++
             this.clearAttackedFields()
-            this.data.gameOver = this.isGameOver()
+            this._data.gameOver = this.isGameOver()
         }
         return move
     }
@@ -2033,7 +2147,7 @@ export class ChessBoard {
         let _isPromotion: boolean = false
         let p = this.peekField(source)
         if (p.kind != pieceKind.Pawn) return undefined
-        if (this.data.nextMoveBy != p.color) return undefined
+        if (this._data.nextMoveBy != p.color) return undefined
         switch (p.color) {
             case color.black: // row ++
                 if (target.colIdx == source.colIdx) { // forward move
@@ -2054,7 +2168,7 @@ export class ChessBoard {
                 }
                 else if (Math.abs(target.colIdx - source.colIdx) == 1) { // capture
                     if (target.rowIdx - source.rowIdx == 1) {
-                        if (this.data.enPassantPossible && boardFieldsAreEqual(this.data.enPassantField!, target)) {
+                        if (this._data.enPassantPossible && boardFieldsAreEqual(this._data.enPassantField!, target)) {
                             _isCaptureEP = true
                         }
                         else {
@@ -2089,7 +2203,7 @@ export class ChessBoard {
                 }
                 else if (Math.abs(target.colIdx - source.colIdx) == 1) { // capture
                     if (source.rowIdx - target.rowIdx == 1) {
-                        if (this.data.enPassantPossible && boardFieldsAreEqual(this.data.enPassantField!, target)) {
+                        if (this._data.enPassantPossible && boardFieldsAreEqual(this._data.enPassantField!, target)) {
                             _isCaptureEP = true
                         }
                         else {
@@ -2118,10 +2232,10 @@ export class ChessBoard {
         if (_isCaptureEP) {
             switch (p.color) {
                 case color.black:
-                    tmpBoard.removePiece({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx - 1 })
+                    tmpBoard.removePiece({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx - 1 })
                     break
                 case color.white:
-                    tmpBoard.removePiece({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx + 1 })
+                    tmpBoard.removePiece({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx + 1 })
                     break
             }
         }
@@ -2137,10 +2251,10 @@ export class ChessBoard {
         if (_isCaptureEP) {
             switch (p.color) {
                 case color.black:
-                    move.pieceCaptured = this.peekFieldPieceOB({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx - 1 })
+                    move.pieceCaptured = this.peekFieldPieceOB({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx - 1 })
                     break
                 case color.white:
-                    move.pieceCaptured = this.peekFieldPieceOB({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx + 1 })
+                    move.pieceCaptured = this.peekFieldPieceOB({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx + 1 })
                     break
             }
         }
@@ -2156,34 +2270,35 @@ export class ChessBoard {
             if (_isCaptureEP) {
                 switch (p.color) {
                     case color.black:
-                        this.removePiece({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx - 1 })
+                        this.removePiece({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx - 1 })
                         break
                     case color.white:
-                        this.removePiece({ colIdx: this.data.enPassantField!.colIdx, rowIdx: this.data.enPassantField!.rowIdx + 1 })
+                        this.removePiece({ colIdx: this._data.enPassantField!.colIdx, rowIdx: this._data.enPassantField!.rowIdx + 1 })
                         break
                 }
             }
-            this.history.push(move)
+            //this._history.push(move)
+            this.addMoveToHistory(move)
 
-            this.data.enPassantPossible = false
-            this.data.enPassantField = undefined
+            this._data.enPassantPossible = false
+            this._data.enPassantField = undefined
             if (_enPassantPossible) {
-                this.data.enPassantPossible = true
-                this.data.enPassantField = _enPassantField
+                this._data.enPassantPossible = true
+                this._data.enPassantField = _enPassantField
             }
 
-            this.data.halfMoves50 = 0
-            this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
-            if (this.data.nextMoveBy == color.white) this.data.moveNumber++
+            this._data.halfMoves50 = 0
+            this._data.nextMoveBy = otherColor(this._data.nextMoveBy)
+            if (this._data.nextMoveBy == color.white) this._data.moveNumber++
             this.clearAttackedFields()
-            this.data.gameOver = this.isGameOver()
+            this._data.gameOver = this.isGameOver()
         }
         return move
     }
     private moveCastle(color_: color, type_: castleType, validateOnly: boolean = false): moveOnBoard | undefined {
         let colIdx_: number
 
-        if (!validateOnly && this.data.nextMoveBy != color_) return undefined
+        if (!validateOnly && this._data.nextMoveBy != color_) return undefined
         if (!this.canCastle(color_, type_)) return undefined
         let castle = KingMovesRaw.castle(color_, type_)
         if (!this.isPieceOn(castle.kingSource, castle.kingPiece)) return undefined
@@ -2198,22 +2313,23 @@ export class ChessBoard {
 
         if (!validateOnly) {
             // validation complete, perform move
-            this.history.push(move)
+            //this._history.push(move)
+            this.addMoveToHistory(move)
 
             this.setPiece(castle.kingPiece, castle.kingTarget)
             this.removePiece(castle.kingSource)
             this.setPiece(castle.rookPiece, castle.rookTarget)
             this.removePiece(castle.rookSource)
 
-            this.data.halfMoves50++
-            this.data.enPassantPossible = false
-            this.data.enPassantField = undefined
+            this._data.halfMoves50++
+            this._data.enPassantPossible = false
+            this._data.enPassantField = undefined
 
             // next move
-            this.data.nextMoveBy = otherColor(this.data.nextMoveBy)
-            if (this.data.nextMoveBy == color.white) this.data.moveNumber++
+            this._data.nextMoveBy = otherColor(this._data.nextMoveBy)
+            if (this._data.nextMoveBy == color.white) this._data.moveNumber++
             this.clearAttackedFields()
-            this.data.gameOver = this.isGameOver()
+            this._data.gameOver = this.isGameOver()
         }
         return move
     }

@@ -18,6 +18,39 @@ describe('Testing chess-board', () => {
 
   });
 
+  test('testing 3 & 5 Repetition Rule', () => {
+    var cb = new chessBoard.ChessBoard()
+    cb.loadFEN(cb.initialBoardFEN)
+    expect(cb.move('Nf3')).toBe(true)
+    expect(cb.move('Nf6')).toBe(true)
+    expect(cb.move('Ng1')).toBe(true)
+    expect(cb.move('Ng8')).toBe(true)
+
+    expect(cb.move('Nf3')).toBe(true) // #2 Rep
+    expect(cb.move('Nf6')).toBe(true)
+    expect(cb.move('Ng1')).toBe(true)
+    expect(cb.move('Ng8')).toBe(true)
+
+    expect(cb.data.drawPossibleThreefoldRepetion).toBe(false)
+    expect(cb.move('Nf3')).toBe(true) // #3 Rep
+    expect(cb.data.drawPossibleThreefoldRepetion).toBe(true)
+    expect(cb.move('Nf6')).toBe(true)
+    expect(cb.move('Ng1')).toBe(true)
+    expect(cb.move('Ng8')).toBe(true)
+
+    expect(cb.move('Nf3')).toBe(true) // #4 Rep
+    expect(cb.move('Nf6')).toBe(true)
+    expect(cb.move('Ng1')).toBe(true)
+    expect(cb.move('Ng8')).toBe(true)
+
+    expect(cb.isGameOver()).toBe(false)
+    expect(cb.move('Nf3')).toBe(true) // #5 Rep -- automatic draw
+    expect(cb.isGameOver()).toBe(true)
+    expect(cb.data.gameResult).toBe(chessBoard.GameResult.draw)
+    expect(cb.move('Nf6')).toBe(false)
+  });
+
+
   test('encode Board', () => {
     var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
     cb.loadFEN(cb.initialBoardFEN);

@@ -12,24 +12,57 @@ import * as chessBoard from "./chess-board"
 
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
 cb.loadFEN(cb.initialBoardFEN);
+console.log(cb.move('Nf3'))
+console.log(cb.move('Nf6'))
+console.log(cb.move('Ng1'))
+console.log(cb.move('Ng8'), '#1')
 
-let b = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple)
+console.log(cb.move('Nf3'))
+console.log(cb.move('Nf6'))
+console.log(cb.move('Ng1'))
+console.log(cb.move('Ng8'), '#2')
+
+console.log('rep', cb.data.drawPossibleThreefoldRepetion) // false
+console.log(cb.move('Nf3'))
+console.log('rep', cb.data.drawPossibleThreefoldRepetion) // true
+console.log(cb.move('Nf6'))
+console.log(cb.move('Ng1'))
+console.log(cb.move('Ng8'), '#3')
+
+console.log(cb.move('Nf3'))
+console.log(cb.move('Nf6'))
+console.log(cb.move('Ng1'))
+console.log(cb.move('Ng8'), '#4')
+
+console.log(cb.move('Nf3')) // game ends #5 repetition
+console.log(cb.move('Nf6')) // false
+
+
+/*
+let b = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple) as number[]
 //console.log(b)
 for (let x of b)
     console.log(x.toString(2).padStart(10, '0'))
 console.log(b.length)
+let a = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLikeBigInt)
+console.log("BigInt:", a.toString(2))
+console.log("BigInt:", a.toString(16))
 
-let b2 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLike)
+let b2 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.BoardLike) as number[]
 //console.log(b2)
 for (let x of b2)
     console.log(x.toString(2).padStart(32, '0'))
 console.log(b2.length)
 
-let b3 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLong)
+let b3 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLong) as number[]
 //console.log(b2)
 for (let x of b3)
     console.log(x.toString(2).padStart(32, '0'))
 console.log(b3.length)
+let a3 = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.FENlikeLongBigInt) as BigInt
+console.log("BigInt:", a3.toString(2))
+console.log("BigInt:", a3.toString(16))
+*/
 
 /*
 let sourceValues: number[] = []

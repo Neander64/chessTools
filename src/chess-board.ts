@@ -1,294 +1,26 @@
-import { assert } from "console"
-import { type } from "os"
 
-// TODO split into several files
+import { EncodedPositionKey, encodeType } from './encode-position-key'
+import { Piece, pieceKind, pieceKeyType } from './chess-board-pieces'
+import { color, otherColor } from './chess-color'
+import { pieceOnBoard, boardFieldIdx, sameFields, fieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
+import { AttackedFields } from './chess-board-attacked-fields'
+import { BishopMovesRaw, bishopRay, isOffsetBishopLike } from './chess-board-bishop-moves'
+import { RookMovesRaw, rookRay, isOffsetRookLike } from './chess-board-rook-moves'
+import { castleType, KingMovesRaw } from './chess-board-king-moves'
+import { KnightMovesRaw } from './chess-board-knight-moves'
+import { PawnMovesRaw } from './chess-board-pawn-moves'
 
-export enum encodeType {
-    Simple,
-    BoardLike,
-    //FENlike,
-    FENlikeLong,
-    BoardLikeBigInt,
-    FENlikeBigInt,
-    FENlikeLongBigInt,
-}
-export class EncodedPositionKey {
-    // encoding board to Uint32 Array that can be used as compact key
-    //   6 kinds of piece + color : 4 Bit
-    // + 64 field : 7 Bit
-    // max 32 pieces, i.e. 32*10 Bit = 320 Bit (max) = 40 Byte : 20 Uint16 : 10 Uint32
-    // + Flags (15 bit):
-    //  Castle rights 4 bit
-    //  white to move 1 bit
-    //  en passant possible 1 bit
-    //  en passant field 7 bit
-    // meaning we can store any position with 42 Byte : 21 Uint16 : 11 Uint32 )
-    // this version allows re-construktion of the board from key
-    // with a little space left (wasted bits on pieces and in the Flags), I think, this is a pretty good compression.
-    // yet, ...
+// TODO split into several files (resolve circular references)
+// TODO push FEN / PGN into a separate structure/class
+// TODO moveToSAN
+// TODO getLegalMoves -> SAN
+// TODO getAttackedFields -> Notation
+// TODO generate PGN
 
-    // alternative like FEN compressed (no delimiter or space)
-    //  piece: 4 Bit (max 32*4=128 Bit)
-    //  empty Fields (1..8): 3 Bit (max 32*3 = 96 Bit)
-    //  Flags: 15 Bit
-    // totals (max 239 Bit : 30 Byte : 15 Uint16 : 8 Uint32)
-    // this version doesn't allow re-construktion of the board from key (unless piece and empty field values are disjunct)
-
-    // 3rd Version:
-    // piece+emptynumber could be encoded together with 5 Bit * (max) 64 = 320+15 Bit = 42 Byte, to be re-constructable
-    // I think, normally the representation is much shorter, max is rare (max is a very spread piece placement, not like a real game)
-    // 
-
-    static readonly pieceKey = {
-        R: 0b0001,
-        N: 0b0010,
-        B: 0b0011,
-        Q: 0b0100,
-        K: 0b0101,
-        P: 0b0110,
-
-        r: 0b0111,
-        n: 0b1000,
-        b: 0b1001,
-        q: 0b1010,
-        k: 0b1011,
-        p: 0b1100,
-
-        // R: 0b00001,
-        // N: 0b00010,
-        // B: 0b00011,
-        // Q: 0b00100,
-        // K: 0b00101,
-        // P: 0b00110,
-        // r: 0b00111,
-        // n: 0b01000,
-        // b: 0b01001,
-        // q: 0b01010,
-        // k: 0b01011,
-        // p: 0b01100,
-        // 1: 0b10001,
-        // 2: 0b10010,
-        // 3: 0b10011,
-        // 4: 0b10100,
-        // 5: 0b10101,
-        // 6: 0b10110,
-        // 7: 0b10111,
-        // 8: 0b11000,
-        none: 0b1111,
-    }
-
-    static encodeField(colIdx: number, rowIdx: number): number {
-        return rowIdx * 8 + colIdx /* 0..63 */
-    }
-    static encodeFieldIdx(f: boardFieldIdx): number {
-        return f.rowIdx * 8 + f.colIdx /* 0..63 */
-    }
-    static readonly IS_WHITE_MOVE = 0b0000000000000001
-    static readonly KINGSIDE_CASTLE_WHITE = 0b0000000000000010
-    static readonly QUEENSIDE_CASTLE_WHITE = 0b0000000000000100
-    static readonly KINGSIDE_CASTLE_BLACK = 0b0000000000001000
-    static readonly QUEENSIDE_CASTLE_BLACK = 0b000000000010000
-    static readonly ENPASSANT = 0b000000000100000
-    static makeFlags(cbData: ChessBoardData): number {
-        let result = 0x0000
-        if (cbData.nextMoveBy == color.white) result |= this.IS_WHITE_MOVE
-        if (cbData.canCastleShortWhite) result |= this.KINGSIDE_CASTLE_WHITE
-        if (cbData.canCastleLongWhite) result |= this.QUEENSIDE_CASTLE_WHITE
-        if (cbData.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
-        if (cbData.canCastleLongBlack) result |= this.QUEENSIDE_CASTLE_BLACK
-        if (cbData.enPassantPossible) {
-            result |= EncodedPositionKey.ENPASSANT
-            if (cbData.enPassantField)
-                result |= (this.encodeFieldIdx(cbData.enPassantField) << 6)
-        }
-        return result
-    }
-    static numArrAreEqual(k1: number[], k2: number[]): boolean {
-        // compare keys
-        if (k1.length != k2.length) return false
-        for (let i = 0; i < k1.length; i++)
-            if (k1[i] != k2[i]) return false
-        return true
-    }
-
-    static encodeBoard(board_: Piece[][], cbData: ChessBoardData, encodeType_: encodeType): number[] | BigInt {
-        let header = this.makeFlags(cbData)
-        switch (encodeType_) {
-            case encodeType.Simple:
-                return this.encodeBoard_simple(board_, header)
-            case encodeType.BoardLike:
-                return this.encodeBoard_BoardLike(board_, header)
-            // case encodeType.FENlike:
-            //     return this.encodeBoard_FENLike(board_, header)
-            case encodeType.FENlikeLong:
-                return this.encodeBoard_FENLikeLong(board_, header)
-            case encodeType.BoardLikeBigInt:
-                return this.encodeBoard_BoardLike_BigInt(board_, header)
-            case encodeType.FENlikeBigInt:
-                return this.encodeBoard_FENLike_BigInt(board_, header)
-            case encodeType.FENlikeLongBigInt:
-                return this.encodeBoard_FENLikeLong_BigInt(board_, header)
-        }
-    }
-    private static encodeBoard_BoardLike_BigInt(board_: Piece[][], header: number): BigInt {
-        // TODO I feel like there is an error with the first Bits comparing the result with the array values
-        let result = 1n // adding 1 Bit to avoid cutting leading zeros
-        for (let row = 0; row < 8; row++)
-            for (let col = 0; col < 8; col++) {
-                let p = board_[col][row]
-                if (p.isPiece) {
-                    let b = BigInt((p.key << 6) | this.encodeField(row, col))
-                    result = (result << 11n) | b
-                }
-            }
-        result = (result << 15n) + BigInt(header)
-        return result
-    }
-    private static encodeBoard_FENLike_BigInt(board_: Piece[][], header: number): BigInt {
-        // TODO Impementation, issue it's not fix length, requires to generalize compress
-        throw new Error("not implemented, yet")
-        let result = 1n // adding 1 Bit to avoid cutting leading zeros
-        return result
-    }
-    private static encodeBoard_FENLikeLong_BigInt(board_: Piece[][], header: number): BigInt {
-        let result = 1n // adding 1 Bit to avoid cutting leading zeros
-        for (let row = 0; row < 8; row++) {
-            let emptyCount = 0
-            for (let col = 0; col < 8; col++) {
-                let p = board_[col][row]
-                if (p.isPiece) {
-                    if (emptyCount > 0) {
-                        result = (result << 5n) | BigInt(emptyCount | 0b10000)
-                        emptyCount = 0
-                    }
-                    result = (result << 5n) + BigInt(p.key)
-                }
-                else emptyCount++
-            }
-            if (emptyCount > 0)
-                result = (result << 5n) | BigInt(emptyCount | 0b10000)
-        }
-        result = (result << 15n) | BigInt(header)
-        return result
-    }
-
-    private static encodeBoard_simple(board_: Piece[][], header: number): number[] {
-        let result: number[] = []
-        for (let row = 0; row < 8; row++)
-            for (let col = 0; col < 8; col++) {
-                let p = board_[col][row]
-                if (p.isPiece)
-                    result.push((p.key << 6) | this.encodeField(row, col))
-            }
-        result.push(header)
-        return result
-    }
-    private static encodeBoard_BoardLike(board_: Piece[][], header: number): number[] {
-        let result: number[] = []
-        for (let row = 0; row < 8; row++)
-            for (let col = 0; col < 8; col++) {
-                let p = board_[col][row]
-                if (p.isPiece)
-                    result.push((p.key << 6) | this.encodeField(row, col))
-            }
-        result = this.compress(result, 10) // 4:key + 6:field
-        result.push(header)
-        return result
-    }
-    // private static encodeBoard_FENLike(board_: Piece[][], header: number): number[] {
-    //     // TODO Impementation, issue it's not fix length, requires to generalize compress
-    //     throw new Error("not implemented, yet")
-    //     let result: number[] = []
-    //     return result
-    // }
-    private static encodeBoard_FENLikeLong(board_: Piece[][], header: number): number[] {
-        let result: number[] = []
-        for (let row = 0; row < 8; row++) {
-            let emptyCount = 0
-            for (let col = 0; col < 8; col++) {
-                let p = board_[col][row]
-                if (p.isPiece) {
-                    if (emptyCount > 0) {
-                        result.push(emptyCount | 0b10000)
-                        emptyCount = 0
-                    }
-                    result.push(p.key)
-                }
-                else emptyCount++
-            }
-            if (emptyCount > 0)
-                result.push(emptyCount | 0b10000)
-        }
-        result = this.compress(result, 5) // count || piece : 5 Bit
-        result.push(header)
-        return result
-    }
-    private static compress(sourceValues: number[], bitLenSource: number): number[] {
-        // TODO other precisions like set/getBigUint64()
-        let result: number[] = []
-        const bytesPerTarget = 4 // 2 if Uint16
-        const bitLenTarget = bytesPerTarget * 8
-        assert(bitLenTarget > bitLenSource) // sorry, doesn't work that way
-        const byteLenTarget = Math.ceil((sourceValues.length * bitLenSource) / bitLenTarget) * bytesPerTarget
-        let dataTarget = new ArrayBuffer(byteLenTarget)
-        let view = new DataView(dataTarget)
-        let pos = 0
-        let leftVal = 0x00
-        let rightVal = 0x00
-        let availableBits = bitLenTarget
-        let nextTargetVal = 0x00
-        let leftOverSource = 0
-        let hasData = false
-        for (let x of sourceValues) {
-            let leftOverTarget = availableBits - bitLenSource
-            if (leftOverTarget >= 0) {
-                nextTargetVal |= (x << leftOverTarget)
-                availableBits = leftOverTarget
-                hasData = true
-            }
-            else {
-                leftOverSource = bitLenSource - availableBits
-                leftVal = x >> leftOverSource
-                rightVal = x ^ (leftVal << leftOverSource)
-                nextTargetVal |= leftVal
-                availableBits = 0
-                hasData = true
-            }
-            if (availableBits == 0) {
-                view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
-                nextTargetVal = 0x00
-                availableBits = bitLenTarget
-                hasData = false
-                if (leftOverSource > 0) {
-                    availableBits = bitLenTarget - leftOverSource
-                    nextTargetVal |= rightVal << availableBits
-                    leftOverSource = 0
-                    hasData = true
-                }
-            }
-        }
-        if (hasData) {
-            view.setUint32(pos++ * bytesPerTarget, nextTargetVal)
-        }
-        //let bigNumResult = 0n
-        for (let i = 0; i < byteLenTarget / bytesPerTarget; i++) {
-            let v = view.getUint32(i * bytesPerTarget)
-            //bigNumResult = (bigNumResult << BigInt(bytesPerTarget * 8)) + BigInt(v)
-            result.push(v)
-        }
-        return result
-    }
+function colorStr(color_: color) {
+    return color_.toString()
 }
 
-export const enum pieceKind {
-    Rook,
-    Knight,
-    Bishop,
-    Queen,
-    King,
-    Pawn,
-    none,
-}
 const pieceKindPGN = new Map<number, string>([
     // map piece to string, usage: pieceKindPGN.get(p /*:pieceKind*/)
     [pieceKind.Rook, 'R'],
@@ -300,22 +32,10 @@ const pieceKindPGN = new Map<number, string>([
     [pieceKind.none, ' '],
 ])
 function isLegalPromotionPiece(kind_: pieceKind): boolean {
-    return kind_ != pieceKind.none && kind_ != pieceKind.Pawn && kind_ != pieceKind.King
+    //return kind_ != pieceKind.none && kind_ != pieceKind.Pawn && kind_ != pieceKind.King
+    return kind_ < pieceKind.King
 }
 
-export const enum color {
-    black = 'Black',
-    white = 'White',
-}
-function colorStr(color_: color) {
-    return color_.toString()
-}
-function otherColor(color_: color) {
-    switch (color_) {
-        case color.black: return color.white
-        case color.white: return color.black;
-    }
-}
 /*
 function doForColor(color_: color, blackFct: () => void, whiteFct: () => void) {
     switch (color_) {
@@ -324,75 +44,6 @@ function doForColor(color_: color, blackFct: () => void, whiteFct: () => void) {
     }
 }
 */
-export class Piece {
-    private _kind: pieceKind
-    private _color?: color
-    private _key: number // encoding kind & color -- value of pieceKey
-
-    constructor(kind_: pieceKind, key: number, color_?: color) {
-        this._kind = kind_
-        this._color = color_
-        this._key = key
-    }
-    get kind() { return this._kind }
-    get color() { return this._color }
-    get isNone() { return this._kind === pieceKind.none }
-    get isEmpty() { return this._kind === pieceKind.none }
-    get isPiece() { return this._kind !== pieceKind.none }
-    same(p: Piece) { return this._kind == p.kind && this._color == p.color }
-    get key() { return this._key }
-
-    private static _none = new Piece(pieceKind.none, EncodedPositionKey.pieceKey.none)
-    private static _blackRook = new Piece(pieceKind.Rook, EncodedPositionKey.pieceKey.r, color.black)
-    private static _blackKnight = new Piece(pieceKind.Knight, EncodedPositionKey.pieceKey.n, color.black)
-    private static _blackBishop = new Piece(pieceKind.Bishop, EncodedPositionKey.pieceKey.b, color.black)
-    private static _blackQueen = new Piece(pieceKind.Queen, EncodedPositionKey.pieceKey.q, color.black)
-    private static _blackKing = new Piece(pieceKind.King, EncodedPositionKey.pieceKey.k, color.black)
-    private static _blackPawn = new Piece(pieceKind.Pawn, EncodedPositionKey.pieceKey.p, color.black)
-    private static _whiteRook = new Piece(pieceKind.Rook, EncodedPositionKey.pieceKey.R, color.white)
-    private static _whiteKnight = new Piece(pieceKind.Knight, EncodedPositionKey.pieceKey.N, color.white)
-    private static _whiteBishop = new Piece(pieceKind.Bishop, EncodedPositionKey.pieceKey.B, color.white)
-    private static _whiteQueen = new Piece(pieceKind.Queen, EncodedPositionKey.pieceKey.Q, color.white)
-    private static _whiteKing = new Piece(pieceKind.King, EncodedPositionKey.pieceKey.K, color.white)
-    private static _whitePawn = new Piece(pieceKind.Pawn, EncodedPositionKey.pieceKey.P, color.white)
-    static none() { return Piece._none }
-    static blackRook() { return Piece._blackRook }
-    static blackKnight() { return Piece._blackKnight }
-    static blackBishop() { return Piece._blackBishop }
-    static blackQueen() { return Piece._blackQueen }
-    static blackKing() { return Piece._blackKing }
-    static blackPawn() { return Piece._blackPawn }
-    static whiteRook() { return Piece._whiteRook }
-    static whiteKnight() { return Piece._whiteKnight }
-    static whiteBishop() { return Piece._whiteBishop }
-    static whiteQueen() { return Piece._whiteQueen }
-    static whiteKing() { return Piece._whiteKing }
-    static whitePawn() { return Piece._whitePawn }
-    static getPiece(kind_: pieceKind, color_: color): Piece {
-        switch (color_) {
-            case color.black:
-                switch (kind_) {
-                    case pieceKind.Rook: return Piece.blackRook()
-                    case pieceKind.Knight: return Piece.blackKnight()
-                    case pieceKind.Bishop: return Piece.blackBishop()
-                    case pieceKind.Queen: return Piece.blackQueen()
-                    case pieceKind.King: return Piece.blackKing()
-                    case pieceKind.Pawn: return Piece.blackPawn()
-                }
-                break;
-            case color.white:
-                switch (kind_) {
-                    case pieceKind.Rook: return Piece.whiteRook()
-                    case pieceKind.Knight: return Piece.whiteKnight()
-                    case pieceKind.Bishop: return Piece.whiteBishop()
-                    case pieceKind.Queen: return Piece.whiteQueen()
-                    case pieceKind.King: return Piece.whiteKing()
-                    case pieceKind.Pawn: return Piece.whitePawn()
-                }
-        }
-        return Piece.none()
-    }
-}
 
 function pieceToChar(p: Piece): string {
     let result = pieceKindPGN.get(p.kind) || ' '
@@ -434,8 +85,25 @@ function pieceToChar(p: Piece): string {
     return result;
 }
 
-export function charFENToPiece(pieceStr: string): { valid: boolean, piece: Piece } {
+const charFENtoPieceMap = new Map<string, Piece>([
+    ['R', Piece.whiteRook()],
+    ['N', Piece.whiteKnight()],
+    ['B', Piece.whiteBishop()],
+    ['Q', Piece.whiteQueen()],
+    ['K', Piece.whiteKing()],
+    ['P', Piece.whitePawn()],
 
+    ['r', Piece.blackRook()],
+    ['n', Piece.blackKnight()],
+    ['b', Piece.blackBishop()],
+    ['q', Piece.blackQueen()],
+    ['k', Piece.blackKing()],
+    ['p', Piece.blackPawn()],
+])
+export function charFENToPiece(pieceStr: string): { valid: boolean, piece: Piece } {
+    if (charFENtoPieceMap.has(pieceStr))
+        return { valid: true, piece: charFENtoPieceMap.get(pieceStr)! }
+    /*
     switch (pieceStr) {
         case 'R': return { valid: true, piece: Piece.whiteRook() }
         case 'N': return { valid: true, piece: Piece.whiteKnight() }
@@ -453,7 +121,8 @@ export function charFENToPiece(pieceStr: string): { valid: boolean, piece: Piece
 
         default:
             return { valid: false, piece: Piece.none() }
-    }
+    }*/
+    return { valid: false, piece: Piece.none() }
 }
 function charPGNToPiece(pieceStr: string, color_: color): { valid: boolean, piece: Piece } {
 
@@ -532,51 +201,7 @@ export function fieldIdxArrToNotation(fields: boardFieldIdx[]): string[] {
     return result
 }
 
-type boardFieldIdx = {
-    colIdx: number,
-    rowIdx: number
-}
 
-type fieldOffset = {
-    dCol: number,
-    dRow: number
-}
-const offsets = {
-    N: { dCol: 0, dRow: -1 },
-    W: { dCol: 1, dRow: 0 },
-    S: { dCol: 0, dRow: 1 },
-    E: { dCol: -1, dRow: 0 },
-    NW: { dCol: 1, dRow: -1 },
-    SW: { dCol: 1, dRow: 1 },
-    SE: { dCol: -1, dRow: 1 },
-    NE: { dCol: -1, dRow: -1 },
-    //--- Knight moves
-    NNE: { dCol: -1, dRow: -2 },
-    NNW: { dCol: 1, dRow: -2 },
-    SSE: { dCol: -1, dRow: 2 },
-    SSW: { dCol: 1, dRow: 2 },
-    WWN: { dCol: 2, dRow: -1 },
-    WWS: { dCol: 2, dRow: 1 },
-    EEN: { dCol: -2, dRow: -1 },
-    EES: { dCol: -2, dRow: 1 },
-}
-function shiftField(field: boardFieldIdx, offset: fieldOffset, factor: number = 1) {
-    return { colIdx: field.colIdx + offset.dCol * factor, rowIdx: field.rowIdx + offset.dRow * factor }
-}
-function boardFieldsAreEqual(f1: boardFieldIdx, f2: boardFieldIdx): boolean {
-    return f1.colIdx == f2.colIdx && f1.rowIdx == f2.rowIdx
-}
-function fieldIdx(colIdx_: number, rowIdx_: number) {
-    return { colIdx: colIdx_, rowIdx: rowIdx_ }
-}
-function isFieldOnBoard(field: boardFieldIdx) {
-    return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8)
-}
-
-type pieceOnBoard = {
-    piece: Piece,
-    field: boardFieldIdx
-};
 
 type moveOnBoard = { // Data to do/undo moves
     pieceOB: pieceOnBoard,
@@ -593,360 +218,7 @@ type moveOnBoard = { // Data to do/undo moves
     boardKey?: /*number[] |*/ BigInt,
 };
 
-type attackedBy = {
-    field: boardFieldIdx,  // attacked field
-    attackingPieces: pieceOnBoard[]
-}
-class AttackedFields {
-    private _fields: attackedBy[]
-    constructor() {
-        this._fields = []
-    }
-    add(attackedField: boardFieldIdx, attackingPiece: pieceOnBoard) {
-        let found = this._fields.find(x => (x.field.colIdx == attackedField.colIdx && x.field.rowIdx == attackedField.rowIdx))
-        if (found)
-            found.attackingPieces.push(attackingPiece)
-        else
-            this._fields.push({ field: attackedField, attackingPieces: [attackingPiece] })
-    }
-    clear() {
-        this._fields = []
-    }
-    isAttacked(field: boardFieldIdx): boolean {
-        let found = this._fields.find(x => (x.field.colIdx == field.colIdx && x.field.rowIdx == field.rowIdx))
-        return (typeof found !== 'undefined')
-    }
-    attackersOn(field: boardFieldIdx): pieceOnBoard[] {
-        let found = this._fields.find(x => (x.field.colIdx == field.colIdx && x.field.rowIdx == field.rowIdx))
-        if (typeof found == 'undefined') return []
-        return found!.attackingPieces
-    }
-    attackedFields(): boardFieldIdx[] {
-        let result: boardFieldIdx[] = []
-        for (let attacked of this._fields) {
-            result.push(attacked.field)
-        }
-        return result
-    }
-    hasData() {
-        return this._fields.length > 0
-    }
-}
 
-const enum bishopRay { // 1-2,3-4 are opposites
-    SW = 'SW',
-    NE = 'NE',
-    NW = 'NW',
-    SE = 'SE',
-}
-class BishopMovesRaw {
-    moves_SW: boardFieldIdx[]
-    moves_NE: boardFieldIdx[]
-    moves_NW: boardFieldIdx[]
-    moves_SE: boardFieldIdx[]
-    constructor(startField: boardFieldIdx) {
-        this.moves_SW = this.generateRay(startField, offsets.SW)
-        this.moves_NE = this.generateRay(startField, offsets.NE)
-        this.moves_NW = this.generateRay(startField, offsets.NW)
-        this.moves_SE = this.generateRay(startField, offsets.SE)
-    }
-    private generateRay(startField: boardFieldIdx, offset: fieldOffset): boardFieldIdx[] {
-        let moves: boardFieldIdx[] = []
-        for (let i = 1; i < 8; i++) {
-            let newField = shiftField(startField, offset, i)
-            if (isFieldOnBoard(newField)) {
-                moves.push(newField)
-            }
-            else break
-        }
-        return moves
-    }
-    getRay(ray: bishopRay): boardFieldIdx[] {
-        switch (ray) {
-            case bishopRay.SW: return this.moves_SW
-            case bishopRay.NE: return this.moves_NE
-            case bishopRay.NW: return this.moves_NW
-            case bishopRay.SE: return this.moves_SE
-        }
-        return []; // unreachable
-    }
-}
-/* optional implementation with iterator
-export class BishopRayIt implements IterableIterator<boardFieldIdx> {
-    private _startField: boardFieldIdx;
-    private _curOffset: { colOffset: number, rowOffset: number };
-    private _offset: { colOffset: number, rowOffset: number };
-
-    constructor(startField: boardFieldIdx, diag: bishopRay) {
-        this._startField = startField;
-        switch (diag) {
-            case bishopRay.ray1: this._offset = { colOffset: 1, rowOffset: 1 }; break;
-            case bishopRay.ray2: this._offset = { colOffset: -1, rowOffset: -1 }; break;
-            case bishopRay.ray3: this._offset = { colOffset: 1, rowOffset: -1 }; break;
-            case bishopRay.ray4: this._offset = { colOffset: -1, rowOffset: 1 }; break;
-        }
-        this._curOffset = { colOffset: this._offset.colOffset, rowOffset: this._offset.rowOffset };
-    }
-
-    public next(): IteratorResult<boardFieldIdx> {
-        let newCol = this._startField.colIdx + this._curOffset.colOffset;
-        let newRow = this._startField.rowIdx + this._curOffset.rowOffset;
-        this._curOffset.colOffset += this._offset.colOffset;
-        this._curOffset.rowOffset += this._offset.rowOffset;
-        if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) {
-            return { done: false, value: { colIdx: newCol, rowIdx: newRow } }
-        }
-        return { done: true, value: null };
-    }
-
-    [Symbol.iterator](): IterableIterator<boardFieldIdx> {
-        return this;
-    }
-}
-*/
-function isOffsetBishopLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: bishopRay } {
-    if (Math.abs(source.rowIdx - target.rowIdx) == Math.abs(source.colIdx - target.colIdx)) {
-        if (source.colIdx > target.colIdx) {
-            if (source.rowIdx > target.rowIdx)  // - -
-                return { valid: true, ray: bishopRay.NE }
-            else                                // - +
-                return { valid: true, ray: bishopRay.SE }
-        }
-        else {
-            if (source.rowIdx > target.rowIdx)  // + -
-                return { valid: true, ray: bishopRay.NW }
-            else                                // + +
-                return { valid: true, ray: bishopRay.SW }
-        }
-    }
-    return { valid: false };
-}
-
-
-const enum rookRay {// 1-2,3-4 are opposites
-    W = 'W',
-    E = 'E',
-    S = 'S',
-    N = 'N',
-}
-
-class RookMovesRaw {
-    moves_W: boardFieldIdx[]
-    moves_E: boardFieldIdx[]
-    moves_S: boardFieldIdx[]
-    moves_N: boardFieldIdx[]
-    constructor(startField: boardFieldIdx) {
-        this.moves_W = this.generateRay(startField, offsets.W)
-        this.moves_E = this.generateRay(startField, offsets.E)
-        this.moves_S = this.generateRay(startField, offsets.S)
-        this.moves_N = this.generateRay(startField, offsets.N)
-
-    }
-    private generateRay(startField: boardFieldIdx, offset: fieldOffset): boardFieldIdx[] {
-        let moves: boardFieldIdx[] = []
-        for (let i = 1; i < 8; i++) {
-            let newField = shiftField(startField, offset, i)
-            if (isFieldOnBoard(newField)) {
-                moves.push(newField)
-            }
-            else break
-        }
-        return moves
-    }
-    getRay(ray: rookRay): boardFieldIdx[] {
-        switch (ray) {
-            case rookRay.W: return this.moves_W
-            case rookRay.E: return this.moves_E
-            case rookRay.S: return this.moves_S
-            case rookRay.N: return this.moves_N
-        }
-        return []; // unreachable
-    }
-}
-/* optional implementation with iterator
-export class RookRayIt implements IterableIterator<boardFieldIdx> {
-    private _startField: boardFieldIdx;
-    private _curOffset: { colOffset: number, rowOffset: number };
-    private _offset: { colOffset: number, rowOffset: number };
-
-    constructor(startField: boardFieldIdx, ray: rookRay) {
-        this._startField = startField;
-        switch (ray) {
-            case rookRay.ray1: this._offset = { colOffset: 1, rowOffset: 0 }; break;
-            case rookRay.ray2: this._offset = { colOffset: -1, rowOffset: 0 }; break;
-            case rookRay.ray3: this._offset = { colOffset: 0, rowOffset: 1 }; break;
-            case rookRay.ray4: this._offset = { colOffset: 0, rowOffset: -1 }; break;
-        }
-        this._curOffset = { colOffset: this._offset.colOffset, rowOffset: this._offset.rowOffset };
-    }
-    public next(): IteratorResult<boardFieldIdx> {
-        let newCol = this._startField.colIdx + this._curOffset.colOffset;
-        let newRow = this._startField.rowIdx + this._curOffset.rowOffset;
-        this._curOffset.colOffset += this._offset.colOffset;
-        this._curOffset.rowOffset += this._offset.rowOffset;
-        if (isFieldOnBoard(newCol, newRow)) {
-            return { done: false, value: { colIdx: newCol, rowIdx: newRow } }
-        }
-        return { done: true, value: null };
-    }
-
-    [Symbol.iterator](): IterableIterator<boardFieldIdx> {
-        return this;
-    }
-}
-*/
-function isOffsetRookLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: rookRay } {
-    if ((source.rowIdx == target.rowIdx) || (source.colIdx == target.colIdx)) {
-        if (source.colIdx == target.colIdx) {
-            if (source.rowIdx < target.rowIdx)
-                return { valid: true, ray: rookRay.S } // 0 +
-            else
-                return { valid: true, ray: rookRay.N } // 0 -
-        }
-        else { // source.rowIdx == target.rowIdx
-            if (source.colIdx < target.colIdx)
-                return { valid: true, ray: rookRay.W } // + 0
-            else
-                return { valid: true, ray: rookRay.E } // - 0
-        }
-    }
-    return { valid: false }
-}
-
-enum castleType {
-    short,
-    long
-}
-
-type castleData = {
-    kingSource: boardFieldIdx
-    kingTarget: boardFieldIdx
-    rookSource: boardFieldIdx
-    rookTarget: boardFieldIdx
-    kingPiece: Piece
-    rookPiece: Piece
-    row: number
-    kingPathCols: { start: number, end: number }
-    betweenPathCols: { start: number, end: number }
-}
-class KingMovesRaw {
-    static readonly CASTLE_SHORT_STR = 'O-O'
-    static readonly CASTLE_LONG_STR = 'O-O-O'
-    static readonly kingsTargetColCastleShort = 6
-    static readonly kingsTargetColCastleLong = 2
-
-    moves: boardFieldIdx[]
-
-    constructor(startField: boardFieldIdx) {
-        const offsetsKing = [
-            offsets.NE,
-            offsets.N,
-            offsets.NW,
-            offsets.E,
-            offsets.W,
-            offsets.SE,
-            offsets.S,
-            offsets.SW,
-        ];
-        this.moves = [];
-        for (const f of offsetsKing) {
-            let newField = shiftField(startField, f)
-            if (isFieldOnBoard(newField)) {
-                this.moves.push(newField)
-            }
-        }
-    }
-
-    static castle(color_: color, type_: castleType): castleData {
-        let rowIdx_ = (color_ == color.black) ? 0 : 7
-
-        return {
-            kingSource: { colIdx: (type_ == castleType.short) ? 4 : 4, rowIdx: rowIdx_ },
-            kingTarget: { colIdx: (type_ == castleType.short) ? 6 : 2, rowIdx: rowIdx_ },
-            rookSource: { colIdx: (type_ == castleType.short) ? 7 : 0, rowIdx: rowIdx_ },
-            rookTarget: { colIdx: (type_ == castleType.short) ? 5 : 3, rowIdx: rowIdx_ },
-            kingPiece: (color_ == color.black) ? Piece.blackKing() : Piece.whiteKing(),
-            rookPiece: (color_ == color.black) ? Piece.blackRook() : Piece.whiteRook(),
-            row: rowIdx_,
-            kingPathCols: { start: (type_ == castleType.short) ? 4 : 2, end: (type_ == castleType.short) ? 6 : 4 },
-            betweenPathCols: { start: (type_ == castleType.short) ? 5 : 1, end: (type_ == castleType.short) ? 6 : 3 }
-        }
-    }
-}
-
-class KnightMovesRaw {
-    moves: boardFieldIdx[]
-
-    constructor(startField: boardFieldIdx) {
-        const offsetsKnight = [
-            offsets.NNE, offsets.NNW,
-            offsets.SSE, offsets.SSW,
-            offsets.WWN, offsets.WWS,
-            offsets.EEN, offsets.EES
-        ];
-        this.moves = []
-        for (const f of offsetsKnight) {
-            let newField = shiftField(startField, f)
-            if (isFieldOnBoard(newField)) {
-                this.moves.push(newField)
-            }
-        }
-    }
-}
-type pawnTarget = {
-    target: boardFieldIdx,
-    isPromotion: boolean
-}
-class PawnMovesRaw {
-    static readonly startRowBlack = 1
-    static readonly startRowWhite = 6
-    static readonly promotionRowBlack = 7
-    static readonly promotionRowWhite = 0
-    static readonly promotionPieces = [pieceKind.Bishop, pieceKind.Knight, pieceKind.Queen, pieceKind.Rook]
-    static readonly config = {
-        Black: {
-            direction: offsets.S,
-            startRow: PawnMovesRaw.startRowBlack,
-            promotionRow: PawnMovesRaw.promotionRowBlack,
-            capture_left: offsets.SE,
-            capture_right: offsets.SW,
-        },
-        White: {
-            direction: offsets.N,
-            startRow: PawnMovesRaw.startRowWhite,
-            promotionRow: PawnMovesRaw.promotionRowWhite,
-            capture_left: offsets.NW,
-            capture_right: offsets.NE,
-        }
-    }
-    moves: pawnTarget[]
-    bigMove: boardFieldIdx | undefined
-    attacks: pawnTarget[]
-
-    constructor(startField: boardFieldIdx, color_: color) {
-        this.moves = []
-        this.attacks = []
-        this.bigMove = undefined
-
-        let cfg = PawnMovesRaw.config[color_]
-        let target: boardFieldIdx
-        if (startField.rowIdx == cfg.startRow) {
-            target = shiftField(startField, cfg.direction, 2)
-            this.bigMove = target
-        }
-        target = shiftField(startField, cfg.direction)
-        if (isFieldOnBoard(target))
-            this.moves.push({ target: target, isPromotion: target.rowIdx == cfg.promotionRow })
-
-        target = shiftField(startField, cfg.capture_left)
-        if (isFieldOnBoard(target))
-            this.attacks.push({ target: target, isPromotion: target.rowIdx == cfg.promotionRow })
-
-        target = shiftField(startField, cfg.capture_right)
-        if (isFieldOnBoard(target))
-            this.attacks.push({ target: target, isPromotion: target.rowIdx == cfg.promotionRow })
-    }
-}
 
 export const enum GameResult {
     white_wins = "1-0",
@@ -963,42 +235,94 @@ function gameResult(r: GameResult): string {
             case GameResult.none: return "*"
         }*/
 }
-export type ChessBoardData = {
-    nextMoveBy: color
+
+export interface IChessBoardData {
+    isWhitesMove: boolean
     canCastleShortWhite: boolean
     canCastleLongWhite: boolean
     canCastleShortBlack: boolean
     canCastleLongBlack: boolean
     enPassantPossible: boolean
     enPassantField: boardFieldIdx | undefined
-    halfMoves50: number
-    moveNumber: number
-    gameOver: boolean // meaning: no further moves are allowed.
-    gameResult: GameResult
-    drawPossible50MovesRule: boolean
-    drawPossibleThreefoldRepetion: boolean
 }
 
+export class ChessBoardData implements IChessBoardData {
+    nextMoveBy!: color
+    canCastleShortWhite!: boolean
+    canCastleLongWhite!: boolean
+    canCastleShortBlack!: boolean
+    canCastleLongBlack!: boolean
+    enPassantPossible!: boolean
+    enPassantField: boardFieldIdx | undefined
+    halfMoves50!: number
+    moveNumber!: number
+    gameOver!: boolean // meaning: no further moves are allowed.
+    gameResult!: GameResult
+    drawPossible50MovesRule!: boolean
+    drawPossibleThreefoldRepetion!: boolean
+    constructor() {
+        this.init()
+    }
+    init() {
+        this.nextMoveBy = color.white
+        this.canCastleShortWhite = false
+        this.canCastleLongWhite = false
+        this.canCastleShortBlack = false
+        this.canCastleLongBlack = false
+        this.enPassantPossible = false
+        this.enPassantField = undefined
+        this.halfMoves50 = 0
+        this.moveNumber = 1
+        this.gameOver = true
+        this.gameResult = GameResult.none
+        this.drawPossible50MovesRule = false
+        this.drawPossibleThreefoldRepetion = false
+    }
+    get isWhitesMove() { return this.nextMoveBy == color.white }
+
+}
+export type fileType = number
+export type rankType = number
+export interface IChessBoardRepresentation {
+    isPiece(file: fileType, rank: rankType): boolean
+    pieceKey(file: fileType, rank: rankType): pieceKeyType
+
+    isFieldOnBoard(field: boardFieldIdx): boolean
+}
+class ChessBoardRepresentation implements IChessBoardRepresentation {
+    private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
+    isPiece(file: fileType, rank: rankType) { return this._board[file][rank].isPiece }
+    pieceKey(file: fileType, rank: rankType) { return this._board[file][rank].key }
+    constructor() {
+        for (let file = 0; file < 8; file++) {
+            this._board[file] = []
+            for (let rank = 0; rank < 8; rank++) {
+                this._board[file][rank] = Piece.none()
+            }
+        }
+    }
+    // TODO keep implementation hidden
+    get board() { return this._board }
+    isFieldOnBoard(field: boardFieldIdx) {
+        return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8)
+    }
+}
 export class ChessBoard {
 
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
-    private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
+    //private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
+    private _b: ChessBoardRepresentation
     private _history: moveOnBoard[] = []
-    private _data!: ChessBoardData
+    private _data: ChessBoardData
 
     private _emptyBoard: boolean = true
     private _fieldsAttackedByBlack: AttackedFields
     private _fieldsAttackedByWhite: AttackedFields
 
     constructor(fen?: string) {
-        // allocate and initialize a empty board
-        for (let col = 0; col < 8; col++) {
-            this._board[col] = []
-            for (let row = 0; row < 8; row++) {
-                this._board[col][row] = Piece.none()
-            }
-        }
+        this._b = new ChessBoardRepresentation()
+        this._data = new ChessBoardData()
         this._fieldsAttackedByBlack = new AttackedFields()
         this._fieldsAttackedByWhite = new AttackedFields()
         this.clearBoard()
@@ -1012,8 +336,11 @@ export class ChessBoard {
         }
         this._emptyBoard = false
     }
-    get board(): Piece[][] {
-        return this._board
+    private get _board(): Piece[][] {
+        return this._b.board
+    }
+    get board(): ChessBoardRepresentation {
+        return this._b
     }
     get data(): ChessBoardData {
         return this._data
@@ -1031,21 +358,7 @@ export class ChessBoard {
             }
         }
         this._history = []
-        this._data = {
-            nextMoveBy: color.white,
-            canCastleShortWhite: false,
-            canCastleLongWhite: false,
-            canCastleShortBlack: false,
-            canCastleLongBlack: false,
-            enPassantPossible: false,
-            enPassantField: undefined,
-            halfMoves50: 0,
-            moveNumber: 1,
-            gameOver: true,
-            gameResult: GameResult.none,
-            drawPossible50MovesRule: false,
-            drawPossibleThreefoldRepetion: false,
-        }
+        this._data.init()
         this.clearAttackedFields()
     }
 
@@ -1375,7 +688,7 @@ export class ChessBoard {
         let rookMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
         const rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this.board)
         for (const ray of rays) {
             let moveRay = rookMovesRaw.getRay(ray)
             for (f of moveRay) {
@@ -1386,14 +699,14 @@ export class ChessBoard {
         return rookMoves;
     }
     private getAttackedFieldsByKnight(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let knightMoves = new KnightMovesRaw(pieceOB_.field)
+        let knightMoves = new KnightMovesRaw(pieceOB_.field, this.board)
         return knightMoves.moves
     }
     private getAttackedFieldsByBishop(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let bishopMoves: boardFieldIdx[] = []
         let f: boardFieldIdx
         const rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this.board)
         for (const ray of rays) {
             let moveRay = bishopMovesRaw.getRay(ray)
             for (f of moveRay) {
@@ -1408,7 +721,7 @@ export class ChessBoard {
         let f: boardFieldIdx
 
         const raysR = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this.board)
         for (const ray of raysR) {
             let moveRay = rookMovesRaw.getRay(ray)
             for (f of moveRay) {
@@ -1418,7 +731,7 @@ export class ChessBoard {
         }
 
         const raysB = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this.board)
         for (const ray of raysB) {
             let moveRay = bishopMovesRaw.getRay(ray)
             for (f of moveRay) {
@@ -1435,7 +748,7 @@ export class ChessBoard {
         const startField = pieceOB_.field;
         for (const f of offsetsPawn) {
             let newField = shiftField(startField, f)
-            if (isFieldOnBoard(newField)) {
+            if (this.board.isFieldOnBoard(newField)) {
                 pawnCaptureMoves.push(newField);
             }
         }
@@ -1448,7 +761,7 @@ export class ChessBoard {
         const startField = pieceOB_.field
         for (const f of offsetsPawn) {
             let newField = shiftField(startField, f)
-            if (isFieldOnBoard(newField)) {
+            if (this.board.isFieldOnBoard(newField)) {
                 pawnCaptureMoves.push(newField)
             }
         }
@@ -1456,7 +769,7 @@ export class ChessBoard {
         return pawnCaptureMoves
     }
     private getAttackedFieldsByKing(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let kingMoves = new KingMovesRaw(pieceOB_.field)
+        let kingMoves = new KingMovesRaw(pieceOB_.field, this.board)
         return kingMoves.moves;
     }
 
@@ -1535,7 +848,7 @@ export class ChessBoard {
         let result: moveOnBoard[] = []
         let target: boardFieldIdx
         const rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this.board)
         for (const ray of rays) {
             let moveRay = rookMovesRaw.getRay(ray)
             for (target of moveRay) {
@@ -1548,7 +861,7 @@ export class ChessBoard {
     }
     getLegalMovesOfKnight(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let knightMoves = new KnightMovesRaw(pieceOB_.field)
+        let knightMoves = new KnightMovesRaw(pieceOB_.field, this.board)
         for (let target of knightMoves.moves) {
             let m = this.moveIdx(pieceOB_.field, target, { validateOnly: true })
             if (m !== undefined) result.push(m)
@@ -1559,7 +872,7 @@ export class ChessBoard {
         let result: moveOnBoard[] = []
         let target: boardFieldIdx
         const rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this.board)
         for (const ray of rays) {
             let moveRay = bishopMovesRaw.getRay(ray)
             for (target of moveRay) {
@@ -1574,7 +887,7 @@ export class ChessBoard {
         let result: moveOnBoard[] = []
         let target: boardFieldIdx
         const raysR = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this.board)
         for (const ray of raysR) {
             let moveRay = rookMovesRaw.getRay(ray)
             for (target of moveRay) {
@@ -1584,7 +897,7 @@ export class ChessBoard {
             }
         }
         const raysB = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this.board)
         for (const ray of raysB) {
             let moveRay = bishopMovesRaw.getRay(ray)
             for (target of moveRay) {
@@ -1597,7 +910,7 @@ export class ChessBoard {
     }
     getLegalMovesOfKing(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let kingMoves = new KingMovesRaw(pieceOB_.field)
+        let kingMoves = new KingMovesRaw(pieceOB_.field, this.board)
         for (let target of kingMoves.moves) {
             let m = this.moveIdx(pieceOB_.field, target, { validateOnly: true })
             if (m !== undefined) result.push(m)
@@ -1616,7 +929,7 @@ export class ChessBoard {
     }
     getLegalMovesOfPawn(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color!)
+        let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color!, this.board)
         for (let pawnMove of pawnMovesRaw.moves) {
             if (pawnMove.isPromotion) {
                 for (let promoKind of PawnMovesRaw.promotionPieces) {
@@ -1692,7 +1005,7 @@ export class ChessBoard {
         let tmpBoard = new ChessBoard()
         tmpBoard.setBoard(this._board)
         tmpBoard.removePiece(kingField) // avoid the king blocking checks by itself
-        let kingMoves = new KingMovesRaw(kingField)
+        let kingMoves = new KingMovesRaw(kingField, this.board)
         for (let m of kingMoves.moves) {
             let p = this.peekField(m)
             if (p.isPiece && p.color == color) continue // field is block by own piece
@@ -1777,7 +1090,7 @@ export class ChessBoard {
         if (spec.black.total == 2 && spec.white.total == 2) {
             // K+B vs K+B, with Bishops on same color
             if (spec.black.bishops == 1 && spec.white.bishops == 1) {
-                //TODO: check if both have the same color
+                //TODO: check if both have the same colored field
                 return true;
 
             }
@@ -1926,26 +1239,26 @@ export class ChessBoard {
                 switch (this._data.nextMoveBy) {
                     case color.black:
                         field = shiftField(target, offsets.N)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                             else if (target.rowIdx == 3 && p.piece.kind == pieceKind.none) {
                                 field = shiftField(field, offsets.N)
-                                if (isFieldOnBoard(field)) {
+                                if (this.board.isFieldOnBoard(field)) {
                                     p = this.peekFieldPieceOB(field)
                                     if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                                 }
                             }
                         }
                         field = shiftField(target, offsets.NW)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = shiftField(target, offsets.NE)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
@@ -1960,26 +1273,26 @@ export class ChessBoard {
                         return { valid: true, source: targetingP[0].field }
                     case color.white:
                         field = shiftField(target, offsets.S)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                             else if (target.rowIdx == 4 && p.piece.kind == pieceKind.none) {
                                 field = shiftField(field, offsets.S)
-                                if (isFieldOnBoard(field)) {
+                                if (this.board.isFieldOnBoard(field)) {
                                     p = this.peekFieldPieceOB(field)
                                     if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                                 }
                             }
                         }
                         field = shiftField(target, offsets.SW)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = shiftField(target, offsets.SE)
-                        if (isFieldOnBoard(field)) {
+                        if (this.board.isFieldOnBoard(field)) {
                             p = this.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
@@ -2025,10 +1338,10 @@ export class ChessBoard {
                 if (this._data.nextMoveBy != _piece.color) return undefined
                 let bishopLike = isOffsetBishopLike(_source, target)
                 if (!bishopLike.valid) return undefined;
-                let bishopMovesRaw = new BishopMovesRaw(_source)
+                let bishopMovesRaw = new BishopMovesRaw(_source, this.board)
                 let moveRayB = bishopMovesRaw.getRay(bishopLike.ray!)
                 for (let f of moveRayB) {
-                    if (boardFieldsAreEqual(f, target)) break
+                    if (sameFields(f, target)) break
                     if (!this.isFieldEmpty(f)) return undefined
                 }
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
@@ -2036,8 +1349,8 @@ export class ChessBoard {
                 break
             case pieceKind.Knight:
                 if (this._data.nextMoveBy != _piece.color) return undefined
-                let knightMoves = new KnightMovesRaw(_source)
-                let found = knightMoves.moves.find(x => boardFieldsAreEqual(x, target))
+                let knightMoves = new KnightMovesRaw(_source, this.board)
+                let found = knightMoves.moves.find(x => sameFields(x, target))
                 if (typeof found === 'undefined') return undefined
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
@@ -2046,10 +1359,10 @@ export class ChessBoard {
                 if (this._data.nextMoveBy != _piece.color) return undefined
                 let rookLike = isOffsetRookLike(_source, target)
                 if (!rookLike.valid) return undefined;
-                let rookMovesRaw = new RookMovesRaw(_source)
+                let rookMovesRaw = new RookMovesRaw(_source, this.board)
                 let moveRayR = rookMovesRaw.getRay(rookLike.ray!)
                 for (let f of moveRayR) {
-                    if (boardFieldsAreEqual(f, target)) break
+                    if (sameFields(f, target)) break
                     if (!this.isFieldEmpty(f)) return undefined
                 }
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
@@ -2066,10 +1379,10 @@ export class ChessBoard {
                 if (this._data.nextMoveBy != _piece.color) return undefined
                 let bishopLikeQ = isOffsetBishopLike(_source, target)
                 if (bishopLikeQ.valid) {
-                    let bishopMovesRawQ = new BishopMovesRaw(_source)
+                    let bishopMovesRawQ = new BishopMovesRaw(_source, this.board)
                     let moveRayQ = bishopMovesRawQ.getRay(bishopLikeQ.ray!)
                     for (let f of moveRayQ) {
-                        if (boardFieldsAreEqual(f, target)) break
+                        if (sameFields(f, target)) break
                         if (!this.isFieldEmpty(f)) return undefined
                     }
                     if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
@@ -2078,10 +1391,10 @@ export class ChessBoard {
                 else {
                     let rookLikeQ = isOffsetRookLike(_source, target)
                     if (rookLikeQ.valid) {
-                        let rookMovesRawQ = new RookMovesRaw(_source)
+                        let rookMovesRawQ = new RookMovesRaw(_source, this.board)
                         let moveRayRQ = rookMovesRawQ.getRay(rookLikeQ.ray!)
                         for (let f of moveRayRQ) {
-                            if (boardFieldsAreEqual(f, target)) break
+                            if (sameFields(f, target)) break
                             if (!this.isFieldEmpty(f)) return undefined
                         }
                         if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
@@ -2092,8 +1405,8 @@ export class ChessBoard {
                 break;
             case pieceKind.King: // no castle here
                 if (this._data.nextMoveBy != _piece.color) return undefined
-                let kingMovesRaw = new KingMovesRaw(_source)
-                let legalKingMove = kingMovesRaw.moves.find(x => boardFieldsAreEqual(x, target))
+                let kingMovesRaw = new KingMovesRaw(_source, this.board)
+                let legalKingMove = kingMovesRaw.moves.find(x => sameFields(x, target))
                 if (typeof legalKingMove === 'undefined') return undefined
                 if (!this.isFieldEmptyOrCapture(target, _piece.color)) return undefined
                 if (this.isCaptureOn(target, _piece.color)) _isCapture = true
@@ -2124,7 +1437,6 @@ export class ChessBoard {
         if (!validateOnly) {
             this.setPiece(pieceOB.piece, target)
             this.removePiece(_source)
-            //this._history.push(move)
             this.addMoveToHistory(move)
             this._data.enPassantPossible = false;
             this._data.enPassantField = undefined
@@ -2148,6 +1460,7 @@ export class ChessBoard {
         let p = this.peekField(source)
         if (p.kind != pieceKind.Pawn) return undefined
         if (this._data.nextMoveBy != p.color) return undefined
+        // TODO refactorize using the PawnRaw class
         switch (p.color) {
             case color.black: // row ++
                 if (target.colIdx == source.colIdx) { // forward move
@@ -2168,7 +1481,7 @@ export class ChessBoard {
                 }
                 else if (Math.abs(target.colIdx - source.colIdx) == 1) { // capture
                     if (target.rowIdx - source.rowIdx == 1) {
-                        if (this._data.enPassantPossible && boardFieldsAreEqual(this._data.enPassantField!, target)) {
+                        if (this._data.enPassantPossible && sameFields(this._data.enPassantField!, target)) {
                             _isCaptureEP = true
                         }
                         else {
@@ -2203,7 +1516,7 @@ export class ChessBoard {
                 }
                 else if (Math.abs(target.colIdx - source.colIdx) == 1) { // capture
                     if (source.rowIdx - target.rowIdx == 1) {
-                        if (this._data.enPassantPossible && boardFieldsAreEqual(this._data.enPassantField!, target)) {
+                        if (this._data.enPassantPossible && sameFields(this._data.enPassantField!, target)) {
                             _isCaptureEP = true
                         }
                         else {
@@ -2222,6 +1535,7 @@ export class ChessBoard {
         }
 
         // check if checked after move (i.e. was a pin)
+        // TODO use isCheckAfterMove()
         let tmpBoard = new ChessBoard()
         tmpBoard.setBoard(this._board)
         if (_isPromotion)
@@ -2277,7 +1591,6 @@ export class ChessBoard {
                         break
                 }
             }
-            //this._history.push(move)
             this.addMoveToHistory(move)
 
             this._data.enPassantPossible = false
@@ -2313,7 +1626,6 @@ export class ChessBoard {
 
         if (!validateOnly) {
             // validation complete, perform move
-            //this._history.push(move)
             this.addMoveToHistory(move)
 
             this.setPiece(castle.kingPiece, castle.kingTarget)

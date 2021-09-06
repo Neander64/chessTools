@@ -6,10 +6,74 @@ import * as path from "path"
 import * as chessGame from "./chess-game"
 import { parseChessable as Parser } from "./parseChessable"
 import * as chessBoard from "./chess-board"
+import { Piece, pieceKind } from './chess-board-pieces'
+
+import * as repl from "repl"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
+let p = Piece.blackPawn()
+console.log(p.isPiece)
+console.log(p.isEmpty)
+console.log(p.isNone)
+console.log(p.color)
+console.log(p.kind)
+console.log(p.key)
+process.exit()
+
+const prompt = 'ChessTools >'
+let cb = new chessBoard.ChessBoard()
+cb.loadFEN(cb.initialBoardFEN);
+const replServer = repl.start({ prompt: prompt, useColors: true }) // .context.m = msg
+
+replServer.defineCommand('move', {
+    help: 'move <SAN>',
+    action(m) {
+        this.clearBufferedCommand()
+        console.log(cb.move(m))
+        console.log(cb.toASCII())
+        this.displayPrompt()
+    }
+})
+replServer.defineCommand('FEN', {
+    help: 'FEN <FEN-String>',
+    action(fen) {
+        this.clearBufferedCommand()
+        console.log(cb.loadFEN(fen))
+        console.log(cb.toASCII())
+        this.displayPrompt()
+    }
+})
+replServer.defineCommand('getFEN', function getFEN() {
+    this.clearBufferedCommand()
+    console.log(cb.getFEN())
+    this.displayPrompt()
+})
+replServer.defineCommand('display', function display() {
+    this.clearBufferedCommand()
+    console.log(cb.toASCII())
+    this.displayPrompt()
+})
+replServer.defineCommand('clear', function display() {
+    this.clearBufferedCommand()
+    console.log(cb.clearBoard())
+    this.displayPrompt()
+})
+
+replServer.defineCommand('test', function getFEN() {
+    this.clearBufferedCommand()
+    cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 b kq e3 4 8")
+    console.log(cb.toASCII())
+    this.displayPrompt()
+})
+
+replServer.on('exit', () => {
+    process.exit()
+})
+
+
+/*
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");
 cb.loadFEN(cb.initialBoardFEN);
 console.log(cb.move('Nf3'))
@@ -36,7 +100,7 @@ console.log(cb.move('Ng8'), '#4')
 
 console.log(cb.move('Nf3')) // game ends #5 repetition
 console.log(cb.move('Nf6')) // false
-
+*/
 
 /*
 let b = chessBoard.EncodedPositionKey.encodeBoard(cb.board, cb.data, chessBoard.encodeType.Simple) as number[]

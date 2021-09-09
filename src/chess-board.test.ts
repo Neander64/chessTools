@@ -363,26 +363,45 @@ describe('Testing chess-board', () => {
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.board.currentPieceSpectrum()).toMatchInlineSnapshot(`
 Object {
-  "black": Object {
-    "bishops": 2,
-    "kings": 1,
-    "knights": 2,
-    "materialEvaluaton": 14250,
-    "pawns": 8,
-    "queens": 1,
-    "rooks": 2,
-    "total": 16,
+  "black": Map {
+    Piece {
+      "_key": 9,
+    } => 2,
+    Piece {
+      "_key": 10,
+    } => 2,
+    Piece {
+      "_key": 11,
+    } => 2,
+    Piece {
+      "_key": 12,
+    } => 1,
+    Piece {
+      "_key": 13,
+    } => 1,
+    Piece {
+      "_key": 14,
+    } => 8,
   },
-  "total": 32,
-  "white": Object {
-    "bishops": 2,
-    "kings": 1,
-    "knights": 2,
-    "materialEvaluaton": 14250,
-    "pawns": 8,
-    "queens": 1,
-    "rooks": 2,
-    "total": 16,
+  "white": Map {
+    Piece {
+      "_key": 6,
+    } => 8,
+    Piece {
+      "_key": 1,
+    } => 2,
+    Piece {
+      "_key": 2,
+    } => 2,
+    Piece {
+      "_key": 3,
+    } => 2,
+    Piece {
+      "_key": 4,
+    } => 1,
+    Piece {
+      "_key": 5,
+    } => 1,
   },
 }
 `)

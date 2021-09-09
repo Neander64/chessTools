@@ -544,20 +544,19 @@ export class ChessBoard {
     private drawByDeadPosition(): boolean { // insufficient material
         let spec = this.board.currentPieceSpectrum()
         // K vs K
-        if (spec.total == 2) return true;
-        if (spec.total == 3) {
+        if (spec.black.size == 1 && spec.white.size == 1) return true;
+        if (spec.black.size + spec.white.size == 3) {
             // K vs K+B
-            if (spec.black.bishops == 1 || spec.white.bishops == 1) return true;
+            if (spec.black.get(Piece.blackBishop()) == 1 || spec.white.get(Piece.whiteBishop()) == 1) return true;
             // K vs K+N
-            if (spec.black.knights == 1 || spec.white.knights == 1) return true;
+            if (spec.black.get(Piece.blackKnight()) == 1 || spec.white.get(Piece.whiteKnight()) == 1) return true;
         }
-        if (spec.black.total == 2 && spec.white.total == 2) {
+        if (spec.black.size == 2 && spec.white.size == 1 &&
+            spec.black.get(Piece.blackBishop()) == 1 && spec.white.get(Piece.whiteBishop()) == 1) {
             // K+B vs K+B, with Bishops on same color
-            if (spec.black.bishops == 1 && spec.white.bishops == 1) {
-                //TODO: check if both have the same colored field
-                return true;
+            //TODO: check if both have the same colored field
+            return true;
 
-            }
         }
         // TODO add check funtion for : almost certain draws
         // K vs K+N+N

@@ -79,27 +79,8 @@ export class ValidatedMove { // Data to do/undo moves
 
 // TODO change pieceStat to a map of piece to number, remove evaluation
 export type pieceStat = {
-    black: {
-        rooks: number,
-        knights: number,
-        bishops: number,
-        queens: number,
-        kings: number,
-        pawns: number,
-        total: number,
-        materialEvaluaton: number,
-    },
-    white: {
-        rooks: number,
-        knights: number,
-        bishops: number,
-        queens: number,
-        kings: number,
-        pawns: number,
-        total: number
-        materialEvaluaton: number,
-    }
-    total: number
+    black: Map<Piece, number>,
+    white: Map<Piece, number>
 }
 
 export interface IChessBoardRepresentation {
@@ -199,80 +180,24 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return result
     }
     currentPieceSpectrum(): pieceStat {
-        let result: pieceStat = {
-            black: { rooks: 0, knights: 0, bishops: 0, queens: 0, kings: 0, pawns: 0, total: 0, materialEvaluaton: 0 },
-            white: { rooks: 0, knights: 0, bishops: 0, queens: 0, kings: 0, pawns: 0, total: 0, materialEvaluaton: 0 },
-            total: 0
+        let result = {
+            black: new Map<Piece, number>(),
+            white: new Map<Piece, number>()
         }
-        const evaluation = { // Centipawns, Larry Kaufman 2012
-            rooks: 525, knights: 350, bishops: 350, queens: 1000, kings: 10000, pawns: 100
-        }
+
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 let p = this.peekField({ colIdx: c, rowIdx: r })
-                if (p.isPiece) {
+                if (p.isPiece)
                     switch (p.color) {
                         case color.black:
-                            switch (p.kind) {
-                                case pieceKind.Rook:
-                                    result.black.rooks++
-                                    result.black.materialEvaluaton += evaluation.rooks
-                                    break
-                                case pieceKind.Knight:
-                                    result.black.knights++
-                                    result.black.materialEvaluaton += evaluation.knights
-                                    break
-                                case pieceKind.Bishop:
-                                    result.black.bishops++
-                                    result.black.materialEvaluaton += evaluation.bishops
-                                    break
-                                case pieceKind.Queen:
-                                    result.black.queens++
-                                    result.black.materialEvaluaton += evaluation.queens
-                                    break
-                                case pieceKind.King:
-                                    result.black.kings++
-                                    result.black.materialEvaluaton += evaluation.kings
-                                    break
-                                case pieceKind.Pawn:
-                                    result.black.pawns++
-                                    result.black.materialEvaluaton += evaluation.pawns
-                                    break
-                            }
-                            result.black.total++
+                            const countB = result.black.get(p) || 0
+                            result.black.set(p, countB + 1)
                             break
                         case color.white:
-                            switch (p.kind) {
-                                case pieceKind.Rook:
-                                    result.white.rooks++
-                                    result.white.materialEvaluaton += evaluation.rooks
-                                    break
-                                case pieceKind.Knight:
-                                    result.white.knights++
-                                    result.white.materialEvaluaton += evaluation.knights
-                                    break
-                                case pieceKind.Bishop:
-                                    result.white.bishops++
-                                    result.white.materialEvaluaton += evaluation.bishops
-                                    break
-                                case pieceKind.Queen:
-                                    result.white.queens++
-                                    result.white.materialEvaluaton += evaluation.queens
-                                    break
-                                case pieceKind.King:
-                                    result.white.kings++
-                                    result.white.materialEvaluaton += evaluation.kings
-                                    break
-                                case pieceKind.Pawn:
-                                    result.white.pawns++
-                                    result.white.materialEvaluaton += evaluation.pawns
-                                    break
-                            }
-                            result.white.total++
-                            break
+                            const countW = result.white.get(p) || 0
+                            result.white.set(p, countW + 1)
                     }
-                    result.total++
-                }
             }
         }
         return result;

@@ -361,7 +361,7 @@ describe('Testing chess-board', () => {
   test('testing piece spectrum', () => {
     var cb = new chessBoard.ChessBoard()
     cb.loadFEN(cb.initialBoardFEN)
-    expect(cb.currentPieceSpectrum()).toMatchInlineSnapshot(`
+    expect(cb.board.currentPieceSpectrum()).toMatchInlineSnapshot(`
 Object {
   "black": Object {
     "bishops": 2,

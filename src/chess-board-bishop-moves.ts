@@ -1,5 +1,5 @@
 import { boardFieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board'
+import { IChessBoardRepresentation } from './chess-board-representation'
 
 export const enum bishopRay { // 1-2,3-4 are opposites
     SW = 'SW',
@@ -7,11 +7,16 @@ export const enum bishopRay { // 1-2,3-4 are opposites
     NW = 'NW',
     SE = 'SE',
 }
+
 export class BishopMovesRaw {
-    moves_SW: boardFieldIdx[]
-    moves_NE: boardFieldIdx[]
-    moves_NW: boardFieldIdx[]
-    moves_SE: boardFieldIdx[]
+
+    private moves_SW: boardFieldIdx[]
+    private moves_NE: boardFieldIdx[]
+    private moves_NW: boardFieldIdx[]
+    private moves_SE: boardFieldIdx[]
+
+    static readonly rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
+
     constructor(startField: boardFieldIdx, board: IChessBoardRepresentation) {
         this.moves_SW = this.generateRay(startField, offsets.SW, board)
         this.moves_NE = this.generateRay(startField, offsets.NE, board)
@@ -36,7 +41,7 @@ export class BishopMovesRaw {
             case bishopRay.NW: return this.moves_NW
             case bishopRay.SE: return this.moves_SE
         }
-        return []; // unreachable
+        //return []; // unreachable
     }
 }
 /* optional implementation with iterator

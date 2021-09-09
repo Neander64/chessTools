@@ -1,5 +1,7 @@
 import { Piece } from './chess-board-pieces'
 
+//TODO decouple from implementation
+// TODO mapping to Notation
 export type boardFieldIdx = {
     colIdx: number,
     rowIdx: number

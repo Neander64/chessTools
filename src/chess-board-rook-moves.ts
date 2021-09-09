@@ -1,8 +1,8 @@
 import { boardFieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board'
+import { IChessBoardRepresentation } from './chess-board-representation'
 
 
-export const enum rookRay {// 1-2,3-4 are opposites
+export const enum rookRay {
     W = 'W',
     E = 'E',
     S = 'S',
@@ -10,10 +10,14 @@ export const enum rookRay {// 1-2,3-4 are opposites
 }
 
 export class RookMovesRaw {
+
     moves_W: boardFieldIdx[]
     moves_E: boardFieldIdx[]
     moves_S: boardFieldIdx[]
     moves_N: boardFieldIdx[]
+
+    static readonly rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
+
     constructor(startField: boardFieldIdx, board: IChessBoardRepresentation) {
         this.moves_W = this.generateRay(startField, offsets.W, board)
         this.moves_E = this.generateRay(startField, offsets.E, board)
@@ -42,7 +46,7 @@ export class RookMovesRaw {
         return []; // unreachable
     }
 }
-/* optional implementation with iterator
+/* optional experimental implementation with iterator
 export class RookRayIt implements IterableIterator<boardFieldIdx> {
     private _startField: boardFieldIdx;
     private _curOffset: { colOffset: number, rowOffset: number };

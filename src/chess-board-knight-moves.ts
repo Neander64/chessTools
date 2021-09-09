@@ -1,6 +1,5 @@
 import { boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board'
-
+import { IChessBoardRepresentation } from './chess-board-representation'
 
 export class KnightMovesRaw {
     moves: boardFieldIdx[]

@@ -1,12 +1,19 @@
-import { boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board'
+import { boardFieldIdx, offsets, sameFields, shiftField } from './chess-board-internal-types'
+import { IChessBoardRepresentation } from './chess-board-representation'
 import { pieceKind } from './chess-board-pieces'
-import { color } from './chess-color'
+import { color, otherColor } from './chess-color'
 
 export type pawnTarget = {
     target: boardFieldIdx,
     isPromotion: boolean
 }
+export type pawnMove = {
+    isPromotion: boolean,
+    enPassantField: boardFieldIdx | undefined
+    isCapture: boolean
+
+}
+
 
 export class PawnMovesRaw {
     static readonly startRowBlack = 1
@@ -56,6 +63,52 @@ export class PawnMovesRaw {
         target = shiftField(startField, cfg.capture_right)
         if (board.isFieldOnBoard(target))
             this.attacks.push({ target: target, isPromotion: target.rowIdx == cfg.promotionRow })
+
+    }
+
+    static isLegalPromotionPieceKind(kind_: pieceKind): boolean {
+        for (let k of PawnMovesRaw.promotionPieces)
+            if (k == kind_) return true
+        return false
+    }
+
+    static checkPawnMove(source: boardFieldIdx, target: boardFieldIdx, color_: color): pawnMove | undefined {
+        // prepare to validate
+        let _isPromotion = false
+        let _enPassantField: boardFieldIdx | undefined = undefined
+        let _isCapture = false
+        let cfg = PawnMovesRaw.config[color_]
+        if (source.colIdx == target.colIdx) { // forward
+            let t1 = shiftField(source, cfg.direction) // 1-step
+            if (sameFields(target, t1)) {
+                if (target.rowIdx == cfg.promotionRow) _isPromotion = true
+            }
+            else if (source.rowIdx == cfg.startRow) {
+                let t2 = shiftField(source, cfg.direction, 2) // 2-step
+                if (sameFields(target, t2)) {
+                    _enPassantField = t1
+                }
+                else return undefined
+            }
+            else return undefined
+        }
+        else {
+            let tl = shiftField(source, cfg.capture_left)
+            let tr = shiftField(source, cfg.capture_right)
+            if (sameFields(target, tl) || sameFields(target, tr)) {
+                _isCapture = true
+                if (target.rowIdx == cfg.promotionRow) _isPromotion = true
+            }
+            else return undefined
+        }
+        return { isPromotion: _isPromotion, enPassantField: _enPassantField, isCapture: _isCapture }
+    }
+
+    static getPawnFieldOfCaptureEP(targetEP: boardFieldIdx, colorOfAttacker: color): boardFieldIdx {
+        // no validation here, we assume this to be a valid e.p. capture
+        let cfg = PawnMovesRaw.config[otherColor(colorOfAttacker)]
+        return shiftField(targetEP, cfg.direction) // that is the place where the pawn should stand
     }
 }
+
 

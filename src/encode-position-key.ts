@@ -1,6 +1,7 @@
-import * as cb from "./chess-board"
+import { IChessBoardData } from "./chess-board"
 import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces"
 import { boardFieldIdx } from './chess-board-internal-types'
+import { IChessBoardRepresentation } from './chess-board-representation'
 
 export enum encodeType {
     Simple,
@@ -75,7 +76,7 @@ export class EncodedPositionKey {
     static readonly QUEENSIDE_CASTLE_BLACK = 0b000000000010000
     static readonly ENPASSANT = 0b000000000100000
 
-    static makeFlags(cbData: cb.IChessBoardData): number {
+    static makeFlags(cbData: IChessBoardData): number {
         let result = 0x0000
         if (cbData.isWhitesMove) result |= this.IS_WHITE_MOVE
         if (cbData.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
@@ -100,7 +101,7 @@ export class EncodedPositionKey {
     //}
 
 
-    static encodeBoard(board_: cb.IChessBoardRepresentation, cbData: cb.IChessBoardData, encodeType_: encodeType): number[] | BigInt {
+    static encodeBoard(board_: IChessBoardRepresentation, cbData: IChessBoardData, encodeType_: encodeType): number[] | BigInt {
         let header = this.makeFlags(cbData)
         switch (encodeType_) {
             case encodeType.Simple:
@@ -119,7 +120,7 @@ export class EncodedPositionKey {
                 return this.encodeBoard_FENLikeLong_BigInt(board_, header)
         }
     }
-    private static encodeBoard_BoardLike_BigInt(board_: cb.IChessBoardRepresentation, header: number): BigInt {
+    private static encodeBoard_BoardLike_BigInt(board_: IChessBoardRepresentation, header: number): BigInt {
         // TODO I feel like there is an error with the first Bits comparing the result with the array values
         let result = 1n // adding 1 Bit to avoid cutting leading zeros
         for (let row = 0; row < 8; row++)
@@ -132,7 +133,7 @@ export class EncodedPositionKey {
         result = (result << 15n) | BigInt(header)
         return result
     }
-    private static encodeBoard_FENLike_BigInt(board_: cb.IChessBoardRepresentation, header: number): BigInt {
+    private static encodeBoard_FENLike_BigInt(board_: IChessBoardRepresentation, header: number): BigInt {
         let result = 1n // adding 1 Bit to avoid cutting leading zeros
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
@@ -152,7 +153,7 @@ export class EncodedPositionKey {
         result = (result << 15n) | BigInt(header)
         return result
     }
-    private static encodeBoard_FENLikeLong_BigInt(board_: cb.IChessBoardRepresentation, header: number): BigInt {
+    private static encodeBoard_FENLikeLong_BigInt(board_: IChessBoardRepresentation, header: number): BigInt {
         let result = 1n // adding 1 Bit to avoid cutting leading zeros
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
@@ -173,7 +174,7 @@ export class EncodedPositionKey {
         return result
     }
 
-    private static encodeBoard_simple(board_: cb.IChessBoardRepresentation, header: number): number[] {
+    private static encodeBoard_simple(board_: IChessBoardRepresentation, header: number): number[] {
         let result: number[] = []
         for (let row = 0; row < 8; row++)
             for (let col = 0; col < 8; col++) {
@@ -183,7 +184,7 @@ export class EncodedPositionKey {
         result.push(header)
         return result
     }
-    private static encodeBoard_BoardLike(board_: cb.IChessBoardRepresentation, header: number): number[] {
+    private static encodeBoard_BoardLike(board_: IChessBoardRepresentation, header: number): number[] {
         let result: number[] = []
         for (let row = 0; row < 8; row++)
             for (let col = 0; col < 8; col++) {
@@ -200,7 +201,7 @@ export class EncodedPositionKey {
     //     let result: number[] = []
     //     return result
     // }
-    private static encodeBoard_FENLikeLong(board_: cb.IChessBoardRepresentation, header: number): number[] {
+    private static encodeBoard_FENLikeLong(board_: IChessBoardRepresentation, header: number): number[] {
         let result: number[] = []
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0

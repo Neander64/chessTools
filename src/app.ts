@@ -13,17 +13,17 @@ import * as repl from "repl"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let p = Piece.blackPawn()
-console.log(p.isPiece)
-console.log(p.isEmpty)
-console.log(p.isNone)
-console.log(p.color)
-console.log(p.kind)
-console.log(p.key)
+let cb = new chessBoard.ChessBoard()
+cb.loadFEN(cb.initialBoardFEN);
+console.log(cb.toASCII())
+console.log(cb.move("e2f3"))
+console.log(cb.toASCII())
 process.exit()
 
+
+
 const prompt = 'ChessTools >'
-let cb = new chessBoard.ChessBoard()
+//let cb = new chessBoard.ChessBoard()
 cb.loadFEN(cb.initialBoardFEN);
 const replServer = repl.start({ prompt: prompt, useColors: true }) // .context.m = msg
 
@@ -50,7 +50,7 @@ replServer.defineCommand('getFEN', function getFEN() {
     console.log(cb.getFEN())
     this.displayPrompt()
 })
-replServer.defineCommand('display', function display() {
+replServer.defineCommand('board', function display() {
     this.clearBufferedCommand()
     console.log(cb.toASCII())
     this.displayPrompt()

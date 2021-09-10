@@ -1,17 +1,17 @@
 import { RookMovesRaw, isOffsetRookLike, rookRay } from './chess-board-rook-moves'
-import { ChessBoardRepresentation } from './chess-board-representation'
+import { ChessBoardRepresentation, Field } from './chess-board-representation'
 import { ChessBoardData } from './chess-board'
 
-describe('Testing chess-board-bishop-moves', () => {
+describe('Testing chess-board-rook-moves', () => {
 
-    test('testing bishop moves', () => {
-        let source = { colIdx: 0, rowIdx: 0 }
+    test('testing rook moves', () => {
+        let source = new Field(0, 0)
         let test: boolean[][] = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
             for (let r = 0; r < 8; r++) {
-                let v = isOffsetRookLike(source, { colIdx: c, rowIdx: r })
-                test[c][r] = v.valid
+                let v = source.isHorizontalVertical(new Field(c, r))
+                test[c][r] = (typeof v !== 'undefined')
             }
         }
         let result: string[] = []
@@ -33,13 +33,13 @@ Array [
 ]
 `)
 
-        source = { colIdx: 7, rowIdx: 7 }
+        source = new Field(7, 7)
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
             for (let r = 0; r < 8; r++) {
-                let v = isOffsetRookLike(source, { colIdx: c, rowIdx: r })
-                test[c][r] = v.valid
+                let v = source.isHorizontalVertical(new Field(c, r))
+                test[c][r] = (typeof v !== 'undefined')
             }
         }
         result = []
@@ -61,13 +61,13 @@ Array [
 ]
 `)
 
-        source = { colIdx: 5, rowIdx: 5 }
+        source = new Field(5, 5)
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
             for (let r = 0; r < 8; r++) {
-                let v = isOffsetRookLike(source, { colIdx: c, rowIdx: r })
-                test[c][r] = v.valid
+                let v = source.isHorizontalVertical(new Field(c, r))
+                test[c][r] = (typeof v !== 'undefined')
             }
         }
         result = []
@@ -90,10 +90,8 @@ Array [
 `)
 
 
-        source = { colIdx: 5, rowIdx: 5 }
-        let data = new ChessBoardData()
-        let cbr = new ChessBoardRepresentation(data)
-        let b = new RookMovesRaw(source, cbr)
+        source = new Field(5, 5)
+        let b = new RookMovesRaw(source)
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -103,7 +101,7 @@ Array [
         }
         let r = b.getRay(rookRay.N)
         for (let x of r) {
-            test[x.colIdx][x.rowIdx] = true
+            test[x.file][x.rank] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -124,7 +122,7 @@ Array [
 ]
 `)
 
-        b = new RookMovesRaw(source, cbr)
+        b = new RookMovesRaw(source)
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -134,7 +132,7 @@ Array [
         }
         r = b.getRay(rookRay.S)
         for (let x of r) {
-            test[x.colIdx][x.rowIdx] = true
+            test[x.file][x.rank] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -156,7 +154,7 @@ Array [
 `)
 
 
-        b = new RookMovesRaw(source, cbr)
+        b = new RookMovesRaw(source)
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -166,38 +164,7 @@ Array [
         }
         r = b.getRay(rookRay.E)
         for (let x of r) {
-            test[x.colIdx][x.rowIdx] = true
-        }
-        result = []
-        for (let r = 0; r < 8; r++) {
-            result[r] = ''
-            for (let c = 0; c < 8; c++)
-                result[r] += (test[c][r]) ? ' X ' : '   '
-        }
-        expect(result).toMatchInlineSnapshot(`
-Array [
-  "                        ",
-  "                        ",
-  "                        ",
-  "                        ",
-  "                        ",
-  " X  X  X  X  X          ",
-  "                        ",
-  "                        ",
-]
-`)
-
-        b = new RookMovesRaw(source, cbr)
-        test = []
-        for (let c = 0; c < 8; c++) {
-            test[c] = []
-            for (let r = 0; r < 8; r++) {
-                test[c][r] = false
-            }
-        }
-        r = b.getRay(rookRay.W)
-        for (let x of r) {
-            test[x.colIdx][x.rowIdx] = true
+            test[x.file][x.rank] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -213,6 +180,37 @@ Array [
   "                        ",
   "                        ",
   "                   X  X ",
+  "                        ",
+  "                        ",
+]
+`)
+
+        b = new RookMovesRaw(source)
+        test = []
+        for (let c = 0; c < 8; c++) {
+            test[c] = []
+            for (let r = 0; r < 8; r++) {
+                test[c][r] = false
+            }
+        }
+        r = b.getRay(rookRay.W)
+        for (let x of r) {
+            test[x.file][x.rank] = true
+        }
+        result = []
+        for (let r = 0; r < 8; r++) {
+            result[r] = ''
+            for (let c = 0; c < 8; c++)
+                result[r] += (test[c][r]) ? ' X ' : '   '
+        }
+        expect(result).toMatchInlineSnapshot(`
+Array [
+  "                        ",
+  "                        ",
+  "                        ",
+  "                        ",
+  "                        ",
+  " X  X  X  X  X          ",
   "                        ",
   "                        ",
 ]

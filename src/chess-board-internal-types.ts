@@ -22,22 +22,22 @@ export type fieldOffset = {
 
 export const offsets = {
     N: { dCol: 0, dRow: -1 },
-    W: { dCol: 1, dRow: 0 },
+    W: { dCol: -1, dRow: 0 },
     S: { dCol: 0, dRow: 1 },
-    E: { dCol: -1, dRow: 0 },
-    NW: { dCol: 1, dRow: -1 },
-    SW: { dCol: 1, dRow: 1 },
-    SE: { dCol: -1, dRow: 1 },
-    NE: { dCol: -1, dRow: -1 },
+    E: { dCol: 1, dRow: 0 },
+    NW: { dCol: -1, dRow: -1 },
+    SW: { dCol: -1, dRow: 1 },
+    SE: { dCol: 1, dRow: 1 },
+    NE: { dCol: 1, dRow: -1 },
     //--- Knight moves
-    NNE: { dCol: -1, dRow: -2 },
-    NNW: { dCol: 1, dRow: -2 },
-    SSE: { dCol: -1, dRow: 2 },
-    SSW: { dCol: 1, dRow: 2 },
-    WWN: { dCol: 2, dRow: -1 },
-    WWS: { dCol: 2, dRow: 1 },
-    EEN: { dCol: -2, dRow: -1 },
-    EES: { dCol: -2, dRow: 1 },
+    NNE: { dCol: 1, dRow: -2 },
+    NNW: { dCol: -1, dRow: -2 },
+    SSE: { dCol: 1, dRow: 2 },
+    SSW: { dCol: -1, dRow: 2 },
+    WWN: { dCol: -2, dRow: -1 },
+    WWS: { dCol: -2, dRow: 1 },
+    EEN: { dCol: 2, dRow: -1 },
+    EES: { dCol: 2, dRow: 1 },
 }
 
 export function shiftField(field: boardFieldIdx, offset: fieldOffset, factor: number = 1): boardFieldIdx {

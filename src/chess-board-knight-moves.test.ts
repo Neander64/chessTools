@@ -1,21 +1,17 @@
-import { ChessBoardRepresentation } from './chess-board-representation'
-import { ChessBoardData } from './chess-board'
+import { Field } from './chess-board-representation'
 import { KnightMovesRaw } from './chess-board-knight-moves'
-import { sameFields } from './chess-board-internal-types'
 
 describe('Testing chess-board-bishop-moves', () => {
 
     test('testing knight moves', () => {
-        let source = { colIdx: 0, rowIdx: 0 }
-        let data = new ChessBoardData()
-        let cbr = new ChessBoardRepresentation(data)
-        let b = new KnightMovesRaw(source, cbr)
+        let source = new Field(0, 0)
+        let b = new KnightMovesRaw(source)
         let test: boolean[][] = []
         let v = b.moves
         for (let c = 0; c < 8; c++) {
             test[c] = []
             for (let r = 0; r < 8; r++) {
-                test[c][r] = (v.find(x => sameFields(x, { colIdx: c, rowIdx: r }))) ? true : false
+                test[c][r] = (v.find(x => x.sameI(c, r))) ? true : false
 
             }
         }
@@ -38,14 +34,14 @@ Array [
 ]
 `)
 
-        source = { colIdx: 4, rowIdx: 4 }
-        b = new KnightMovesRaw(source, cbr)
+        source = new Field(4, 4)
+        b = new KnightMovesRaw(source)
         test = []
         v = b.moves
         for (let c = 0; c < 8; c++) {
             test[c] = []
             for (let r = 0; r < 8; r++) {
-                test[c][r] = (v.find(x => sameFields(x, { colIdx: c, rowIdx: r }))) ? true : false
+                test[c][r] = (v.find(x => x.sameI(c, r))) ? true : false
 
             }
         }

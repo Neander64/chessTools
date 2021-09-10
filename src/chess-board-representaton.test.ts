@@ -1,11 +1,65 @@
-import { ChessBoardRepresentation } from './chess-board-representation'
+import { ChessBoardRepresentation, Field, offsetsEnum } from './chess-board-representation'
 import { ChessBoardData } from './chess-board'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
 
 describe('Testing chess-board-representation', () => {
 
+    test('testing Field implementation', () => {
+        let f = new Field(0, 0)
+        expect(f.isOnBoard()).toBe(true)
+        expect(f.file).toBe(0)
+        expect(f.rank).toBe(0)
+        expect(f.notation).toBe('a8')
+        let f1 = f.shift(offsetsEnum.N)
+        expect(f1.isOnBoard()).toBe(false)
+        expect(f1.same(f)).toBe(false)
+        expect(f.same(f1)).toBe(false)
+
+        f = new Field(5, 5)
+        expect(f.notation).toBe('f3')
+        f1 = f.shift(offsetsEnum.N)
+        expect(f1.notation).toBe('f4')
+        f1 = f.shift(offsetsEnum.W)
+        expect(f1.notation).toBe('e3')
+        f1 = f.shift(offsetsEnum.S)
+        expect(f1.notation).toBe('f2')
+        f1 = f.shift(offsetsEnum.E)
+        expect(f1.notation).toBe('g3')
+
+        f1 = f.shift(offsetsEnum.NW)
+        expect(f1.notation).toBe('e4')
+        f1 = f.shift(offsetsEnum.SW)
+        expect(f1.notation).toBe('e2')
+        f1 = f.shift(offsetsEnum.SE)
+        expect(f1.notation).toBe('g2')
+        f1 = f.shift(offsetsEnum.NE)
+        expect(f1.notation).toBe('g4')
+
+        f1 = f.shift(offsetsEnum.NNE)
+        expect(f1.notation).toBe('g5')
+        f1 = f.shift(offsetsEnum.NNW)
+        expect(f1.notation).toBe('e5')
+        f1 = f.shift(offsetsEnum.SSE)
+        expect(f1.notation).toBe('g1')
+        f1 = f.shift(offsetsEnum.SSW)
+        expect(f1.notation).toBe('e1')
+        f1 = f.shift(offsetsEnum.WWN)
+        expect(f1.notation).toBe('d4')
+        f1 = f.shift(offsetsEnum.WWS)
+        expect(f1.notation).toBe('d2')
+        f1 = f.shift(offsetsEnum.EEN)
+        expect(f1.notation).toBe('h4')
+        f1 = f.shift(offsetsEnum.EES)
+        expect(f1.notation).toBe('h2')
+
+        f1 = f.shift(offsetsEnum.N, 2)
+        expect(f1.notation).toBe('f5')
+
+    })
+
     test('testing validation (Rook)', () => {
+
         let data = new ChessBoardData()
         let cbr = new ChessBoardRepresentation(data)
         cbr.clearBoard()

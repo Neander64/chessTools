@@ -1,5 +1,5 @@
 import { Piece, pieceKeyType, pieceKind } from './chess-board-pieces'
-import { pieceOnBoard, boardFieldIdx, sameFields, fieldIdx } from './chess-board-internal-types'
+import { pieceOnBoard, boardFieldIdx, sameFields, fieldIdx, fieldOffset } from './chess-board-internal-types'
 import { color, otherColor } from './chess-color'
 import { AttackedFields } from './chess-board-attacked-fields'
 import { BishopMovesRaw, isOffsetBishopLike } from './chess-board-bishop-moves'
@@ -12,7 +12,142 @@ import { moveOnBoard, IChessBoardData } from './chess-board'
 // TODO decouple boardFieldIdx from Representation, introduce internal boardIdx
 
 export type fileType = number
+export type fileNotationType = string
 export type rankType = number
+export enum offsetsEnum {
+    //--- Rook-Like
+    N, W, S, E,
+    //--- Bishop-Like
+    NW, SW, SE, NE,
+    //--- Knight-Like
+    NNE, NNW, SSE, SSW, WWN, WWS, EEN, EES,
+    none
+}
+type fieldOffsetN = {
+    d_file: number,
+    d_rank: number
+}
+
+export interface IField {
+    shift(offset: offsetsEnum, factor?: number): IField
+    same(f: IField): boolean
+    isOnBoard(): boolean
+    //fieldFromIdx(file/*col*/: number, rank/*row*/: number): IField
+    //fieldFrom(fileNotation/*col*/: fileNotationType, rank/*row*/: number): IField
+    get file(): fileType
+    get rank(): rankType
+    get notation(): string
+    createField(file_: fileType, rank_: rankType): IField
+    isDiagonal(target: IField): offsetsEnum | undefined
+    isHorizontalVertical(target: IField): offsetsEnum | undefined
+
+    // TEMP Helper, TODO remove after migration
+    boardFieldIdx(): boardFieldIdx
+    sameF(f: boardFieldIdx): boolean
+    sameI(file_: fileType, rank_: rankType): boolean
+}
+export class Field implements IField {
+    private _file: fileType
+    private _rank: rankType
+    constructor(file_: fileType, rank_: rankType) {
+        this._file = file_
+        this._rank = rank_
+    }
+    shift(offset_: offsetsEnum, factor: number = 1): Field {
+        let fieldOffset = Field.offset(offset_)
+        return new Field(this._file + fieldOffset.d_file * factor, this._rank + fieldOffset.d_rank * factor)
+    }
+    same(f: Field): boolean {
+        return this._file == f._file && this._rank == f._rank
+    }
+    sameF(f: boardFieldIdx): boolean { // TODO remove after Migration
+        return this._file == f.colIdx && this._rank == f.rowIdx
+    }
+    sameI(file_: fileType, rank_: rankType): boolean { // TODO remove after Migration
+        return this._file == file_ && this._rank == rank_
+    }
+    isOnBoard(): boolean {
+        return (this._file >= 0 && this._file < 8 && this._rank >= 0 && this._rank < 8)
+    }
+    createField(file_: fileType, rank_: rankType): Field {
+        return new Field(file_, rank_)
+    }
+
+    get file(): fileType { return this._file }
+    get rank(): rankType { return this._rank }
+    get notation(): string {
+        return 'abcdefgh'.charAt(this._file) + '87654321'.charAt(this._rank)
+    }
+    static offset(offset_: offsetsEnum): fieldOffsetN {
+        const mapOffsets: Map<offsetsEnum, fieldOffsetN> = new Map([
+            [offsetsEnum.N, { d_file: 0, d_rank: -1 }],
+            [offsetsEnum.W, { d_file: -1, d_rank: 0 }],
+            [offsetsEnum.S, { d_file: 0, d_rank: 1 }],
+            [offsetsEnum.E, { d_file: 1, d_rank: 0 }],
+            [offsetsEnum.NW, { d_file: -1, d_rank: -1 }],
+            [offsetsEnum.SW, { d_file: -1, d_rank: 1 }],
+            [offsetsEnum.SE, { d_file: 1, d_rank: 1 }],
+            [offsetsEnum.NE, { d_file: 1, d_rank: -1 }],
+
+            [offsetsEnum.NNE, { d_file: 1, d_rank: -2 }],
+            [offsetsEnum.NNW, { d_file: -1, d_rank: -2 }],
+            [offsetsEnum.SSE, { d_file: 1, d_rank: 2 }],
+            [offsetsEnum.SSW, { d_file: -1, d_rank: 2 }],
+            [offsetsEnum.WWN, { d_file: -2, d_rank: -1 }],
+            [offsetsEnum.WWS, { d_file: -2, d_rank: 1 }],
+            [offsetsEnum.EEN, { d_file: 2, d_rank: -1 }],
+            [offsetsEnum.EES, { d_file: 2, d_rank: 1 }],
+            [offsetsEnum.none, { d_file: 0, d_rank: 0 }],
+        ])
+        return mapOffsets.get(offset_) || { d_file: 0, d_rank: 0 }
+    }
+    // fieldFromIdx(file/*col*/: fileType, rank/*row*/: rankType): Field {
+    // }
+    // fieldFrom(file/*col*/: fileNotationType, rank/*row*/: rankType): Field {
+    // }
+
+    isDiagonal(target: Field): offsetsEnum | undefined {
+        if (Math.abs(this.rank - target.rank) == Math.abs(this.file - target.file)) {
+            if (this.file > target.file) {
+                if (this.rank > target.rank)    // - -
+                    return offsetsEnum.NW
+                else                            // - +
+                    return offsetsEnum.SW
+            }
+            else {
+                if (this.rank > target.rank)    // + -
+                    return offsetsEnum.NE
+                else                            // + +
+                    return offsetsEnum.SE
+            }
+        }
+        return undefined;
+    }
+
+    isHorizontalVertical(target: Field): offsetsEnum | undefined {
+        if ((this.rank == target.rank) || (this.file == target.file)) {
+            if (this.file == target.file) {
+                if (this.rank < target.rank)
+                    return offsetsEnum.S  // 0 +
+                else
+                    return offsetsEnum.N  // 0 -
+            }
+            else { // source.rowIdx == target.rowIdx
+                if (this.file < target.file)
+                    return offsetsEnum.E  // + 0
+                else
+                    return offsetsEnum.W  // - 0
+            }
+        }
+        return undefined;
+    }
+
+    // TEMP Helper, TODO remove after migration
+    boardFieldIdx(): boardFieldIdx { return { colIdx: this._file, rowIdx: this._rank } }
+    static createFromBoardFieldIdx(field: boardFieldIdx): Field { return new Field(field.colIdx, field.rowIdx) }
+
+}
+
 
 export class ValidatedMove { // Data to do/undo moves
     isValid: boolean
@@ -210,47 +345,46 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private getAttackedFieldsByRook(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let rookMoves: boardFieldIdx[] = []
-        let f: boardFieldIdx
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this)
+        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
         for (const ray of RookMovesRaw.rays) {
-            for (f of rookMovesRaw.getRay(ray)) {
-                rookMoves.push(f)
-                if (!this.isFieldEmpty(f)) break
+            for (let f of rookMovesRaw.getRay(ray)) {
+                rookMoves.push(f.boardFieldIdx())
+                if (!this.isFieldEmpty(f.boardFieldIdx())) break
             }
         }
         return rookMoves;
     }
     private getAttackedFieldsByKnight(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let knightMoves = new KnightMovesRaw(pieceOB_.field, this)
-        return knightMoves.moves
+        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) //TODO
+        let result: boardFieldIdx[] = []
+        for (let f of knightMoves.moves) result.push(f.boardFieldIdx()) // TODO remove after type migration
+        return result
     }
     private getAttackedFieldsByBishop(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let bishopMoves: boardFieldIdx[] = []
-        let f: boardFieldIdx
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this)
+        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
         for (const ray of BishopMovesRaw.rays) {
-            for (f of bishopMovesRaw.getRay(ray)) {
-                bishopMoves.push(f)
-                if (!this.isFieldEmpty(f)) break
+            for (let f of bishopMovesRaw.getRay(ray)) {
+                bishopMoves.push(f.boardFieldIdx())
+                if (!this.isFieldEmpty(f.boardFieldIdx())) break
             }
         }
         return bishopMoves
     }
     private getAttackedFieldsByQueen(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let queenMoves: boardFieldIdx[] = []
-        let f: boardFieldIdx
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this)
+        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
         for (const ray of RookMovesRaw.rays) {
-            for (f of rookMovesRaw.getRay(ray)) {
-                queenMoves.push(f);
-                if (!this.isFieldEmpty(f)) break
+            for (let f of rookMovesRaw.getRay(ray)) {
+                queenMoves.push(f.boardFieldIdx());
+                if (!this.isFieldEmpty(f.boardFieldIdx())) break
             }
         }
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this)
+        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
         for (const ray of BishopMovesRaw.rays) {
-            for (f of bishopMovesRaw.getRay(ray)) {
-                queenMoves.push(f)
-                if (!this.isFieldEmpty(f)) break
+            for (let f of bishopMovesRaw.getRay(ray)) {
+                queenMoves.push(f.boardFieldIdx())
+                if (!this.isFieldEmpty(f.boardFieldIdx())) break
             }
         }
         return queenMoves
@@ -323,56 +457,53 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private getLegalMovesOfRook(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let target: boardFieldIdx
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this)
+        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
         for (const ray of RookMovesRaw.rays) {
-            for (target of rookMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target)
+            for (let target of rookMovesRaw.getRay(ray)) {
+                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target)) break
+                if (!this.isFieldEmpty(target.boardFieldIdx())) break
             }
         }
         return result
     }
     private getLegalMovesOfKnight(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let knightMoves = new KnightMovesRaw(pieceOB_.field, this)
+        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO adjust after migration
         for (let target of knightMoves.moves) {
-            let m = this.validateMove(pieceOB_, target)
+            let m = this.validateMove(pieceOB_, target.boardFieldIdx()) // TODO adjust after migration
             if (m.isValid) result.push(m.moveOnBoard)
         }
         return result
     }
     private getLegalMovesOfBishop(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let target: boardFieldIdx
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this)
+        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TOD
         for (const ray of BishopMovesRaw.rays) {
-            for (target of bishopMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target)
+            for (let target of bishopMovesRaw.getRay(ray)) {
+                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target)) break
+                if (!this.isFieldEmpty(target.boardFieldIdx())) break
             }
         }
         return result
     }
     private getLegalMovesOfQueen(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let target: boardFieldIdx
-        let rookMovesRaw = new RookMovesRaw(pieceOB_.field, this)
+        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
         for (const ray of RookMovesRaw.rays) {
-            for (target of rookMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target)
+            for (let target of rookMovesRaw.getRay(ray)) {
+                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target)) break
+                if (!this.isFieldEmpty(target.boardFieldIdx())) break
             }
         }
-        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field, this)
+        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
         for (const ray of BishopMovesRaw.rays) {
-            for (target of bishopMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target)
+            for (let target of bishopMovesRaw.getRay(ray)) {
+                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target)) break
+                if (!this.isFieldEmpty(target.boardFieldIdx())) break
             }
         }
         return result
@@ -483,12 +614,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfRook(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Rook) return false
 
-        let rookLike = isOffsetRookLike(validatedMove.source, validatedMove.target)
-        if (!rookLike.valid) return false;
-        let rookMovesRaw = new RookMovesRaw(validatedMove.source, this)
-        for (let f of rookMovesRaw.getRay(rookLike.ray!)) {
-            if (sameFields(f, validatedMove.target)) break
-            if (!this.isFieldEmpty(f)) return false
+        let rookLike = isOffsetRookLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+        if (typeof rookLike == 'undefined') return false;
+        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+        for (let f of rookMovesRaw.getRay(rookLike)) {
+            if (f.sameF(validatedMove.target)) break
+            if (!this.isFieldEmpty(f.boardFieldIdx())) return false
         }
         if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
 
@@ -501,8 +632,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfKnight(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Knight) return false
 
-        let knightMoves = new KnightMovesRaw(validatedMove.source, this)
-        let found = knightMoves.moves.find(x => sameFields(x, validatedMove.target))
+        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source)) // TODO adjust after migration
+        let found = knightMoves.moves.find(x => x.sameF(validatedMove.target))
         if (typeof found === 'undefined') return false
         if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
@@ -513,12 +644,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfBishop(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Bishop) return false
 
-        let bishopLike = isOffsetBishopLike(validatedMove.source, validatedMove.target)
-        if (!bishopLike.valid) return false;
-        let bishopMovesRaw = new BishopMovesRaw(validatedMove.source, this)
-        for (let f of bishopMovesRaw.getRay(bishopLike.ray!)) {
-            if (sameFields(f, validatedMove.target)) break
-            if (!this.isFieldEmpty(f)) return false
+        let bishopLike = isOffsetBishopLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target)) // TODO
+        if (typeof bishopLike === 'undefined') return false;
+        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+        for (let f of bishopMovesRaw.getRay(bishopLike)) {
+            if (f.sameF(validatedMove.target)) break
+            if (!this.isFieldEmpty(f.boardFieldIdx())) return false
         }
         if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
@@ -529,22 +660,22 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfQueen(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Queen) return false
 
-        let bishopLikeQ = isOffsetBishopLike(validatedMove.source, validatedMove.target)
-        if (bishopLikeQ.valid) {
-            let bishopMovesRawQ = new BishopMovesRaw(validatedMove.source, this)
-            for (let f of bishopMovesRawQ.getRay(bishopLikeQ.ray!)) {
-                if (sameFields(f, validatedMove.target)) break
-                if (!this.isFieldEmpty(f)) return false
+        let bishopLikeQ = isOffsetBishopLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+        if (typeof bishopLikeQ !== 'undefined') {
+            let bishopMovesRawQ = new BishopMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+            for (let f of bishopMovesRawQ.getRay(bishopLikeQ)) {
+                if (f.sameF(validatedMove.target)) break
+                if (!this.isFieldEmpty(f.boardFieldIdx())) return false
             }
             if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
         }
         else {
-            let rookLikeQ = isOffsetRookLike(validatedMove.source, validatedMove.target)
-            if (rookLikeQ.valid) {
-                let rookMovesRawQ = new RookMovesRaw(validatedMove.source, this)
-                for (let f of rookMovesRawQ.getRay(rookLikeQ.ray!)) {
-                    if (sameFields(f, validatedMove.target)) break
-                    if (!this.isFieldEmpty(f)) return false
+            let rookLikeQ = isOffsetRookLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+            if (typeof rookLikeQ !== 'undefined') {
+                let rookMovesRawQ = new RookMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+                for (let f of rookMovesRawQ.getRay(rookLikeQ)) {
+                    if (f.sameF(validatedMove.target)) break
+                    if (!this.isFieldEmpty(f.boardFieldIdx())) return false
                 }
                 if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
             }

@@ -1,42 +1,42 @@
 import { boardFieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board-representation'
+import { IChessBoardRepresentation, IField, Field, offsetsEnum } from './chess-board-representation'
 
 
 export const enum rookRay {
-    W = 'W',
-    E = 'E',
-    S = 'S',
-    N = 'N',
+    W = offsetsEnum.W,
+    E = offsetsEnum.E,
+    S = offsetsEnum.S,
+    N = offsetsEnum.N,
 }
 
 export class RookMovesRaw {
 
-    moves_W: boardFieldIdx[]
-    moves_E: boardFieldIdx[]
-    moves_S: boardFieldIdx[]
-    moves_N: boardFieldIdx[]
+    moves_W: IField[]
+    moves_E: IField[]
+    moves_S: IField[]
+    moves_N: IField[]
 
     static readonly rays = [rookRay.W, rookRay.E, rookRay.S, rookRay.N]
 
-    constructor(startField: boardFieldIdx, board: IChessBoardRepresentation) {
-        this.moves_W = this.generateRay(startField, offsets.W, board)
-        this.moves_E = this.generateRay(startField, offsets.E, board)
-        this.moves_S = this.generateRay(startField, offsets.S, board)
-        this.moves_N = this.generateRay(startField, offsets.N, board)
+    constructor(startField: IField) {
+        this.moves_W = this.generateRay(startField, offsetsEnum.W)
+        this.moves_E = this.generateRay(startField, offsetsEnum.E)
+        this.moves_S = this.generateRay(startField, offsetsEnum.S)
+        this.moves_N = this.generateRay(startField, offsetsEnum.N)
 
     }
-    private generateRay(startField: boardFieldIdx, offset: fieldOffset, board: IChessBoardRepresentation): boardFieldIdx[] {
-        let moves: boardFieldIdx[] = []
+    private generateRay(startField: IField, offset: offsetsEnum): IField[] {
+        let moves: IField[] = []
         for (let i = 1; i < 8; i++) {
-            let newField = shiftField(startField, offset, i)
-            if (board.isFieldOnBoard(newField)) {
+            let newField = startField.shift(offset, i)
+            if (newField.isOnBoard()) {
                 moves.push(newField)
             }
             else break
         }
         return moves
     }
-    getRay(ray: rookRay): boardFieldIdx[] {
+    getRay(ray: rookRay): IField[] {
         switch (ray) {
             case rookRay.W: return this.moves_W
             case rookRay.E: return this.moves_E
@@ -78,20 +78,13 @@ export class RookRayIt implements IterableIterator<boardFieldIdx> {
     }
 }
 */
-export function isOffsetRookLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: rookRay } {
-    if ((source.rowIdx == target.rowIdx) || (source.colIdx == target.colIdx)) {
-        if (source.colIdx == target.colIdx) {
-            if (source.rowIdx < target.rowIdx)
-                return { valid: true, ray: rookRay.S } // 0 +
-            else
-                return { valid: true, ray: rookRay.N } // 0 -
-        }
-        else { // source.rowIdx == target.rowIdx
-            if (source.colIdx < target.colIdx)
-                return { valid: true, ray: rookRay.W } // + 0
-            else
-                return { valid: true, ray: rookRay.E } // - 0
-        }
+export function isOffsetRookLike(source: IField, target: IField): rookRay | undefined {
+    let dir = source.isHorizontalVertical(target)
+    switch (dir) {
+        case offsetsEnum.N: return rookRay.N
+        case offsetsEnum.S: return rookRay.S
+        case offsetsEnum.W: return rookRay.W
+        case offsetsEnum.E: return rookRay.E
     }
-    return { valid: false }
+    return undefined
 }

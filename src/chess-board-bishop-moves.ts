@@ -1,47 +1,46 @@
-import { boardFieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board-representation'
+import { IField, offsetsEnum, Field } from './chess-board-representation'
 
 export const enum bishopRay { // 1-2,3-4 are opposites
-    SW = 'SW',
-    NE = 'NE',
-    NW = 'NW',
-    SE = 'SE',
+    SW = offsetsEnum.SW,
+    NE = offsetsEnum.NE,
+    NW = offsetsEnum.NW,
+    SE = offsetsEnum.SE,
 }
 
 export class BishopMovesRaw {
 
-    private moves_SW: boardFieldIdx[]
-    private moves_NE: boardFieldIdx[]
-    private moves_NW: boardFieldIdx[]
-    private moves_SE: boardFieldIdx[]
+    private moves_SW: IField[]
+    private moves_NE: IField[]
+    private moves_NW: IField[]
+    private moves_SE: IField[]
 
     static readonly rays = [bishopRay.SW, bishopRay.NE, bishopRay.NW, bishopRay.SE]
 
-    constructor(startField: boardFieldIdx, board: IChessBoardRepresentation) {
-        this.moves_SW = this.generateRay(startField, offsets.SW, board)
-        this.moves_NE = this.generateRay(startField, offsets.NE, board)
-        this.moves_NW = this.generateRay(startField, offsets.NW, board)
-        this.moves_SE = this.generateRay(startField, offsets.SE, board)
+    constructor(startField: IField) {
+        this.moves_SW = this.generateRay(startField, offsetsEnum.SW)
+        this.moves_NE = this.generateRay(startField, offsetsEnum.NE)
+        this.moves_NW = this.generateRay(startField, offsetsEnum.NW)
+        this.moves_SE = this.generateRay(startField, offsetsEnum.SE)
     }
-    private generateRay(startField: boardFieldIdx, offset: fieldOffset, board: IChessBoardRepresentation): boardFieldIdx[] {
-        let moves: boardFieldIdx[] = []
+    private generateRay(startField: IField, offset: offsetsEnum): IField[] {
+        let moves: IField[] = []
         for (let i = 1; i < 8; i++) {
-            let newField = shiftField(startField, offset, i)
-            if (board.isFieldOnBoard(newField)) {
+            let newField = startField.shift(offset, i)
+            if (newField.isOnBoard()) {
                 moves.push(newField)
             }
             else break
         }
         return moves
     }
-    getRay(ray: bishopRay): boardFieldIdx[] {
+    getRay(ray: bishopRay): IField[] {
         switch (ray) {
             case bishopRay.SW: return this.moves_SW
             case bishopRay.NE: return this.moves_NE
             case bishopRay.NW: return this.moves_NW
             case bishopRay.SE: return this.moves_SE
         }
-        //return []; // unreachable
+        return []; // unreachable
     }
 }
 /* optional implementation with iterator
@@ -77,20 +76,13 @@ export class BishopRayIt implements IterableIterator<boardFieldIdx> {
     }
 }
 */
-export function isOffsetBishopLike(source: boardFieldIdx, target: boardFieldIdx): { valid: boolean, ray?: bishopRay } {
-    if (Math.abs(source.rowIdx - target.rowIdx) == Math.abs(source.colIdx - target.colIdx)) {
-        if (source.colIdx > target.colIdx) {
-            if (source.rowIdx > target.rowIdx)  // - -
-                return { valid: true, ray: bishopRay.NE }
-            else                                // - +
-                return { valid: true, ray: bishopRay.SE }
-        }
-        else {
-            if (source.rowIdx > target.rowIdx)  // + -
-                return { valid: true, ray: bishopRay.NW }
-            else                                // + +
-                return { valid: true, ray: bishopRay.SW }
-        }
+export function isOffsetBishopLike(source: IField, target: IField): bishopRay | undefined {
+    let dir = source.isDiagonal(target)
+    switch (dir) {
+        case offsetsEnum.NW: return bishopRay.NW
+        case offsetsEnum.SW: return bishopRay.SW
+        case offsetsEnum.NE: return bishopRay.NE
+        case offsetsEnum.SE: return bishopRay.SE
     }
-    return { valid: false };
+    return undefined;
 }

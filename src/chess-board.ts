@@ -3,7 +3,7 @@ import { EncodedPositionKey, encodeType } from './encode-position-key'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color, otherColor } from './chess-color'
 import { pieceOnBoard, boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
-import { castleType, KingMovesRaw } from './chess-board-king-moves'
+import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
 import { ChessBoardRepresentation } from './chess-board-representation'
 
@@ -213,11 +213,12 @@ function gameResult(r: GameResult): string {
 
 export interface IChessBoardData {
     isWhitesMove: boolean
-    canCastleShortWhite: boolean
-    canCastleLongWhite: boolean
-    canCastleShortBlack: boolean
-    canCastleLongBlack: boolean
-    enPassantPossible: boolean
+    castleFlags: CastleFlags
+    // canCastleShortWhite: boolean
+    // canCastleLongWhite: boolean
+    // canCastleShortBlack: boolean
+    // canCastleLongBlack: boolean
+    get enPassantPossible(): boolean
     enPassantField: boardFieldIdx | undefined
 
     nextMoveBy: color // not sure if this or isWhitsMove should be in the interface...
@@ -229,11 +230,12 @@ export interface IChessBoardData {
 
 export class ChessBoardData implements IChessBoardData {
     nextMoveBy!: color
-    canCastleShortWhite!: boolean
-    canCastleLongWhite!: boolean
-    canCastleShortBlack!: boolean
-    canCastleLongBlack!: boolean
-    enPassantPossible!: boolean
+    castleFlags: CastleFlags
+    // canCastleShortWhite!: boolean
+    // canCastleLongWhite!: boolean
+    // canCastleShortBlack!: boolean
+    // canCastleLongBlack!: boolean
+    //enPassantPossible!: boolean
     enPassantField: boardFieldIdx | undefined
     halfMoves50!: number
     moveNumber!: number
@@ -242,15 +244,19 @@ export class ChessBoardData implements IChessBoardData {
     drawPossible50MovesRule!: boolean
     drawPossibleThreefoldRepetion!: boolean
     constructor() {
+        this.castleFlags = new CastleFlags()
         this.init()
     }
+    get enPassantPossible(): boolean { return typeof this.enPassantField !== 'undefined' }
     init() {
         this.nextMoveBy = color.white
-        this.canCastleShortWhite = false
-        this.canCastleLongWhite = false
-        this.canCastleShortBlack = false
-        this.canCastleLongBlack = false
-        this.enPassantPossible = false
+        this.castleFlags.noCastle(color.white)
+        this.castleFlags.noCastle(color.black)
+        // this.canCastleShortWhite = false
+        // this.canCastleLongWhite = false
+        // this.canCastleShortBlack = false
+        // this.canCastleLongBlack = false
+        // this.enPassantPossible = false
         this.enPassantField = undefined
         this.halfMoves50 = 0
         this.moveNumber = 1
@@ -260,24 +266,7 @@ export class ChessBoardData implements IChessBoardData {
         this.drawPossibleThreefoldRepetion = false
     }
     get isWhitesMove() { return this.nextMoveBy == color.white }
-    canCastle(color_: color, type_: castleType): boolean {
-        switch (color_) {
-            case color.black:
-                switch (type_) {
-                    case castleType.short:
-                        return this.canCastleShortBlack
-                    case castleType.long:
-                        return this.canCastleLongBlack
-                }
-            case color.white:
-                switch (type_) {
-                    case castleType.short:
-                        return this.canCastleShortWhite
-                    case castleType.long:
-                        return this.canCastleLongWhite
-                }
-        }
-    }
+    canCastle(color_: color, type_: castleType): boolean { return this.castleFlags.getCastleFlag(color_, type_) }
 }
 export class ChessBoard {
 
@@ -366,15 +355,15 @@ export class ChessBoard {
             }
 
             //3. castle options
-            this._data.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
-            this._data.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
-            this._data.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
-            this._data.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
+            this._data.castleFlags.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
+            this._data.castleFlags.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
+            this._data.castleFlags.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
+            this._data.castleFlags.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
             // TODO check if none specified must be '-' (strict mode)
 
             //4. en passant
-            this._data.enPassantPossible = (fenTokens[3] !== '-')
-            if (this._data.enPassantPossible) {
+            //this._data.enPassantPossible = (fenTokens[3] !== '-')
+            if (fenTokens[3] !== '-') {
                 if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
                 this._data.enPassantField = strToFieldIdx(fenTokens[3])
             }
@@ -428,13 +417,13 @@ export class ChessBoard {
         fen += ' '
 
         //3. castle options
-        if (!this._data.canCastleLongBlack && !this._data.canCastleShortBlack && !this._data.canCastleLongWhite && !this._data.canCastleShortWhite)
+        if (this._data.castleFlags.none())
             fen += '-'
         else {
-            if (this._data.canCastleShortWhite) fen += 'K'
-            if (this._data.canCastleLongWhite) fen += 'Q'
-            if (this._data.canCastleShortBlack) fen += 'k'
-            if (this._data.canCastleLongBlack) fen += 'q'
+            if (this._data.castleFlags.canCastleShortWhite) fen += 'K'
+            if (this._data.castleFlags.canCastleLongWhite) fen += 'Q'
+            if (this._data.castleFlags.canCastleShortBlack) fen += 'k'
+            if (this._data.castleFlags.canCastleLongBlack) fen += 'q'
         }
         fen += ' '
 
@@ -470,8 +459,8 @@ export class ChessBoard {
         }
 
         result.push('next move color: ' + colorStr(this._data.nextMoveBy))
-        result.push('Possible Castle White O-O:' + (this._data.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this._data.canCastleLongWhite ? 'Y' : 'N'))
-        result.push('Possible Castle Black O-O:' + (this._data.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this._data.canCastleLongBlack ? 'Y' : 'N'))
+        result.push('Possible Castle White O-O:' + (this._data.castleFlags.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this._data.castleFlags.canCastleLongWhite ? 'Y' : 'N'))
+        result.push('Possible Castle Black O-O:' + (this._data.castleFlags.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this._data.castleFlags.canCastleLongBlack ? 'Y' : 'N'))
         if (this._data.enPassantPossible) {
             result.push('en passant option at ' + fieldIdxToNotation(this._data.enPassantField!))
         }
@@ -674,7 +663,7 @@ export class ChessBoard {
                     if (typeof source_ === 'undefined') return false
                     source = source_
                 }
-                moveOB = this.board.moveIdx(source!, target, { promotionPieceKind: promotionPiece_.kind })
+                moveOB = this.board.move(source!, target, { promotionPieceKind: promotionPiece_.kind })
                 result = (moveOB !== undefined)
                 if (result) {
                     this.addMoveToHistory(moveOB!)

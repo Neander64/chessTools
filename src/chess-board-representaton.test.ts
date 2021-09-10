@@ -698,12 +698,12 @@ Array [
         cbr.setPiece(t, source_t)
         cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = true
-        data.canCastleLongWhite = false
-        data.canCastleShortBlack = false
-        data.canCastleLongBlack = false
+        data.castleFlags.canCastleShortWhite = true
+        data.castleFlags.canCastleLongWhite = false
+        data.castleFlags.canCastleShortBlack = false
+        data.castleFlags.canCastleLongBlack = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
-        data.canCastleShortWhite = false
+        data.castleFlags.canCastleShortWhite = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
         k = Piece.whiteKing()
@@ -716,10 +716,10 @@ Array [
         cbr.setPiece(t, source_t)
         cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = true
-        data.canCastleLongWhite = true
-        data.canCastleShortBlack = true
-        data.canCastleLongBlack = true
+        data.castleFlags.canCastleShortWhite = true
+        data.castleFlags.canCastleLongWhite = true
+        data.castleFlags.canCastleShortBlack = true
+        data.castleFlags.canCastleLongBlack = true
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
         k = Piece.whiteKing()
@@ -732,12 +732,12 @@ Array [
         cbr.setPiece(t, source_t)
         cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = false
-        data.canCastleLongWhite = true
-        data.canCastleShortBlack = false
-        data.canCastleLongBlack = false
+        data.castleFlags.canCastleShortWhite = false
+        data.castleFlags.canCastleLongWhite = true
+        data.castleFlags.canCastleShortBlack = false
+        data.castleFlags.canCastleLongBlack = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
-        data.canCastleLongWhite = false
+        data.castleFlags.canCastleLongWhite = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
         // black castles
@@ -751,12 +751,12 @@ Array [
         cbr.setPiece(t, source_t)
         cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = false
-        data.canCastleLongWhite = false
-        data.canCastleShortBlack = true
-        data.canCastleLongBlack = false
+        data.castleFlags.canCastleShortWhite = false
+        data.castleFlags.canCastleLongWhite = false
+        data.castleFlags.canCastleShortBlack = true
+        data.castleFlags.canCastleLongBlack = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
-        data.canCastleShortBlack = false
+        data.castleFlags.canCastleShortBlack = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
         source_k = { colIdx: 4, rowIdx: 0 }
@@ -767,12 +767,12 @@ Array [
         cbr.setPiece(t, source_t)
         cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = false
-        data.canCastleLongWhite = false
-        data.canCastleShortBlack = false
-        data.canCastleLongBlack = true
+        data.castleFlags.canCastleShortWhite = false
+        data.castleFlags.canCastleLongWhite = false
+        data.castleFlags.canCastleShortBlack = false
+        data.castleFlags.canCastleLongBlack = true
         expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
-        data.canCastleLongBlack = false
+        data.castleFlags.canCastleLongBlack = false
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
         // 
@@ -787,10 +787,10 @@ Array [
         cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 3 })
         data.nextMoveBy = color.black
         pob = cbr.peekFieldPieceOB(source_k)
-        data.canCastleShortWhite = true
-        data.canCastleLongWhite = true
-        data.canCastleShortBlack = true
-        data.canCastleLongBlack = true
+        data.castleFlags.canCastleShortWhite = true
+        data.castleFlags.canCastleLongWhite = true
+        data.castleFlags.canCastleShortBlack = true
+        data.castleFlags.canCastleLongBlack = true
         expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
 
     })

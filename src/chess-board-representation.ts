@@ -43,7 +43,7 @@ export class ValidatedMove { // Data to do/undo moves
         this.captureEP = false
         this.isPromotion = false
         this.isCastle = false
-        this.castleFlags = new CastleFlags(data_.canCastleShortBlack, data_.canCastleLongBlack, data_.canCastleShortWhite, data_.canCastleLongWhite)
+        this.castleFlags = new CastleFlags(data_.castleFlags)
         this.enPassantField = data_.enPassantField
         this.halfMoves50 = data_.halfMoves50
     }
@@ -56,11 +56,7 @@ export class ValidatedMove { // Data to do/undo moves
     get capturedField(): boardFieldIdx { return this.pieceCaptured?.field! }
 
     updateData(data_: IChessBoardData) {
-        data_.canCastleShortWhite = this.castleFlags.canCastleShortWhite
-        data_.canCastleLongWhite = this.castleFlags.canCastleLongWhite
-        data_.canCastleShortBlack = this.castleFlags.canCastleShortBlack
-        data_.canCastleLongBlack = this.castleFlags.canCastleLongBlack
-        data_.enPassantPossible = (typeof this.enPassantField != 'undefined')
+        data_.castleFlags.set(this.castleFlags)
         data_.enPassantField = this.enPassantField
         data_.halfMoves50 = this.halfMoves50
     }
@@ -667,7 +663,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     // ------------------ Board Moves -------------------
 
-    moveIdx(source: boardFieldIdx, target: boardFieldIdx, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined {
+    move(source: boardFieldIdx, target: boardFieldIdx, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined {
         let validateOnly = false;
         let promotionPieceKind = undefined;
         if (optionals && typeof optionals.validateOnly !== 'undefined') validateOnly = optionals.validateOnly
@@ -691,7 +687,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     moveCastle(castleType: castleType): moveOnBoard | undefined {
         let castleData = KingMovesRaw.castle(this._data.nextMoveBy, castleType)
-        return this.moveIdx(castleData.kingSource, castleData.kingTarget)
+        return this.move(castleData.kingSource, castleData.kingTarget)
     }
 
     // ------------------ Move on Board -------------------

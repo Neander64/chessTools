@@ -79,10 +79,10 @@ export class EncodedPositionKey {
     static makeFlags(cbData: IChessBoardData): number {
         let result = 0x0000
         if (cbData.isWhitesMove) result |= this.IS_WHITE_MOVE
-        if (cbData.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
-        if (cbData.canCastleLongBlack) result |= this.QUEENSIDE_CASTLE_BLACK
-        if (cbData.canCastleShortWhite) result |= this.KINGSIDE_CASTLE_WHITE
-        if (cbData.canCastleLongWhite) result |= this.QUEENSIDE_CASTLE_WHITE
+        if (cbData.castleFlags.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
+        if (cbData.castleFlags.canCastleLongBlack) result |= this.QUEENSIDE_CASTLE_BLACK
+        if (cbData.castleFlags.canCastleShortWhite) result |= this.KINGSIDE_CASTLE_WHITE
+        if (cbData.castleFlags.canCastleLongWhite) result |= this.QUEENSIDE_CASTLE_WHITE
         if (cbData.enPassantPossible) {
             result |= EncodedPositionKey.ENPASSANT
             if (typeof cbData.enPassantField !== 'undefined') {

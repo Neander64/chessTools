@@ -27,7 +27,22 @@ export class CastleFlags {
     canCastleLongBlack: boolean
     canCastleShortWhite: boolean
     canCastleLongWhite: boolean
-    constructor(canCastleShortBlack_: boolean, canCastleLongBlack_: boolean, canCastleShortWhite_: boolean, canCastleLongWhite_: boolean) {
+    //    constructor(canCastleShortBlack_: boolean, canCastleLongBlack_: boolean, canCastleShortWhite_: boolean, canCastleLongWhite_: boolean) {
+    constructor(castleFlags?: CastleFlags) {
+        if (castleFlags) {
+            this.canCastleShortBlack = castleFlags.canCastleShortBlack
+            this.canCastleLongBlack = castleFlags.canCastleLongBlack
+            this.canCastleShortWhite = castleFlags.canCastleShortWhite
+            this.canCastleLongWhite = castleFlags.canCastleLongWhite
+        }
+        else {
+            this.canCastleShortBlack = false
+            this.canCastleLongBlack = false
+            this.canCastleShortWhite = false
+            this.canCastleLongWhite = false
+        }
+    }
+    setFlags(canCastleShortBlack_: boolean, canCastleLongBlack_: boolean, canCastleShortWhite_: boolean, canCastleLongWhite_: boolean) {
         this.canCastleShortBlack = canCastleShortBlack_
         this.canCastleLongBlack = canCastleLongBlack_
         this.canCastleShortWhite = canCastleShortWhite_
@@ -92,6 +107,7 @@ export class CastleFlags {
                 }
         }
     }
+    none(): boolean { return !this.canCastleShortBlack && !this.canCastleLongBlack && !this.canCastleShortWhite && !this.canCastleLongWhite }
 }
 
 export class KingMovesRaw {

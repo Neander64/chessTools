@@ -4,8 +4,10 @@ import { color } from './chess-color'
 describe('Testing chess-board-representation', () => {
 
     test('testing validation (Rook)', () => {
-        let data = new CastleFlags(true, true, true, true)
-        let data2 = new CastleFlags(true, true, true, true)
+        let data = new CastleFlags()
+        data.setFlags(true, true, true, true)
+        let data2 = new CastleFlags()
+        data2.setFlags(true, true, true, true)
         expect(data.canCastleShortBlack).toBe(true)
         expect(data.canCastleLongBlack).toBe(true)
         expect(data.canCastleShortWhite).toBe(true)

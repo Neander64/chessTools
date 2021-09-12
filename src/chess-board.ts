@@ -2,10 +2,11 @@
 import { EncodedPositionKey, encodeType } from './encode-position-key'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color, otherColor } from './chess-color'
-import { boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
+import { boardFieldIdx } from './chess-board-internal-types'
 import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
-import { ChessBoardRepresentation, pieceOnBoard } from './chess-board-representation'
+import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './chess-board-representation'
+import { offsetsEnum } from './chess-board-offsets'
 
 // TODO split into several files (resolve circular references)
 // TODO push FEN / PGN into a separate structure/class
@@ -214,12 +215,8 @@ function gameResult(r: GameResult): string {
 export interface IChessBoardData {
     isWhitesMove: boolean
     castleFlags: CastleFlags
-    // canCastleShortWhite: boolean
-    // canCastleLongWhite: boolean
-    // canCastleShortBlack: boolean
-    // canCastleLongBlack: boolean
     get enPassantPossible(): boolean
-    enPassantField: boardFieldIdx | undefined
+    enPassantField: IField | undefined
 
     nextMoveBy: color // not sure if this or isWhitsMove should be in the interface...
     halfMoves50: number
@@ -231,12 +228,8 @@ export interface IChessBoardData {
 export class ChessBoardData implements IChessBoardData {
     nextMoveBy!: color
     castleFlags: CastleFlags
-    // canCastleShortWhite!: boolean
-    // canCastleLongWhite!: boolean
-    // canCastleShortBlack!: boolean
-    // canCastleLongBlack!: boolean
     //enPassantPossible!: boolean
-    enPassantField: boardFieldIdx | undefined
+    enPassantField: IField | undefined
     halfMoves50!: number
     moveNumber!: number
     gameOver!: boolean // meaning: no further moves are allowed.
@@ -365,7 +358,7 @@ export class ChessBoard {
             //this._data.enPassantPossible = (fenTokens[3] !== '-')
             if (fenTokens[3] !== '-') {
                 if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
-                this._data.enPassantField = strToFieldIdx(fenTokens[3])
+                this._data.enPassantField = this.board.fieldFromNotation(fenTokens[3])
             }
             else this._data.enPassantField = undefined
 
@@ -393,14 +386,14 @@ export class ChessBoard {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (this.board.isFieldEmpty({ colIdx: col, rowIdx: row }))//this._board[col][row].isEmpty)
+                if (!this.board.isPiece(col, row))//this._board[col][row].isEmpty)
                     emptyCount++
                 else {
                     if (emptyCount > 0) {
                         fen += emptyCount
                         emptyCount = 0
                     }
-                    fen += pieceToChar(this.board.peekField({ colIdx: col, rowIdx: row }))
+                    fen += pieceToChar(this.board.peekField(this.board.field(col, row)))
                 }
             }
             if (emptyCount > 0)
@@ -431,7 +424,7 @@ export class ChessBoard {
         if (!this._data.enPassantPossible)
             fen += '-'
         else
-            fen += fieldIdxToNotation(this._data.enPassantField!)
+            fen += this._data.enPassantField!.notation
         fen += ' '
 
         //5. number of half-moves since last capture or pawn move
@@ -452,7 +445,7 @@ export class ChessBoard {
             //for (let row = 7; row >= 0; row--) { // as Black
             let line = "| "
             for (let col = 0; col < 8; col++) {
-                line += pieceToChar(this.board.peekField({ colIdx: col, rowIdx: row })) + (col < 7 ? ' | ' : ' |')
+                line += pieceToChar(this.board.peekField(this.board.field(col, row))) + (col < 7 ? ' | ' : ' |')
             }
             result.push(line)
             result.push(' -------------------------------')
@@ -462,7 +455,7 @@ export class ChessBoard {
         result.push('Possible Castle White O-O:' + (this._data.castleFlags.canCastleShortWhite ? 'Y' : 'N') + ', O-O-O:' + (this._data.castleFlags.canCastleLongWhite ? 'Y' : 'N'))
         result.push('Possible Castle Black O-O:' + (this._data.castleFlags.canCastleShortBlack ? 'Y' : 'N') + ', O-O-O:' + (this._data.castleFlags.canCastleLongBlack ? 'Y' : 'N'))
         if (this._data.enPassantPossible) {
-            result.push('en passant option at ' + fieldIdxToNotation(this._data.enPassantField!))
+            result.push('en passant option at ' + this._data.enPassantField!.notation)
         }
         result.push('moves without pawn or capture: ' + this._data.halfMoves50)
         result.push('move number: ' + this._data.moveNumber)
@@ -643,7 +636,7 @@ export class ChessBoard {
                     piece_ = (this._data.nextMoveBy == color.black) ? Piece.blackPawn() : Piece.whitePawn()
                 }
                 if (!to) return false
-                let target = strToFieldIdxQuiet(to)
+                let target = this.board.fieldFromNotationQuiet(to)
                 if (!target) return false
                 let promotionPiece_: Piece = Piece.none()
                 if (!validPiece /* is a pawn */ && promotion) {
@@ -652,7 +645,7 @@ export class ChessBoard {
                         return false
                     promotionPiece_ = promotionPieceIn
                 }
-                let source = strToFieldIdxQuiet(from)
+                let source = this.board.fieldFromNotationQuiet(from)
                 if (source) {
                     let srcPiece = this.board.peekField(source)
                     if (!validPiece) piece_ = srcPiece
@@ -661,7 +654,7 @@ export class ChessBoard {
                 else {
                     let source_ = this.findSourceByTarget(from, target, piece_, promotionPiece_.kind)
                     if (typeof source_ === 'undefined') return false
-                    source = source_
+                    source = source_ as Field
                 }
                 moveOB = this.board.move(source!, target, { promotionPieceKind: promotionPiece_.kind })
                 result = (moveOB !== undefined)
@@ -674,7 +667,7 @@ export class ChessBoard {
         return result
     }
 
-    private findSourceByTarget(from: string, target: boardFieldIdx, piece_: Piece, promotionPiece: pieceKind = pieceKind.none): boardFieldIdx | undefined {
+    private findSourceByTarget(from: string, target: IField, piece_: Piece, promotionPiece: pieceKind = pieceKind.none): IField | undefined {
         let sourceColIdx: number | undefined = undefined
         let sourceRowIdx: number | undefined = undefined
         if (from.length == 1) {
@@ -702,36 +695,36 @@ export class ChessBoard {
                     }
                 }
                 if (targetingPieces.length != 1) return undefined
-                return targetingPieces[0].field.boardFieldIdx()
+                return targetingPieces[0].field
 
             case pieceKind.Pawn:
                 // TODO shift this to PawnMovesRaw class
                 let candidatesP: pieceOnBoard[] = []
                 let targetingP: pieceOnBoard[] = []
-                let field: boardFieldIdx
+                let field: Field
                 let p: pieceOnBoard
                 switch (this._data.nextMoveBy) {
                     case color.black:
-                        field = shiftField(target, offsets.N)
+                        field = target.shift(offsetsEnum.N) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
-                            else if (target.rowIdx == 3 && p.piece.kind == pieceKind.none) {
-                                field = shiftField(field, offsets.N)
+                            else if (target.rank == 3 && p.piece.kind == pieceKind.none) {
+                                field = field.shift(offsetsEnum.N)
                                 if (this.board.isFieldOnBoard(field)) {
                                     p = this.board.peekFieldPieceOB(field)
                                     if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                                 }
                             }
                         }
-                        field = shiftField(target, offsets.NW)
+                        field = target.shift(offsetsEnum.NW) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
-                        field = shiftField(target, offsets.NE)
+                        field = target.shift(offsetsEnum.NE) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
@@ -744,29 +737,29 @@ export class ChessBoard {
                             }
                         }
                         if (targetingP.length != 1) return undefined
-                        return targetingP[0].field.boardFieldIdx()
+                        return targetingP[0].field
 
                     case color.white:
-                        field = shiftField(target, offsets.S)
+                        field = target.shift(offsetsEnum.S) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
-                            else if (target.rowIdx == 4 && p.piece.kind == pieceKind.none) {
-                                field = shiftField(field, offsets.S)
+                            else if (target.rank == 4 && p.piece.kind == pieceKind.none) {
+                                field = field.shift(offsetsEnum.S)
                                 if (this.board.isFieldOnBoard(field)) {
                                     p = this.board.peekFieldPieceOB(field)
                                     if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
                                 }
                             }
                         }
-                        field = shiftField(target, offsets.SW)
+                        field = target.shift(offsetsEnum.SW) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
                                 if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
-                        field = shiftField(target, offsets.SE)
+                        field = target.shift(offsetsEnum.SE) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
@@ -779,7 +772,7 @@ export class ChessBoard {
                             }
                         }
                         if (targetingP.length != 1) return undefined
-                        return targetingP[0].field.boardFieldIdx()
+                        return targetingP[0].field
                 }
         }
         return undefined

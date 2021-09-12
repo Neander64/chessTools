@@ -1,6 +1,5 @@
 import { BishopMovesRaw, isOffsetBishopLike, bishopRay } from './chess-board-bishop-moves'
-import { ChessBoardRepresentation, Field } from './chess-board-representation'
-import { ChessBoardData } from './chess-board'
+import { Field } from './chess-board-representation'
 
 describe('Testing chess-board-bishop-moves', () => {
 

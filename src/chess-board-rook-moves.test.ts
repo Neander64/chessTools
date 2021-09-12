@@ -1,6 +1,5 @@
-import { RookMovesRaw, isOffsetRookLike, rookRay } from './chess-board-rook-moves'
-import { ChessBoardRepresentation, Field } from './chess-board-representation'
-import { ChessBoardData } from './chess-board'
+import { RookMovesRaw, rookRay } from './chess-board-rook-moves'
+import { Field } from './chess-board-representation'
 
 describe('Testing chess-board-rook-moves', () => {
 

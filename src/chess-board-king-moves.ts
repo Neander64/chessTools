@@ -1,5 +1,5 @@
-import { boardFieldIdx, sameFields } from './chess-board-internal-types'
-import { IField, pieceOnBoard } from './chess-board-representation'
+import { sameFields } from './chess-board-internal-types'
+import { IChessBoardRepresentation, IField, pieceOnBoard } from './chess-board-representation'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
 import { offsetsEnum } from './chess-board-offsets'
@@ -11,10 +11,10 @@ export enum castleType {
 
 export type castleData = {
     castleType: castleType
-    kingSource: boardFieldIdx
-    kingTarget: boardFieldIdx
-    rookSource: boardFieldIdx
-    rookTarget: boardFieldIdx
+    kingSource: IField
+    kingTarget: IField
+    rookSource: IField
+    rookTarget: IField
     kingPiece: Piece
     rookPiece: Piece
     row: number
@@ -134,15 +134,15 @@ export class KingMovesRaw {
         }
     }
 
-    static castle(color_: color, type_: castleType): castleData {
+    static castle(color_: color, type_: castleType, cbr: IChessBoardRepresentation): castleData {
         let rowIdx_ = (color_ == color.black) ? 0 : 7
         // TODO make this use static data
         return {
             castleType: type_,
-            kingSource: { colIdx: (type_ == castleType.short) ? 4 : 4, rowIdx: rowIdx_ },
-            kingTarget: { colIdx: (type_ == castleType.short) ? KingMovesRaw.kingsTargetColCastleShort : KingMovesRaw.kingsTargetColCastleLong, rowIdx: rowIdx_ },
-            rookSource: { colIdx: (type_ == castleType.short) ? 7 : 0, rowIdx: rowIdx_ },
-            rookTarget: { colIdx: (type_ == castleType.short) ? 5 : 3, rowIdx: rowIdx_ },
+            kingSource: cbr.field((type_ == castleType.short) ? 4 : 4, rowIdx_),
+            kingTarget: cbr.field((type_ == castleType.short) ? KingMovesRaw.kingsTargetColCastleShort : KingMovesRaw.kingsTargetColCastleLong, rowIdx_),
+            rookSource: cbr.field((type_ == castleType.short) ? 7 : 0, rowIdx_),
+            rookTarget: cbr.field((type_ == castleType.short) ? 5 : 3, rowIdx_),
             kingPiece: (color_ == color.black) ? Piece.blackKing() : Piece.whiteKing(),
             rookPiece: (color_ == color.black) ? Piece.blackRook() : Piece.whiteRook(),
             row: rowIdx_,
@@ -151,47 +151,47 @@ export class KingMovesRaw {
         }
     }
 
-    static isMoveCastle(sourcePieceOB: pieceOnBoard, target: IField): castleData | undefined {
+    static isMoveCastle(sourcePieceOB: pieceOnBoard, target: IField, cbr: IChessBoardRepresentation): castleData | undefined {
         if (sourcePieceOB.piece.kind != pieceKind.King) return undefined
 
-        let short = this.castle(sourcePieceOB.piece.color, castleType.short)
-        if (sameFields(short.kingSource, sourcePieceOB.field.boardFieldIdx()) && sameFields(short.kingTarget, target.boardFieldIdx())) return short
+        let short = this.castle(sourcePieceOB.piece.color, castleType.short, cbr)
+        if (short.kingSource.same(sourcePieceOB.field) && short.kingTarget.same(target)) return short
 
-        let long = this.castle(sourcePieceOB.piece.color, castleType.long)
-        if (sameFields(long.kingSource, sourcePieceOB.field.boardFieldIdx()) && sameFields(long.kingTarget, target.boardFieldIdx())) return long
+        let long = this.castle(sourcePieceOB.piece.color, castleType.long, cbr)
+        if (long.kingSource.same(sourcePieceOB.field) && long.kingTarget.same(target)) return long
 
         return undefined
     }
 
-    static adjustCastleRightsAfterCapture(capturedPieceOB: pieceOnBoard, castleFlags_: CastleFlags) {
+    static adjustCastleRightsAfterCapture(capturedPieceOB: pieceOnBoard, castleFlags_: CastleFlags, cbr: IChessBoardRepresentation) {
         if (capturedPieceOB.piece.kind == pieceKind.Rook) {
             let color = capturedPieceOB.piece.color
             if (castleFlags_.getCastleFlag(color, castleType.short)) {
-                let short = this.castle(color, castleType.short)
-                if (sameFields(short.rookSource, capturedPieceOB.field.boardFieldIdx())) {
+                let short = this.castle(color, castleType.short, cbr)
+                if (short.rookSource.same(capturedPieceOB.field)) {
                     castleFlags_.setCastleFlag(color, short.castleType, false)
                 }
             }
             if (castleFlags_.getCastleFlag(color, castleType.long)) {
-                let long = this.castle(color, castleType.long)
-                if (sameFields(long.rookSource, capturedPieceOB.field.boardFieldIdx())) {
+                let long = this.castle(color, castleType.long, cbr)
+                if (long.rookSource.same(capturedPieceOB.field)) {
                     castleFlags_.setCastleFlag(color, long.castleType, false)
                 }
             }
         }
     }
-    static adjustCastleRightsAfterMove(sourcePieceOB: pieceOnBoard, castleFlags_: CastleFlags) {
+    static adjustCastleRightsAfterMove(sourcePieceOB: pieceOnBoard, castleFlags_: CastleFlags, cbr: IChessBoardRepresentation) {
         if (sourcePieceOB.piece.kind == pieceKind.Rook) {
             let color = sourcePieceOB.piece.color
             if (castleFlags_.getCastleFlag(color, castleType.short)) {
-                let short = this.castle(color, castleType.short)
-                if (sameFields(short.rookSource, sourcePieceOB.field.boardFieldIdx())) {
+                let short = this.castle(color, castleType.short, cbr)
+                if (short.rookSource.same(sourcePieceOB.field)) {
                     castleFlags_.setCastleFlag(color, short.castleType, false)
                 }
             }
             if (castleFlags_.getCastleFlag(color, castleType.long)) {
-                let long = this.castle(color, castleType.long)
-                if (sameFields(long.rookSource, sourcePieceOB.field.boardFieldIdx())) {
+                let long = this.castle(color, castleType.long, cbr)
+                if (long.rookSource.same(sourcePieceOB.field)) {
                     castleFlags_.setCastleFlag(color, long.castleType, false)
                 }
             }

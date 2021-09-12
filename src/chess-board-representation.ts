@@ -1,5 +1,5 @@
 import { Piece, pieceKeyType, pieceKind } from './chess-board-pieces'
-import { boardFieldIdx, sameFields, fieldIdx } from './chess-board-internal-types'
+import { boardFieldIdx, sameFields } from './chess-board-internal-types'
 import { color, otherColor } from './chess-color'
 import { AttackedFields } from './chess-board-attacked-fields'
 import { BishopMovesRaw, isOffsetBishopLike } from './chess-board-bishop-moves'
@@ -181,7 +181,7 @@ export class ValidatedMove { // Data to do/undo moves
         this.isPromotion = false
         this.isCastle = false
         this.castleFlags = new CastleFlags(data_.castleFlags)
-        this.enPassantField = (typeof data_.enPassantField == 'undefined') ? undefined : Field.createFromBoardFieldIdx(data_.enPassantField)
+        this.enPassantField = data_.enPassantField
         this.halfMoves50 = data_.halfMoves50
     }
     get color(): color { return this.sourcePieceOB.piece.color }
@@ -194,7 +194,7 @@ export class ValidatedMove { // Data to do/undo moves
 
     updateData(data_: IChessBoardData) {
         data_.castleFlags.set(this.castleFlags)
-        data_.enPassantField = this.enPassantField?.boardFieldIdx()
+        data_.enPassantField = this.enPassantField
         data_.halfMoves50 = this.halfMoves50
     }
     get moveOnBoard(): moveOnBoard {
@@ -220,17 +220,19 @@ export interface IChessBoardRepresentation {
     isPiece(file: fileType, rank: rankType): boolean
     pieceKey(file: fileType, rank: rankType): pieceKeyType
 
-    isFieldOnBoard(field: boardFieldIdx): boolean // check validity of boardFieldIdx
+    isFieldOnBoard(field: IField): boolean // check validity of boardFieldIdx
     setPiece(piece_: Piece, field: IField): void
     removePiece(field: IField): void
-    peekField(field: boardFieldIdx): Piece
-    peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard
-    isFieldEmpty(field: boardFieldIdx): boolean
+    peekField(field: IField): Piece
+    peekFieldPieceOB(field_: IField): pieceOnBoard
+    isFieldEmpty(field: IField): boolean
     field(file_: fileType, rank_: rankType): IField
+    fieldFromNotation(s: string): IField
+    fieldFromNotationQuiet(fieldStr: string): IField | undefined
 
     clearBoard(): void
     setBoard(board: Piece[][]): void
-    isCaptureOn(field_: boardFieldIdx, color_: color): boolean
+    isCaptureOn(field_: IField, color_: color): boolean
     currentPieceSpectrum(): pieceStat
 
 }
@@ -256,13 +258,31 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     // Interface implementation
     isPiece(file: fileType, rank: rankType) { return this._board[file][rank].isPiece }
     pieceKey(file: fileType, rank: rankType) { return this._board[file][rank].key }
-    isFieldOnBoard(field: boardFieldIdx) { return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8) }
+    isFieldOnBoard(field: Field) { return (field.file >= 0 && field.file < 8 && field.rank >= 0 && field.rank < 8) }
     setPiece(piece_: Piece, field: Field) { this._board[field.file][field.rank] = piece_ }
     removePiece(field: Field) { this._board[field.file][field.rank] = Piece.none() }
-    peekField(field: boardFieldIdx): Piece { return this._board[field.colIdx][field.rowIdx] }
-    peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard { return { piece: this.peekField(field_), field: Field.createFromBoardFieldIdx(field_) } }
-    isFieldEmpty(field: boardFieldIdx): boolean { return this.peekField(field).isEmpty }
+    peekField(field: Field): Piece { return this._board[field.file][field.rank] }
+    peekFieldPieceOB(field_: Field): pieceOnBoard { return createPieceOB(this.peekField(field_), field_) }
+    isFieldEmpty(field: Field): boolean { return this.peekField(field).isEmpty }
     field(file_: fileType, rank_: rankType): Field { return new Field(file_, rank_) }
+    fieldF(f: Field): Field { return new Field(f.file, f.rank) }
+    fieldFromNotation(fieldStr: string): Field {
+        if (fieldStr.length != 2)
+            throw new Error('unexpected string length for field (should be 2)')
+        // convert chess notation of field (like e4) to index on board
+        const field = this.field(fieldStr[0].charCodeAt(0) - 'a'.charCodeAt(0), 8 - parseInt(fieldStr[1], 10))
+        if (!this.isFieldOnBoard(field)) throw new Error('unexpecte values (col,row)')
+        return field
+
+    }
+    fieldFromNotationQuiet(fieldStr: string): Field | undefined {
+        if (fieldStr.length != 2) return undefined
+        // convert chess notation of field (like e4) to index on board
+        const field = this.field(fieldStr[0].charCodeAt(0) - 'a'.charCodeAt(0), 8 - parseInt(fieldStr[1], 10))
+        if (!this.isFieldOnBoard(field)) return undefined
+        return field
+
+    }
 
     clearBoard() {
         for (let col = 0; col < 8; col++) {
@@ -279,21 +299,21 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             }
         }
     }
-    isCaptureOn(field_: boardFieldIdx, color_: color): boolean {
+    isCaptureOn(field_: Field, color_: color): boolean {
         let _piece = this.peekField(field_)
         return _piece.isPiece && _piece.color == otherColor(color_)
     }
-    isFieldEmptyOrCapture(field_: boardFieldIdx, color_: color): boolean {
+    isFieldEmptyOrCapture(field_: Field, color_: color): boolean {
         return this.isFieldEmpty(field_) || this.isCaptureOn(field_, color_)
     }
-    isPieceOn(field: boardFieldIdx, p: Piece) {
+    isPieceOn(field: Field, p: Piece) {
         return this.peekField(field).same(p)
     }
     currentPiecesOnBoard(color_: color): pieceOnBoard[] {
         let result: pieceOnBoard[] = []
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
-                let p = this.peekField({ colIdx: c, rowIdx: r })
+                let p = this.peekField(this.field(c, r))
                 if (p.isPiece && p.color == color_) {
                     result.push(createPieceOB(p, Field.create(c, r)))
                 }
@@ -306,7 +326,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         if (kind_ == pieceKind.none) return []
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
-                let p = this.peekField({ colIdx: c, rowIdx: r })
+                let p = this.peekField(this.field(c, r))
                 if (p.kind == kind_ && p.color == color_) {
                     result.push(createPieceOB(p, Field.create(c, r)))
                 }
@@ -322,7 +342,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
-                let p = this.peekField({ colIdx: c, rowIdx: r })
+                let p = this.peekField(this.field(c, r))
                 if (p.isPiece)
                     switch (p.color) {
                         case color.black:
@@ -353,7 +373,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         for (const ray of RookMovesRaw.rays) {
             for (let f of rookMovesRaw.getRay(ray)) {
                 rookMoves.push(f.boardFieldIdx())
-                if (!this.isFieldEmpty(f.boardFieldIdx())) break
+                if (!this.isFieldEmpty(f as Field)) break
             }
         }
         return rookMoves;
@@ -370,7 +390,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         for (const ray of BishopMovesRaw.rays) {
             for (let f of bishopMovesRaw.getRay(ray)) {
                 bishopMoves.push(f.boardFieldIdx())
-                if (!this.isFieldEmpty(f.boardFieldIdx())) break
+                if (!this.isFieldEmpty(f as Field)) break
             }
         }
         return bishopMoves
@@ -381,14 +401,14 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         for (const ray of RookMovesRaw.rays) {
             for (let f of rookMovesRaw.getRay(ray)) {
                 queenMoves.push(f.boardFieldIdx());
-                if (!this.isFieldEmpty(f.boardFieldIdx())) break
+                if (!this.isFieldEmpty(f as Field)) break
             }
         }
         let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let f of bishopMovesRaw.getRay(ray)) {
                 queenMoves.push(f.boardFieldIdx())
-                if (!this.isFieldEmpty(f.boardFieldIdx())) break
+                if (!this.isFieldEmpty(f as Field)) break
             }
         }
         return queenMoves
@@ -464,9 +484,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, target)
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target.boardFieldIdx())) break
+                if (!this.isFieldEmpty(target as Field)) break
             }
         }
         return result
@@ -475,7 +495,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let result: moveOnBoard[] = []
         let knightMoves = new KnightMovesRaw(pieceOB_.field)
         for (let target of knightMoves.moves) {
-            let m = this.validateMove(pieceOB_, target.boardFieldIdx()) // TODO adjust after migration
+            let m = this.validateMove(pieceOB_, target) // TODO adjust after migration
             if (m.isValid) result.push(m.moveOnBoard)
         }
         return result
@@ -485,9 +505,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let target of bishopMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, target)
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target.boardFieldIdx())) break
+                if (!this.isFieldEmpty(target as Field)) break
             }
         }
         return result
@@ -497,17 +517,17 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, target)
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target.boardFieldIdx())) break
+                if (!this.isFieldEmpty(target as Field)) break
             }
         }
         let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let target of bishopMovesRaw.getRay(ray)) {
-                let m = this.validateMove(pieceOB_, target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, target)
                 if (m.isValid) result.push(m.moveOnBoard)
-                if (!this.isFieldEmpty(target.boardFieldIdx())) break
+                if (!this.isFieldEmpty(target as Field)) break
             }
         }
         return result
@@ -516,16 +536,16 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let result: moveOnBoard[] = []
         let kingMoves = new KingMovesRaw(pieceOB_.field)
         for (let target of kingMoves.moves) {
-            let m = this.validateMove(pieceOB_, target.boardFieldIdx())
+            let m = this.validateMove(pieceOB_, target)
             if (m.isValid) result.push(m.moveOnBoard)
         }
-        let castleDataShort = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short)
-        if (pieceOB_.field.sameF(castleDataShort.kingSource)) {
+        let castleDataShort = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short, this)
+        if (pieceOB_.field.same(castleDataShort.kingSource)) {
             let m = this.validateMove(pieceOB_, castleDataShort.kingTarget)
             if (m.isValid) result.push(m.moveOnBoard)
         }
-        let castleDataLong = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short)
-        if (pieceOB_.field.sameF(castleDataLong.kingSource)) {
+        let castleDataLong = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short, this)
+        if (pieceOB_.field.same(castleDataLong.kingSource)) {
             let m = this.validateMove(pieceOB_, castleDataLong.kingTarget)
             if (m.isValid) result.push(m.moveOnBoard)
         }
@@ -537,24 +557,24 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         for (let pawnMove of pawnMovesRaw.moves) {
             if (pawnMove.isPromotion) {
                 for (let promoKind of PawnMovesRaw.promotionPieces) {
-                    let m = this.validateMove(pieceOB_, pawnMove.target.boardFieldIdx(), promoKind)
+                    let m = this.validateMove(pieceOB_, pawnMove.target, promoKind)
                     if (m.isValid) result.push(m.moveOnBoard)
                 }
             }
             else { // no promotion
-                let m = this.validateMove(pieceOB_, pawnMove.target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, pawnMove.target)
                 if (m.isValid) result.push(m.moveOnBoard)
             }
         }
         for (let pawnAttack of pawnMovesRaw.attacks) {
             if (pawnAttack.isPromotion) {
                 for (let promoKind of PawnMovesRaw.promotionPieces) {
-                    let m = this.validateMove(pieceOB_, pawnAttack.target.boardFieldIdx(), promoKind)
+                    let m = this.validateMove(pieceOB_, pawnAttack.target, promoKind)
                     if (m.isValid) result.push(m.moveOnBoard)
                 }
             }
             else {
-                let m = this.validateMove(pieceOB_, pawnAttack.target.boardFieldIdx())
+                let m = this.validateMove(pieceOB_, pawnAttack.target)
                 if (m.isValid) result.push(m.moveOnBoard)
             }
         }
@@ -601,10 +621,10 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         // tmpBoard.removePiece(validatedMove.source)
         if (tmpBoard.isCheck()) return false
 
-        if (this.isCaptureOn(validatedMove.target.boardFieldIdx(), validatedMove.color)) {
-            validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target.boardFieldIdx())
+        if (this.isCaptureOn(validatedMove.target as Field, validatedMove.color)) {
+            validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target as Field)
             if (validatedMove.capturedKind == pieceKind.Rook) {
-                KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags)
+                KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags, this)
             }
             validatedMove.halfMoves50 = 0
         }
@@ -623,12 +643,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let rookMovesRaw = new RookMovesRaw(validatedMove.source)
         for (let f of rookMovesRaw.getRay(rookLike)) {
             if (f.same(validatedMove.target)) break
-            if (!this.isFieldEmpty(f.boardFieldIdx())) return false
+            if (!this.isFieldEmpty(f as Field)) return false
         }
-        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
 
         if (!this.validateMoveOfPiece(validatedMove)) return false
-        KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags)
+        KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags, this)
 
         validatedMove.isValid = true
         return true
@@ -639,7 +659,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let knightMoves = new KnightMovesRaw(validatedMove.source)
         let found = knightMoves.moves.find(x => x.same(validatedMove.target))
         if (typeof found === 'undefined') return false
-        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
 
         validatedMove.isValid = true
@@ -653,9 +673,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let bishopMovesRaw = new BishopMovesRaw(validatedMove.source)
         for (let f of bishopMovesRaw.getRay(bishopLike)) {
             if (f.same(validatedMove.target)) break
-            if (!this.isFieldEmpty(f.boardFieldIdx())) return false
+            if (!this.isFieldEmpty(f as Field)) return false
         }
-        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
 
         validatedMove.isValid = true
@@ -669,9 +689,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             let bishopMovesRawQ = new BishopMovesRaw(validatedMove.source)
             for (let f of bishopMovesRawQ.getRay(bishopLikeQ)) {
                 if (f.same(validatedMove.target)) break
-                if (!this.isFieldEmpty(f.boardFieldIdx())) return false
+                if (!this.isFieldEmpty(f as Field)) return false
             }
-            if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+            if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
         }
         else {
             let rookLikeQ = isOffsetRookLike(validatedMove.source, validatedMove.target)
@@ -679,9 +699,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                 let rookMovesRawQ = new RookMovesRaw(validatedMove.source)
                 for (let f of rookMovesRawQ.getRay(rookLikeQ)) {
                     if (f.same(validatedMove.target)) break
-                    if (!this.isFieldEmpty(f.boardFieldIdx())) return false
+                    if (!this.isFieldEmpty(f as Field)) return false
                 }
-                if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+                if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
             }
             else return false
         }
@@ -693,18 +713,18 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfKing(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.King) return false
 
-        let castle = KingMovesRaw.isMoveCastle(validatedMove.sourcePieceOB, validatedMove.target)
+        let castle = KingMovesRaw.isMoveCastle(validatedMove.sourcePieceOB, validatedMove.target, this)
         if (typeof castle !== 'undefined') {
             if (!validatedMove.castleFlags.getCastleFlag(validatedMove.color, castle.castleType)) return false
-            if (!this.isPieceOn(castle.kingSource, castle.kingPiece)) return false
-            if (!this.isPieceOn(castle.rookSource, castle.rookPiece)) return false
+            if (!this.isPieceOn(castle.kingSource as Field, castle.kingPiece)) return false
+            if (!this.isPieceOn(castle.rookSource as Field, castle.rookPiece)) return false
             for (let colIdx_ = castle.betweenPathCols.start; colIdx_ <= castle.betweenPathCols.end; colIdx_++)
-                if (!this.isFieldEmpty(fieldIdx(colIdx_, castle.row))) return false
+                if (!this.isFieldEmpty(this.field(colIdx_, castle.row))) return false
             for (let colIdx_ = castle.kingPathCols.start; colIdx_ <= castle.kingPathCols.end; colIdx_++)
-                if (this.isPieceAttackedOn(Field.create(colIdx_, castle.row), otherColor(validatedMove.color))) return false
+                if (this.isPieceAttackedOn(this.field(colIdx_, castle.row), otherColor(validatedMove.color))) return false
 
-            validatedMove.pieceRook = this.peekFieldPieceOB(castle.rookSource)
-            validatedMove.targetRook = Field.createFromBoardFieldIdx(castle.rookTarget)
+            validatedMove.pieceRook = this.peekFieldPieceOB(castle.rookSource as Field)
+            validatedMove.targetRook = castle.rookTarget
             validatedMove.halfMoves50++
             validatedMove.enPassantField = undefined
             validatedMove.isCastle = true
@@ -713,10 +733,10 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             let kingMovesRaw = new KingMovesRaw(validatedMove.source)
             let legalKingMove = kingMovesRaw.moves.find(x => sameFields(x.boardFieldIdx(), validatedMove.target.boardFieldIdx()))
             if (typeof legalKingMove === 'undefined') return false
-            if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
+            if (!this.isFieldEmptyOrCapture(validatedMove.target as Field, validatedMove.color)) return false
             if (!this.validateMoveOfPiece(validatedMove)) return false
         }
-        KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags)
+        KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags, this)
 
         validatedMove.isValid = true
         return true
@@ -728,27 +748,27 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         let pawnMove = PawnMovesRaw.checkPawnMove(validatedMove.source, validatedMove.target, validatedMove.color)
         if (typeof pawnMove == 'undefined') return false
         if (typeof pawnMove.enPassantField != 'undefined') {
-            if (!this.isFieldEmpty(pawnMove.enPassantField.boardFieldIdx())) return false
-            if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false
+            if (!this.isFieldEmpty(pawnMove.enPassantField as Field)) return false
+            if (!this.isFieldEmpty(validatedMove.target as Field)) return false
             validatedMove.enPassantField = Field.createFromBoardFieldIdx(pawnMove.enPassantField.boardFieldIdx())
         }
         else if (pawnMove.isCapture) {
-            if (typeof this._data.enPassantField != 'undefined' && sameFields(this._data.enPassantField, validatedMove.target.boardFieldIdx())) {
+            if (typeof this._data.enPassantField != 'undefined' && validatedMove.target.same(this._data.enPassantField)) {
                 // capturing e.p.
-                if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false // e.p. target should always be empty
-                validatedMove.pieceCaptured = this.peekFieldPieceOB(PawnMovesRaw.getPawnFieldOfCaptureEP(validatedMove.target, validatedMove.color).boardFieldIdx())
+                if (!this.isFieldEmpty(validatedMove.target as Field)) return false // e.p. target should always be empty
+                validatedMove.pieceCaptured = this.peekFieldPieceOB(PawnMovesRaw.getPawnFieldOfCaptureEP(validatedMove.target, validatedMove.color) as Field)
                 validatedMove.captureEP = true
             }
-            else if (this.isCaptureOn(validatedMove.target.boardFieldIdx(), validatedMove.color)) {
-                validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target.boardFieldIdx())
+            else if (this.isCaptureOn(validatedMove.target as Field, validatedMove.color)) {
+                validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target as Field)
                 if (validatedMove.capturedKind == pieceKind.Rook) {
-                    KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags)
+                    KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags, this)
                 }
             }
             else return false
         }
         else // normal move
-            if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false
+            if (!this.isFieldEmpty(validatedMove.target as Field)) return false
 
         if (pawnMove.isPromotion) {
             if (!validatedMove.promotionPieceKind) return false
@@ -765,8 +785,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         validatedMove.isValid = true
         return true
     }
-    validateMove(sourcePieceOB: pieceOnBoard, target: boardFieldIdx, promotionPieceKind?: pieceKind): ValidatedMove {
-        let validatedMove = new ValidatedMove(sourcePieceOB, Field.createFromBoardFieldIdx(target), this._data)
+    validateMove(sourcePieceOB: pieceOnBoard, target: IField, promotionPieceKind?: pieceKind): ValidatedMove {
+        let validatedMove = new ValidatedMove(sourcePieceOB, target, this._data)
         validatedMove.isValid = false
         if (!validatedMove.source.same(validatedMove.target)) {
             switch (sourcePieceOB.piece.kind) {
@@ -798,13 +818,13 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     // ------------------ Board Moves -------------------
 
-    move(source: boardFieldIdx, target: boardFieldIdx, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined {
+    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined {
         let validateOnly = false;
         let promotionPieceKind = undefined;
         if (optionals && typeof optionals.validateOnly !== 'undefined') validateOnly = optionals.validateOnly
         if (optionals && typeof optionals.promotionPieceKind !== 'undefined') promotionPieceKind = optionals.promotionPieceKind
 
-        let sourcePieceOB = this.peekFieldPieceOB(source)
+        let sourcePieceOB = this.peekFieldPieceOB(source as Field)
         if (sourcePieceOB.piece.kind == pieceKind.none) return undefined
 
         let validatedMove = this.validateMove(sourcePieceOB, target, promotionPieceKind)
@@ -821,7 +841,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
 
     moveCastle(castleType: castleType): moveOnBoard | undefined {
-        let castleData = KingMovesRaw.castle(this._data.nextMoveBy, castleType)
+        let castleData = KingMovesRaw.castle(this._data.nextMoveBy, castleType, this)
         return this.move(castleData.kingSource, castleData.kingTarget)
     }
 
@@ -864,7 +884,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         tmpBoard.removePiece(kingField as Field) // avoid the king blocking checks by itself
         let kingMoves = new KingMovesRaw(kingField)
         for (let m of kingMoves.moves) {
-            let p = this.peekField(m.boardFieldIdx())
+            let p = this.peekField(m as Field)
             if (p.isPiece && p.color == color) continue // field is block by own piece
             if (!tmpBoard.isPieceAttackedOn(m, otherColor(color))) {
                 return false // could move here

@@ -1,7 +1,6 @@
 import { IChessBoardData } from "./chess-board"
 import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces"
-import { boardFieldIdx } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board-representation'
+import { IChessBoardRepresentation, IField } from './chess-board-representation'
 
 export enum encodeType {
     Simple,
@@ -63,8 +62,8 @@ export class EncodedPositionKey {
     static encodeField(colIdx: number, rowIdx: number): number {
         return rowIdx * 8 + colIdx /* 0..63 */
     }
-    static encodeFieldIdx(f: boardFieldIdx): number {
-        return f.rowIdx * 8 + f.colIdx /* 0..63 */
+    static encodeFieldIdx(f: IField): number {
+        return f.rank * 8 + f.file /* 0..63 */
     }
     static mapPieceKey(key_: piecesPieceKeyType): pieceKeyType { // insert mapping of pieceTypes to our representaton if different
         return key_

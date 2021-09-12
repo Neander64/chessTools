@@ -1,7 +1,8 @@
-import { ChessBoardRepresentation, Field, offsetsEnum } from './chess-board-representation'
+import { ChessBoardRepresentation, Field } from './chess-board-representation'
 import { ChessBoardData } from './chess-board'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
+import { offsetsEnum } from './chess-board-offsets'
 
 describe('Testing chess-board-representation', () => {
 

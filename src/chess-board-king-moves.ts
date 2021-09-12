@@ -1,7 +1,8 @@
-import { boardFieldIdx, offsets, shiftField, pieceOnBoard, sameFields } from './chess-board-internal-types'
-import { IChessBoardRepresentation } from './chess-board-representation'
+import { boardFieldIdx, pieceOnBoard, sameFields } from './chess-board-internal-types'
+import { IField } from './chess-board-representation'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
+import { offsetsEnum } from './chess-board-offsets'
 
 export enum castleType {
     short,
@@ -116,18 +117,18 @@ export class KingMovesRaw {
     static readonly kingsTargetColCastleShort = 6
     static readonly kingsTargetColCastleLong = 2
 
-    moves: boardFieldIdx[]
+    moves: IField[]
 
-    constructor(startField: boardFieldIdx, board: IChessBoardRepresentation) {
+    constructor(startField: IField) {
         const offsetsKing = [
-            offsets.NE, offsets.N, offsets.NW,
-            offsets.E, offsets.W,
-            offsets.SE, offsets.S, offsets.SW,
+            offsetsEnum.NE, offsetsEnum.N, offsetsEnum.NW,
+            offsetsEnum.E, offsetsEnum.W,
+            offsetsEnum.SE, offsetsEnum.S, offsetsEnum.SW,
         ];
         this.moves = [];
-        for (const f of offsetsKing) {
-            let newField = shiftField(startField, f)
-            if (board.isFieldOnBoard(newField)) {
+        for (const off of offsetsKing) {
+            let newField = startField.shift(off)
+            if (newField.isOnBoard()) {
                 this.moves.push(newField)
             }
         }
@@ -150,14 +151,14 @@ export class KingMovesRaw {
         }
     }
 
-    static isMoveCastle(sourcePieceOB: pieceOnBoard, target: boardFieldIdx): castleData | undefined {
+    static isMoveCastle(sourcePieceOB: pieceOnBoard, target: IField): castleData | undefined {
         if (sourcePieceOB.piece.kind != pieceKind.King) return undefined
 
         let short = this.castle(sourcePieceOB.piece.color, castleType.short)
-        if (sameFields(short.kingSource, sourcePieceOB.field) && sameFields(short.kingTarget, target)) return short
+        if (sameFields(short.kingSource, sourcePieceOB.field) && sameFields(short.kingTarget, target.boardFieldIdx())) return short
 
         let long = this.castle(sourcePieceOB.piece.color, castleType.long)
-        if (sameFields(long.kingSource, sourcePieceOB.field) && sameFields(long.kingTarget, target)) return long
+        if (sameFields(long.kingSource, sourcePieceOB.field) && sameFields(long.kingTarget, target.boardFieldIdx())) return long
 
         return undefined
     }

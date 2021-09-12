@@ -1,4 +1,5 @@
-import { IField, offsetsEnum, Field } from './chess-board-representation'
+import { IField, Field } from './chess-board-representation'
+import { offsetsEnum } from './chess-board-offsets'
 
 export const enum bishopRay { // 1-2,3-4 are opposites
     SW = offsetsEnum.SW,

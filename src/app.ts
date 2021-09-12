@@ -3,27 +3,29 @@ import * as fsp from "fs/promises"
 import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
-import * as chessGame from "./chess-game"
-import { parseChessable as Parser } from "./parseChessable"
+//import * as chessGame from "./chess-game"
+//import { parseChessable as Parser } from "./parseChessable"
 import * as chessBoard from "./chess-board"
-import { Piece, pieceKind } from './chess-board-pieces'
+//import { Piece, pieceKind } from './chess-board-pieces'
 
 import * as repl from "repl"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let cb = new chessBoard.ChessBoard()
-cb.loadFEN(cb.initialBoardFEN);
-console.log(cb.toASCII())
-console.log(cb.move("e2f3"))
-console.log(cb.toASCII())
+console.log('#')
+//let cb = new chessBoard.ChessBoard()
+console.log('##')
+//cb.loadFEN(cb.initialBoardFEN);
+//console.log(cb.toASCII())
+//console.log(cb.move("Nf3"))
+//console.log(cb.toASCII())
 process.exit()
 
 
 
 const prompt = 'ChessTools >'
-//let cb = new chessBoard.ChessBoard()
+let cb = new chessBoard.ChessBoard()
 cb.loadFEN(cb.initialBoardFEN);
 const replServer = repl.start({ prompt: prompt, useColors: true }) // .context.m = msg
 

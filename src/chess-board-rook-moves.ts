@@ -1,5 +1,5 @@
-import { boardFieldIdx, fieldOffset, offsets, shiftField } from './chess-board-internal-types'
-import { IChessBoardRepresentation, IField, Field, offsetsEnum } from './chess-board-representation'
+import { IField } from './chess-board-representation'
+import { offsetsEnum } from './chess-board-offsets'
 
 
 export const enum rookRay {
@@ -46,38 +46,6 @@ export class RookMovesRaw {
         return []; // unreachable
     }
 }
-/* optional experimental implementation with iterator
-export class RookRayIt implements IterableIterator<boardFieldIdx> {
-    private _startField: boardFieldIdx;
-    private _curOffset: { colOffset: number, rowOffset: number };
-    private _offset: { colOffset: number, rowOffset: number };
-
-    constructor(startField: boardFieldIdx, ray: rookRay) {
-        this._startField = startField;
-        switch (ray) {
-            case rookRay.ray1: this._offset = { colOffset: 1, rowOffset: 0 }; break;
-            case rookRay.ray2: this._offset = { colOffset: -1, rowOffset: 0 }; break;
-            case rookRay.ray3: this._offset = { colOffset: 0, rowOffset: 1 }; break;
-            case rookRay.ray4: this._offset = { colOffset: 0, rowOffset: -1 }; break;
-        }
-        this._curOffset = { colOffset: this._offset.colOffset, rowOffset: this._offset.rowOffset };
-    }
-    public next(): IteratorResult<boardFieldIdx> {
-        let newCol = this._startField.colIdx + this._curOffset.colOffset;
-        let newRow = this._startField.rowIdx + this._curOffset.rowOffset;
-        this._curOffset.colOffset += this._offset.colOffset;
-        this._curOffset.rowOffset += this._offset.rowOffset;
-        if (isFieldOnBoard(newCol, newRow)) {
-            return { done: false, value: { colIdx: newCol, rowIdx: newRow } }
-        }
-        return { done: true, value: null };
-    }
-
-    [Symbol.iterator](): IterableIterator<boardFieldIdx> {
-        return this;
-    }
-}
-*/
 export function isOffsetRookLike(source: IField, target: IField): rookRay | undefined {
     let dir = source.isHorizontalVertical(target)
     switch (dir) {

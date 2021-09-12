@@ -1,5 +1,5 @@
 import { Piece, pieceKeyType, pieceKind } from './chess-board-pieces'
-import { pieceOnBoard, boardFieldIdx, sameFields, fieldIdx, fieldOffset } from './chess-board-internal-types'
+import { boardFieldIdx, sameFields, fieldIdx } from './chess-board-internal-types'
 import { color, otherColor } from './chess-color'
 import { AttackedFields } from './chess-board-attacked-fields'
 import { BishopMovesRaw, isOffsetBishopLike } from './chess-board-bishop-moves'
@@ -138,14 +138,23 @@ export class Field implements IField {
     // TEMP Helper, TODO remove after migration
     boardFieldIdx(): boardFieldIdx { return { colIdx: this._file, rowIdx: this._rank } }
     static createFromBoardFieldIdx(field: boardFieldIdx): Field { return new Field(field.colIdx, field.rowIdx) }
+    static create(file_: fileType, rank_: rankType): Field {
+        return new Field(file_, rank_)
+    }
 
 }
+
+export type pieceOnBoard = {
+    piece: Piece,
+    field: IField,
+};
+function createPieceOB(piece_: Piece, field_: IField) { return { piece: piece_, field: field_ } }
 
 
 export class ValidatedMove { // Data to do/undo moves
     isValid: boolean
     sourcePieceOB: pieceOnBoard
-    target: boardFieldIdx
+    target: IField
     // pawn promotion
     isPromotion: boolean
     promotionPieceKind?: pieceKind;
@@ -154,17 +163,17 @@ export class ValidatedMove { // Data to do/undo moves
     // castle
     isCastle: boolean
     pieceRook?: pieceOnBoard
-    targetRook?: boardFieldIdx
+    targetRook?: IField
     // captured/replaced Piece
     pieceCaptured?: pieceOnBoard
 
     // data to be updated
     castleFlags: CastleFlags
-    enPassantField: boardFieldIdx | undefined
+    enPassantField: IField | undefined
     halfMoves50: number
 
 
-    constructor(pieceOB_: pieceOnBoard, target_: boardFieldIdx, data_: IChessBoardData) {
+    constructor(pieceOB_: pieceOnBoard, target_: IField, data_: IChessBoardData) {
         this.isValid = false
         this.sourcePieceOB = pieceOB_
         this.target = target_
@@ -172,29 +181,29 @@ export class ValidatedMove { // Data to do/undo moves
         this.isPromotion = false
         this.isCastle = false
         this.castleFlags = new CastleFlags(data_.castleFlags)
-        this.enPassantField = data_.enPassantField
+        this.enPassantField = (typeof data_.enPassantField == 'undefined') ? undefined : Field.createFromBoardFieldIdx(data_.enPassantField)
         this.halfMoves50 = data_.halfMoves50
     }
     get color(): color { return this.sourcePieceOB.piece.color }
-    get source(): boardFieldIdx { return this.sourcePieceOB.field }
+    get source(): IField { return this.sourcePieceOB.field }
     get kind(): pieceKind { return this.sourcePieceOB.piece.kind }
     get piece(): Piece { return this.sourcePieceOB.piece }
     get capturedKind(): pieceKind { return this.pieceCaptured?.piece.kind! }
     get capturedColor(): color { return this.pieceCaptured?.piece.color! }
-    get capturedField(): boardFieldIdx { return this.pieceCaptured?.field! }
+    get capturedField(): IField { return this.pieceCaptured?.field! }
 
     updateData(data_: IChessBoardData) {
         data_.castleFlags.set(this.castleFlags)
-        data_.enPassantField = this.enPassantField
+        data_.enPassantField = this.enPassantField?.boardFieldIdx()
         data_.halfMoves50 = this.halfMoves50
     }
     get moveOnBoard(): moveOnBoard {
         return {
             pieceOB: this.sourcePieceOB,
-            target: this.target,
+            target: this.target.boardFieldIdx(),
             promotionPiece: this.promotionPieceKind,
             pieceRook: this.pieceRook,
-            targetRook: this.targetRook,
+            targetRook: this.targetRook?.boardFieldIdx(),
             pieceCaptured: this.pieceCaptured
         }
     }
@@ -212,11 +221,12 @@ export interface IChessBoardRepresentation {
     pieceKey(file: fileType, rank: rankType): pieceKeyType
 
     isFieldOnBoard(field: boardFieldIdx): boolean // check validity of boardFieldIdx
-    setPiece(piece_: Piece, field: boardFieldIdx): void
-    removePiece(field: boardFieldIdx): void
+    setPiece(piece_: Piece, field: IField): void
+    removePiece(field: IField): void
     peekField(field: boardFieldIdx): Piece
     peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard
     isFieldEmpty(field: boardFieldIdx): boolean
+    field(file_: fileType, rank_: rankType): IField
 
     clearBoard(): void
     setBoard(board: Piece[][]): void
@@ -247,11 +257,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     isPiece(file: fileType, rank: rankType) { return this._board[file][rank].isPiece }
     pieceKey(file: fileType, rank: rankType) { return this._board[file][rank].key }
     isFieldOnBoard(field: boardFieldIdx) { return (field.colIdx >= 0 && field.colIdx < 8 && field.rowIdx >= 0 && field.rowIdx < 8) }
-    setPiece(piece_: Piece, field: boardFieldIdx) { this._board[field.colIdx][field.rowIdx] = piece_ }
-    removePiece(field: boardFieldIdx) { this._board[field.colIdx][field.rowIdx] = Piece.none() }
+    setPiece(piece_: Piece, field: Field) { this._board[field.file][field.rank] = piece_ }
+    removePiece(field: Field) { this._board[field.file][field.rank] = Piece.none() }
     peekField(field: boardFieldIdx): Piece { return this._board[field.colIdx][field.rowIdx] }
-    peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard { return { piece: this.peekField(field_), field: field_ } }
+    peekFieldPieceOB(field_: boardFieldIdx): pieceOnBoard { return { piece: this.peekField(field_), field: Field.createFromBoardFieldIdx(field_) } }
     isFieldEmpty(field: boardFieldIdx): boolean { return this.peekField(field).isEmpty }
+    field(file_: fileType, rank_: rankType): Field { return new Field(file_, rank_) }
 
     clearBoard() {
         for (let col = 0; col < 8; col++) {
@@ -284,7 +295,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             for (let c = 0; c < 8; c++) {
                 let p = this.peekField({ colIdx: c, rowIdx: r })
                 if (p.isPiece && p.color == color_) {
-                    result.push({ piece: p, field: { colIdx: c, rowIdx: r } })
+                    result.push(createPieceOB(p, Field.create(c, r)))
                 }
             }
         }
@@ -297,7 +308,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             for (let c = 0; c < 8; c++) {
                 let p = this.peekField({ colIdx: c, rowIdx: r })
                 if (p.kind == kind_ && p.color == color_) {
-                    result.push({ piece: p, field: { colIdx: c, rowIdx: r } })
+                    result.push(createPieceOB(p, Field.create(c, r)))
                 }
             }
         }
@@ -327,7 +338,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return result;
     }
 
-    getKingField(color_: color): boardFieldIdx {
+    getKingField(color_: color): IField {
         //if (this._emptyBoard) throw new Error('getKing() operation on empty board')
         let kings = this.currentKindOfPiecesOnBoard(color_, pieceKind.King)
         if (kings.length != 1) throw new Error('getKingField(): unexpected number of kings (' + kings.length + ')')
@@ -338,7 +349,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private getAttackedFieldsByRook(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let rookMoves: boardFieldIdx[] = []
-        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let f of rookMovesRaw.getRay(ray)) {
                 rookMoves.push(f.boardFieldIdx())
@@ -348,14 +359,14 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return rookMoves;
     }
     private getAttackedFieldsByKnight(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) //TODO
+        let knightMoves = new KnightMovesRaw(pieceOB_.field)
         let result: boardFieldIdx[] = []
         for (let f of knightMoves.moves) result.push(f.boardFieldIdx()) // TODO remove after type migration
         return result
     }
     private getAttackedFieldsByBishop(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let bishopMoves: boardFieldIdx[] = []
-        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let f of bishopMovesRaw.getRay(ray)) {
                 bishopMoves.push(f.boardFieldIdx())
@@ -366,14 +377,14 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     private getAttackedFieldsByQueen(pieceOB_: pieceOnBoard): boardFieldIdx[] {
         let queenMoves: boardFieldIdx[] = []
-        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let f of rookMovesRaw.getRay(ray)) {
                 queenMoves.push(f.boardFieldIdx());
                 if (!this.isFieldEmpty(f.boardFieldIdx())) break
             }
         }
-        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let f of bishopMovesRaw.getRay(ray)) {
                 queenMoves.push(f.boardFieldIdx())
@@ -383,11 +394,11 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return queenMoves
     }
     private getAttackedFieldsByPawn(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let pawnMovesRaw = new PawnMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field), pieceOB_.piece.color)
+        let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color)
         return pawnMovesRaw.attacks.map(x => x.target.boardFieldIdx())
     }
     private getAttackedFieldsByKing(pieceOB_: pieceOnBoard): boardFieldIdx[] {
-        let kingMoves = new KingMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let kingMoves = new KingMovesRaw(pieceOB_.field)
         return kingMoves.moves.map(x => x.boardFieldIdx());
     }
     getAttackedFieldsByPiece(pieceOB_: pieceOnBoard): boardFieldIdx[] {
@@ -417,7 +428,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                     let attackingPieces = this.currentPiecesOnBoard(attackingColor)
                     for (let piece of attackingPieces) {
                         for (let field of this.getAttackedFieldsByPiece(piece)) {
-                            this._fieldsAttackedByBlack.add(field, piece)
+                            this._fieldsAttackedByBlack.add(Field.createFromBoardFieldIdx(field), piece)
                         }
                     }
                 }
@@ -427,7 +438,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                     let attackingPieces = this.currentPiecesOnBoard(attackingColor)
                     for (let piece of attackingPieces) {
                         for (let field of this.getAttackedFieldsByPiece(piece)) {
-                            this._fieldsAttackedByWhite.add(field, piece)
+                            this._fieldsAttackedByWhite.add(Field.createFromBoardFieldIdx(field), piece)
                         }
                     }
                 }
@@ -439,10 +450,10 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         this._fieldsAttackedByWhite.clear()
     }
 
-    isPieceAttackedOn(field: boardFieldIdx, attackingColor: color): boolean {
+    isPieceAttackedOn(field: IField, attackingColor: color): boolean {
         return this.getAttackedFields(attackingColor).isAttacked(field)
     }
-    getAttackersOn(field: boardFieldIdx, attackingColor: color): pieceOnBoard[] {
+    getAttackersOn(field: IField, attackingColor: color): pieceOnBoard[] {
         return this.getAttackedFields(attackingColor).attackersOn(field)
     }
 
@@ -450,7 +461,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private getLegalMovesOfRook(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
                 let m = this.validateMove(pieceOB_, target.boardFieldIdx())
@@ -462,7 +473,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     private getLegalMovesOfKnight(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO adjust after migration
+        let knightMoves = new KnightMovesRaw(pieceOB_.field)
         for (let target of knightMoves.moves) {
             let m = this.validateMove(pieceOB_, target.boardFieldIdx()) // TODO adjust after migration
             if (m.isValid) result.push(m.moveOnBoard)
@@ -471,7 +482,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     private getLegalMovesOfBishop(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TOD
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let target of bishopMovesRaw.getRay(ray)) {
                 let m = this.validateMove(pieceOB_, target.boardFieldIdx())
@@ -483,7 +494,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     private getLegalMovesOfQueen(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
                 let m = this.validateMove(pieceOB_, target.boardFieldIdx())
@@ -491,7 +502,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                 if (!this.isFieldEmpty(target.boardFieldIdx())) break
             }
         }
-        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field)) // TODO
+        let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let target of bishopMovesRaw.getRay(ray)) {
                 let m = this.validateMove(pieceOB_, target.boardFieldIdx())
@@ -503,18 +514,18 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     getLegalMovesOfKing(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let kingMoves = new KingMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field))
+        let kingMoves = new KingMovesRaw(pieceOB_.field)
         for (let target of kingMoves.moves) {
             let m = this.validateMove(pieceOB_, target.boardFieldIdx())
             if (m.isValid) result.push(m.moveOnBoard)
         }
         let castleDataShort = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short)
-        if (pieceOB_.field == castleDataShort.kingSource) {
+        if (pieceOB_.field.sameF(castleDataShort.kingSource)) {
             let m = this.validateMove(pieceOB_, castleDataShort.kingTarget)
             if (m.isValid) result.push(m.moveOnBoard)
         }
         let castleDataLong = KingMovesRaw.castle(pieceOB_.piece.color!, castleType.short)
-        if (pieceOB_.field == castleDataLong.kingSource) {
+        if (pieceOB_.field.sameF(castleDataLong.kingSource)) {
             let m = this.validateMove(pieceOB_, castleDataLong.kingTarget)
             if (m.isValid) result.push(m.moveOnBoard)
         }
@@ -522,7 +533,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     getLegalMovesOfPawn(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
-        let pawnMovesRaw = new PawnMovesRaw(Field.createFromBoardFieldIdx(pieceOB_.field), pieceOB_.piece.color!)
+        let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color!)
         for (let pawnMove of pawnMovesRaw.moves) {
             if (pawnMove.isPromotion) {
                 for (let promoKind of PawnMovesRaw.promotionPieces) {
@@ -590,8 +601,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         // tmpBoard.removePiece(validatedMove.source)
         if (tmpBoard.isCheck()) return false
 
-        if (this.isCaptureOn(validatedMove.target, validatedMove.color)) {
-            validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target)
+        if (this.isCaptureOn(validatedMove.target.boardFieldIdx(), validatedMove.color)) {
+            validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target.boardFieldIdx())
             if (validatedMove.capturedKind == pieceKind.Rook) {
                 KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags)
             }
@@ -607,14 +618,14 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfRook(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Rook) return false
 
-        let rookLike = isOffsetRookLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+        let rookLike = isOffsetRookLike(validatedMove.source, validatedMove.target)
         if (typeof rookLike == 'undefined') return false;
-        let rookMovesRaw = new RookMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+        let rookMovesRaw = new RookMovesRaw(validatedMove.source)
         for (let f of rookMovesRaw.getRay(rookLike)) {
-            if (f.sameF(validatedMove.target)) break
+            if (f.same(validatedMove.target)) break
             if (!this.isFieldEmpty(f.boardFieldIdx())) return false
         }
-        if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
 
         if (!this.validateMoveOfPiece(validatedMove)) return false
         KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags)
@@ -625,10 +636,10 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfKnight(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Knight) return false
 
-        let knightMoves = new KnightMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source)) // TODO adjust after migration
-        let found = knightMoves.moves.find(x => x.sameF(validatedMove.target))
+        let knightMoves = new KnightMovesRaw(validatedMove.source)
+        let found = knightMoves.moves.find(x => x.same(validatedMove.target))
         if (typeof found === 'undefined') return false
-        if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
 
         validatedMove.isValid = true
@@ -637,14 +648,14 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfBishop(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Bishop) return false
 
-        let bishopLike = isOffsetBishopLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target)) // TODO
+        let bishopLike = isOffsetBishopLike(validatedMove.source, validatedMove.target)
         if (typeof bishopLike === 'undefined') return false;
-        let bishopMovesRaw = new BishopMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+        let bishopMovesRaw = new BishopMovesRaw(validatedMove.source)
         for (let f of bishopMovesRaw.getRay(bishopLike)) {
-            if (f.sameF(validatedMove.target)) break
+            if (f.same(validatedMove.target)) break
             if (!this.isFieldEmpty(f.boardFieldIdx())) return false
         }
-        if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+        if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
         if (!this.validateMoveOfPiece(validatedMove)) return false
 
         validatedMove.isValid = true
@@ -653,24 +664,24 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfQueen(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.Queen) return false
 
-        let bishopLikeQ = isOffsetBishopLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+        let bishopLikeQ = isOffsetBishopLike(validatedMove.source, validatedMove.target)
         if (typeof bishopLikeQ !== 'undefined') {
-            let bishopMovesRawQ = new BishopMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+            let bishopMovesRawQ = new BishopMovesRaw(validatedMove.source)
             for (let f of bishopMovesRawQ.getRay(bishopLikeQ)) {
-                if (f.sameF(validatedMove.target)) break
+                if (f.same(validatedMove.target)) break
                 if (!this.isFieldEmpty(f.boardFieldIdx())) return false
             }
-            if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+            if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
         }
         else {
-            let rookLikeQ = isOffsetRookLike(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target))
+            let rookLikeQ = isOffsetRookLike(validatedMove.source, validatedMove.target)
             if (typeof rookLikeQ !== 'undefined') {
-                let rookMovesRawQ = new RookMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
+                let rookMovesRawQ = new RookMovesRaw(validatedMove.source)
                 for (let f of rookMovesRawQ.getRay(rookLikeQ)) {
-                    if (f.sameF(validatedMove.target)) break
+                    if (f.same(validatedMove.target)) break
                     if (!this.isFieldEmpty(f.boardFieldIdx())) return false
                 }
-                if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+                if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
             }
             else return false
         }
@@ -682,7 +693,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     private validateMoveOfKing(validatedMove: ValidatedMove): boolean {
         if (validatedMove.kind != pieceKind.King) return false
 
-        let castle = KingMovesRaw.isMoveCastle(validatedMove.sourcePieceOB, Field.createFromBoardFieldIdx(validatedMove.target))
+        let castle = KingMovesRaw.isMoveCastle(validatedMove.sourcePieceOB, validatedMove.target)
         if (typeof castle !== 'undefined') {
             if (!validatedMove.castleFlags.getCastleFlag(validatedMove.color, castle.castleType)) return false
             if (!this.isPieceOn(castle.kingSource, castle.kingPiece)) return false
@@ -690,19 +701,19 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             for (let colIdx_ = castle.betweenPathCols.start; colIdx_ <= castle.betweenPathCols.end; colIdx_++)
                 if (!this.isFieldEmpty(fieldIdx(colIdx_, castle.row))) return false
             for (let colIdx_ = castle.kingPathCols.start; colIdx_ <= castle.kingPathCols.end; colIdx_++)
-                if (this.isPieceAttackedOn(fieldIdx(colIdx_, castle.row), otherColor(validatedMove.color))) return false
+                if (this.isPieceAttackedOn(Field.create(colIdx_, castle.row), otherColor(validatedMove.color))) return false
 
             validatedMove.pieceRook = this.peekFieldPieceOB(castle.rookSource)
-            validatedMove.targetRook = castle.rookTarget
+            validatedMove.targetRook = Field.createFromBoardFieldIdx(castle.rookTarget)
             validatedMove.halfMoves50++
             validatedMove.enPassantField = undefined
             validatedMove.isCastle = true
         }
         else {
-            let kingMovesRaw = new KingMovesRaw(Field.createFromBoardFieldIdx(validatedMove.source))
-            let legalKingMove = kingMovesRaw.moves.find(x => sameFields(x.boardFieldIdx(), validatedMove.target))
+            let kingMovesRaw = new KingMovesRaw(validatedMove.source)
+            let legalKingMove = kingMovesRaw.moves.find(x => sameFields(x.boardFieldIdx(), validatedMove.target.boardFieldIdx()))
             if (typeof legalKingMove === 'undefined') return false
-            if (!this.isFieldEmptyOrCapture(validatedMove.target, validatedMove.color)) return false
+            if (!this.isFieldEmptyOrCapture(validatedMove.target.boardFieldIdx(), validatedMove.color)) return false
             if (!this.validateMoveOfPiece(validatedMove)) return false
         }
         KingMovesRaw.adjustCastleRightsAfterMove(validatedMove.sourcePieceOB, validatedMove.castleFlags)
@@ -714,22 +725,22 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         if (validatedMove.kind != pieceKind.Pawn) return false
 
         validatedMove.enPassantField = undefined
-        let pawnMove = PawnMovesRaw.checkPawnMove(Field.createFromBoardFieldIdx(validatedMove.source), Field.createFromBoardFieldIdx(validatedMove.target), validatedMove.color)
+        let pawnMove = PawnMovesRaw.checkPawnMove(validatedMove.source, validatedMove.target, validatedMove.color)
         if (typeof pawnMove == 'undefined') return false
         if (typeof pawnMove.enPassantField != 'undefined') {
             if (!this.isFieldEmpty(pawnMove.enPassantField.boardFieldIdx())) return false
-            if (!this.isFieldEmpty(validatedMove.target)) return false
-            validatedMove.enPassantField = pawnMove.enPassantField.boardFieldIdx()
+            if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false
+            validatedMove.enPassantField = Field.createFromBoardFieldIdx(pawnMove.enPassantField.boardFieldIdx())
         }
         else if (pawnMove.isCapture) {
-            if (typeof this._data.enPassantField != 'undefined' && sameFields(this._data.enPassantField, validatedMove.target)) {
+            if (typeof this._data.enPassantField != 'undefined' && sameFields(this._data.enPassantField, validatedMove.target.boardFieldIdx())) {
                 // capturing e.p.
-                if (!this.isFieldEmpty(validatedMove.target)) return false // e.p. target should always be empty
-                validatedMove.pieceCaptured = this.peekFieldPieceOB(PawnMovesRaw.getPawnFieldOfCaptureEP(Field.createFromBoardFieldIdx(validatedMove.target), validatedMove.color).boardFieldIdx())
+                if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false // e.p. target should always be empty
+                validatedMove.pieceCaptured = this.peekFieldPieceOB(PawnMovesRaw.getPawnFieldOfCaptureEP(validatedMove.target, validatedMove.color).boardFieldIdx())
                 validatedMove.captureEP = true
             }
-            else if (this.isCaptureOn(validatedMove.target, validatedMove.color)) {
-                validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target)
+            else if (this.isCaptureOn(validatedMove.target.boardFieldIdx(), validatedMove.color)) {
+                validatedMove.pieceCaptured = this.peekFieldPieceOB(validatedMove.target.boardFieldIdx())
                 if (validatedMove.capturedKind == pieceKind.Rook) {
                     KingMovesRaw.adjustCastleRightsAfterCapture(validatedMove.pieceCaptured, validatedMove.castleFlags)
                 }
@@ -737,7 +748,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             else return false
         }
         else // normal move
-            if (!this.isFieldEmpty(validatedMove.target)) return false
+            if (!this.isFieldEmpty(validatedMove.target.boardFieldIdx())) return false
 
         if (pawnMove.isPromotion) {
             if (!validatedMove.promotionPieceKind) return false
@@ -755,9 +766,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return true
     }
     validateMove(sourcePieceOB: pieceOnBoard, target: boardFieldIdx, promotionPieceKind?: pieceKind): ValidatedMove {
-        let validatedMove = new ValidatedMove(sourcePieceOB, target, this._data)
+        let validatedMove = new ValidatedMove(sourcePieceOB, Field.createFromBoardFieldIdx(target), this._data)
         validatedMove.isValid = false
-        if (!sameFields(validatedMove.source, validatedMove.target)) {
+        if (!validatedMove.source.same(validatedMove.target)) {
             switch (sourcePieceOB.piece.kind) {
                 case pieceKind.Rook:
                     this.validateMoveOfRook(validatedMove)
@@ -818,19 +829,19 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     doMove(validatedMove: ValidatedMove) {
         if (validatedMove.isCastle) {
-            this.setPiece(validatedMove.piece, validatedMove.target)
-            this.removePiece(validatedMove.source)
-            this.setPiece(validatedMove.pieceRook?.piece!, validatedMove.targetRook!)
-            this.removePiece(validatedMove.pieceRook?.field!)
+            this.setPiece(validatedMove.piece, validatedMove.target as Field)
+            this.removePiece(validatedMove.source as Field)
+            this.setPiece(validatedMove.pieceRook?.piece!, validatedMove.targetRook! as Field)
+            this.removePiece(validatedMove.pieceRook?.field as Field)
         }
         else {
             if (validatedMove.isPromotion)
-                this.setPiece(Piece.getPiece(validatedMove.promotionPieceKind!, validatedMove.color), validatedMove.target)
+                this.setPiece(Piece.getPiece(validatedMove.promotionPieceKind!, validatedMove.color), validatedMove.target as Field)
             else
-                this.setPiece(validatedMove.piece, validatedMove.target)
-            this.removePiece(validatedMove.source)
+                this.setPiece(validatedMove.piece, validatedMove.target as Field)
+            this.removePiece(validatedMove.source as Field)
             if (validatedMove.captureEP)
-                this.removePiece(validatedMove.pieceCaptured?.field!)
+                this.removePiece(validatedMove.pieceCaptured?.field! as Field)
 
         }
     }
@@ -850,12 +861,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         // check if the King can move unattacked
         let tmpBoard = new ChessBoardRepresentation(this._data)
         tmpBoard.setBoard(this._board)
-        tmpBoard.removePiece(kingField) // avoid the king blocking checks by itself
-        let kingMoves = new KingMovesRaw(Field.createFromBoardFieldIdx(kingField))
+        tmpBoard.removePiece(kingField as Field) // avoid the king blocking checks by itself
+        let kingMoves = new KingMovesRaw(kingField)
         for (let m of kingMoves.moves) {
             let p = this.peekField(m.boardFieldIdx())
             if (p.isPiece && p.color == color) continue // field is block by own piece
-            if (!tmpBoard.isPieceAttackedOn(m.boardFieldIdx(), otherColor(color))) {
+            if (!tmpBoard.isPieceAttackedOn(m, otherColor(color))) {
                 return false // could move here
             }
         }

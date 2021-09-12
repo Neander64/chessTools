@@ -44,7 +44,3 @@ export function shiftField(field: boardFieldIdx, offset: fieldOffset, factor: nu
     return { colIdx: field.colIdx + offset.dCol * factor, rowIdx: field.rowIdx + offset.dRow * factor }
 }
 
-export type pieceOnBoard = {
-    piece: Piece,
-    field: boardFieldIdx
-};

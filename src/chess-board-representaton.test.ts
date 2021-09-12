@@ -66,12 +66,12 @@ describe('Testing chess-board-representation', () => {
         cbr.clearBoard()
         data.nextMoveBy = color.black
         let p = Piece.blackRook()
-        let source = { colIdx: 4, rowIdx: 5 }
+        let source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         let test: boolean[][] = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -99,13 +99,13 @@ describe('Testing chess-board-representation', () => {
         `)
 
         // Blocked by own piece
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 2 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 2))
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -133,15 +133,15 @@ describe('Testing chess-board-representation', () => {
         `)
 
         // Blocked and can capture
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         p = Piece.whiteRook()
         data.nextMoveBy = color.white
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 2 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 2))
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -176,12 +176,12 @@ describe('Testing chess-board-representation', () => {
         cbr.clearBoard()
         let p = Piece.blackKnight()
         data.nextMoveBy = color.black
-        let source = { colIdx: 4, rowIdx: 5 }
+        let source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         let test: boolean[][] = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -208,14 +208,14 @@ describe('Testing chess-board-representation', () => {
         ]
         `)
 
-        source = { colIdx: 1, rowIdx: 6 }
+        source = cbr.field(1, 6)
         cbr.clearBoard()
         p = Piece.whiteKnight()
         data.nextMoveBy = color.white
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 7, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(7, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -240,12 +240,12 @@ describe('Testing chess-board-representation', () => {
         ]
         `)
 
-        source = { colIdx: 6, rowIdx: 3 }
+        source = cbr.field(6, 3)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -307,12 +307,12 @@ describe('Testing chess-board-representation', () => {
     ]
     `)
         // Bishop in Corner a8
-        let source = { colIdx: 0, rowIdx: 0 }
+        let source = cbr.field(0, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -340,12 +340,12 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in Corner h8
-        source = { colIdx: 7, rowIdx: 0 }
+        source = cbr.field(7, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 7, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(7, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -371,12 +371,12 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in Corner a1
-        source = { colIdx: 0, rowIdx: 7 }
+        source = cbr.field(0, 7)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 7, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(7, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -402,12 +402,12 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in Corner h1
-        source = { colIdx: 7, rowIdx: 7 }
+        source = cbr.field(7, 7)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -433,12 +433,12 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in central field
-        source = { colIdx: 4, rowIdx: 4 }
+        source = cbr.field(4, 4)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -464,13 +464,13 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in central field, blocked
-        source = { colIdx: 4, rowIdx: 4 }
+        source = cbr.field(4, 4)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 5, rowIdx: 5 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(5, 5))
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -496,15 +496,15 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Bishop in central field, blocked, can capture
-        source = { colIdx: 4, rowIdx: 4 }
+        source = cbr.field(4, 4)
         p = Piece.whiteBishop()
         data.nextMoveBy = color.white
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 5, rowIdx: 5 })
-        pob = cbr.peekFieldPieceOB(source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
+        cbr.setPiece(Piece.blackRook(), cbr.field(5, 5))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
         for (let c = 0; c < 8; c++) {
             for (let r = 0; r < 8; r++) {
                 test[c][r] = cbr.validateMove(pob, { colIdx: c, rowIdx: r }).isValid
@@ -535,12 +535,12 @@ describe('Testing chess-board-representation', () => {
         let cbr = new ChessBoardRepresentation(data)
         let p = Piece.blackQueen()
         data.nextMoveBy = color.black
-        let source = { colIdx: 4, rowIdx: 5 }
+        let source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         let test: boolean[][] = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -567,13 +567,13 @@ describe('Testing chess-board-representation', () => {
     ]
     `)
         // Blocked by own piece
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 2 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 2))
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -601,15 +601,15 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Blocked and can capture
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         p = Piece.whiteQueen()
         data.nextMoveBy = color.white
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 2 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 2))
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -643,11 +643,11 @@ describe('Testing chess-board-representation', () => {
         let cbr = new ChessBoardRepresentation(data)
         let p = Piece.blackKing()
         data.nextMoveBy = color.black
-        let source = { colIdx: 4, rowIdx: 5 }
+        let source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         let test: boolean[][] = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -675,12 +675,12 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Blocked by own piece
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 6 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 0, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 6))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(0, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -708,14 +708,14 @@ describe('Testing chess-board-representation', () => {
     `)
 
         // Blocked and can capture
-        source = { colIdx: 4, rowIdx: 5 }
+        source = cbr.field(4, 5)
         cbr.clearBoard()
         p = Piece.whiteKing()
         data.nextMoveBy = color.white
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackRook(), { colIdx: 4, rowIdx: 4 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 0, rowIdx: 0 })
-        pob = cbr.peekFieldPieceOB(source)
+        cbr.setPiece(Piece.blackRook(), cbr.field(4, 4))
+        cbr.setPiece(Piece.blackKing(), cbr.field(0, 0))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
         test = []
         for (let c = 0; c < 8; c++) {
             test[c] = []
@@ -745,108 +745,108 @@ Array [
         let k = Piece.whiteKing()
         data.nextMoveBy = color.white
         let t = Piece.whiteRook()
-        let source_k = { colIdx: 4, rowIdx: 7 }
-        let target_k = { colIdx: 6, rowIdx: 7 }
-        let source_t = { colIdx: 7, rowIdx: 7 }
+        let source_k = cbr.field(4, 7)
+        let target_k = cbr.field(6, 7)
+        let source_t = cbr.field(7, 7)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        pob = cbr.peekFieldPieceOB(source_k)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = true
         data.castleFlags.canCastleLongWhite = false
         data.castleFlags.canCastleShortBlack = false
         data.castleFlags.canCastleLongBlack = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(true)
         data.castleFlags.canCastleShortWhite = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
         k = Piece.whiteKing()
         t = Piece.blackRook()
-        source_k = { colIdx: 4, rowIdx: 7 }
-        target_k = { colIdx: 6, rowIdx: 7 }
-        source_t = { colIdx: 7, rowIdx: 7 }
+        source_k = cbr.field(4, 7)
+        target_k = cbr.field(6, 7)
+        source_t = cbr.field(7, 7)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        pob = cbr.peekFieldPieceOB(source_k)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = true
         data.castleFlags.canCastleLongWhite = true
         data.castleFlags.canCastleShortBlack = true
         data.castleFlags.canCastleLongBlack = true
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
         k = Piece.whiteKing()
         t = Piece.whiteRook()
-        source_k = { colIdx: 4, rowIdx: 7 }
-        target_k = { colIdx: 2, rowIdx: 7 }
-        source_t = { colIdx: 0, rowIdx: 7 }
+        source_k = cbr.field(4, 7)
+        target_k = cbr.field(2, 7)
+        source_t = cbr.field(0, 7)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        pob = cbr.peekFieldPieceOB(source_k)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = false
         data.castleFlags.canCastleLongWhite = true
         data.castleFlags.canCastleShortBlack = false
         data.castleFlags.canCastleLongBlack = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(true)
         data.castleFlags.canCastleLongWhite = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
         // black castles
         k = Piece.blackKing()
         t = Piece.blackRook()
-        source_k = { colIdx: 4, rowIdx: 0 }
-        target_k = { colIdx: 6, rowIdx: 0 }
-        source_t = { colIdx: 7, rowIdx: 0 }
+        source_k = cbr.field(4, 0)
+        target_k = cbr.field(6, 0)
+        source_t = cbr.field(7, 0)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source_k)
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = false
         data.castleFlags.canCastleLongWhite = false
         data.castleFlags.canCastleShortBlack = true
         data.castleFlags.canCastleLongBlack = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(true)
         data.castleFlags.canCastleShortBlack = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
-        source_k = { colIdx: 4, rowIdx: 0 }
-        target_k = { colIdx: 2, rowIdx: 0 }
-        source_t = { colIdx: 0, rowIdx: 0 }
+        source_k = cbr.field(4, 0)
+        target_k = cbr.field(2, 0)
+        source_t = cbr.field(0, 0)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source_k)
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = false
         data.castleFlags.canCastleLongWhite = false
         data.castleFlags.canCastleShortBlack = false
         data.castleFlags.canCastleLongBlack = true
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(true)
         data.castleFlags.canCastleLongBlack = false
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
         // 
         k = Piece.whiteKing()
         t = Piece.blackRook()
-        source_k = { colIdx: 4, rowIdx: 0 }
-        target_k = { colIdx: 6, rowIdx: 0 }
-        source_t = { colIdx: 7, rowIdx: 0 }
+        source_k = cbr.field(4, 0)
+        target_k = cbr.field(6, 0)
+        source_t = cbr.field(7, 0)
         cbr.clearBoard()
         cbr.setPiece(k, source_k)
         cbr.setPiece(t, source_t)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 3 })
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 3))
         data.nextMoveBy = color.black
-        pob = cbr.peekFieldPieceOB(source_k)
+        pob = cbr.peekFieldPieceOB(source_k.boardFieldIdx())
         data.castleFlags.canCastleShortWhite = true
         data.castleFlags.canCastleLongWhite = true
         data.castleFlags.canCastleShortBlack = true
         data.castleFlags.canCastleLongBlack = true
-        expect(cbr.validateMove(pob, target_k).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target_k.boardFieldIdx()).isValid).toBe(false)
 
     })
 
@@ -856,178 +856,178 @@ Array [
         let p = Piece.blackPawn()
         data.nextMoveBy = color.black
         let p2 = Piece.whiteRook()
-        let source = { colIdx: 0, rowIdx: 1 }
-        let target = { colIdx: 0, rowIdx: 2 }
+        let source = cbr.field(0, 1)
+        let target = cbr.field(0, 2)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        let pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(true)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        let pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(true)
 
-        source = { colIdx: 0, rowIdx: 1 }
-        target = { colIdx: 0, rowIdx: 3 }
+        source = cbr.field(0, 1)
+        target = cbr.field(0, 3)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(true)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(true)
 
-        source = { colIdx: 0, rowIdx: 1 }
-        target = { colIdx: 1, rowIdx: 2 }
+        source = cbr.field(0, 1)
+        target = cbr.field(1, 2)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 1, rowIdx: 2 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(1, 2))
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 6 }
-        target = { colIdx: 1, rowIdx: 7 }
+        source = cbr.field(1, 6)
+        target = cbr.field(1, 7)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 6 }
-        target = { colIdx: 0, rowIdx: 7 }
+        source = cbr.field(1, 6)
+        target = cbr.field(0, 7)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 0, rowIdx: 7 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(0, 7))
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 6 }
-        target = { colIdx: 2, rowIdx: 7 }
+        source = cbr.field(1, 6)
+        target = cbr.field(2, 7)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 2, rowIdx: 7 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(2, 7))
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
         // --- flip colors, same test
         p = Piece.whitePawn()
         p2 = Piece.blackRook()
         data.nextMoveBy = color.white
 
-        source = { colIdx: 0, rowIdx: 6 }
-        target = { colIdx: 0, rowIdx: 5 }
+        source = cbr.field(0, 6)
+        target = cbr.field(0, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(true)
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(true)
 
-        source = { colIdx: 0, rowIdx: 6 }
-        target = { colIdx: 1, rowIdx: 5 }
+        source = cbr.field(0, 6)
+        target = cbr.field(1, 5)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 1, rowIdx: 5 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 4, rowIdx: 0 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(1, 5))
+        cbr.setPiece(Piece.blackKing(), cbr.field(4, 0))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 1 }
-        target = { colIdx: 1, rowIdx: 0 }
+        source = cbr.field(1, 1)
+        target = cbr.field(1, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 1 }
-        target = { colIdx: 0, rowIdx: 0 }
+        source = cbr.field(1, 1)
+        target = cbr.field(0, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 0, rowIdx: 0 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(0, 0))
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
-        source = { colIdx: 1, rowIdx: 1 }
-        target = { colIdx: 2, rowIdx: 0 }
+        source = cbr.field(1, 1)
+        target = cbr.field(2, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(p2, { colIdx: 2, rowIdx: 0 })
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Pawn).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.King).isValid).toBe(false)
-        expect(cbr.validateMove(pob, target, pieceKind.Rook).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Bishop).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Knight).isValid).toBe(true)
-        expect(cbr.validateMove(pob, target, pieceKind.Queen).isValid).toBe(true)
+        cbr.setPiece(p2, cbr.field(2, 0))
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Pawn).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.King).isValid).toBe(false)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Rook).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Bishop).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Knight).isValid).toBe(true)
+        expect(cbr.validateMove(pob, target.boardFieldIdx(), pieceKind.Queen).isValid).toBe(true)
 
         // some additional negatives
-        source = { colIdx: 1, rowIdx: 1 }
-        target = { colIdx: 2, rowIdx: 3 }
+        source = cbr.field(1, 1)
+        target = cbr.field(2, 3)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
 
-        source = { colIdx: 1, rowIdx: 6 }
-        target = { colIdx: 1, rowIdx: 3 }
+        source = cbr.field(1, 6)
+        target = cbr.field(1, 3)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
 
-        source = { colIdx: 1, rowIdx: 5 }
-        target = { colIdx: 1, rowIdx: 0 }
+        source = cbr.field(1, 5)
+        target = cbr.field(1, 0)
         cbr.clearBoard()
         cbr.setPiece(p, source)
-        cbr.setPiece(Piece.blackKing(), { colIdx: 7, rowIdx: 1 })
-        cbr.setPiece(Piece.whiteKing(), { colIdx: 4, rowIdx: 7 })
-        pob = cbr.peekFieldPieceOB(source)
-        expect(cbr.validateMove(pob, target).isValid).toBe(false)
+        cbr.setPiece(Piece.blackKing(), cbr.field(7, 1))
+        cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
+        pob = cbr.peekFieldPieceOB(source.boardFieldIdx())
+        expect(cbr.validateMove(pob, target.boardFieldIdx()).isValid).toBe(false)
     })
 })

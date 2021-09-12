@@ -1,5 +1,5 @@
-import { boardFieldIdx, pieceOnBoard, sameFields } from './chess-board-internal-types'
-import { IField } from './chess-board-representation'
+import { boardFieldIdx, sameFields } from './chess-board-internal-types'
+import { IField, pieceOnBoard } from './chess-board-representation'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
 import { offsetsEnum } from './chess-board-offsets'
@@ -155,10 +155,10 @@ export class KingMovesRaw {
         if (sourcePieceOB.piece.kind != pieceKind.King) return undefined
 
         let short = this.castle(sourcePieceOB.piece.color, castleType.short)
-        if (sameFields(short.kingSource, sourcePieceOB.field) && sameFields(short.kingTarget, target.boardFieldIdx())) return short
+        if (sameFields(short.kingSource, sourcePieceOB.field.boardFieldIdx()) && sameFields(short.kingTarget, target.boardFieldIdx())) return short
 
         let long = this.castle(sourcePieceOB.piece.color, castleType.long)
-        if (sameFields(long.kingSource, sourcePieceOB.field) && sameFields(long.kingTarget, target.boardFieldIdx())) return long
+        if (sameFields(long.kingSource, sourcePieceOB.field.boardFieldIdx()) && sameFields(long.kingTarget, target.boardFieldIdx())) return long
 
         return undefined
     }
@@ -168,13 +168,13 @@ export class KingMovesRaw {
             let color = capturedPieceOB.piece.color
             if (castleFlags_.getCastleFlag(color, castleType.short)) {
                 let short = this.castle(color, castleType.short)
-                if (sameFields(short.rookSource, capturedPieceOB.field)) {
+                if (sameFields(short.rookSource, capturedPieceOB.field.boardFieldIdx())) {
                     castleFlags_.setCastleFlag(color, short.castleType, false)
                 }
             }
             if (castleFlags_.getCastleFlag(color, castleType.long)) {
                 let long = this.castle(color, castleType.long)
-                if (sameFields(long.rookSource, capturedPieceOB.field)) {
+                if (sameFields(long.rookSource, capturedPieceOB.field.boardFieldIdx())) {
                     castleFlags_.setCastleFlag(color, long.castleType, false)
                 }
             }
@@ -185,13 +185,13 @@ export class KingMovesRaw {
             let color = sourcePieceOB.piece.color
             if (castleFlags_.getCastleFlag(color, castleType.short)) {
                 let short = this.castle(color, castleType.short)
-                if (sameFields(short.rookSource, sourcePieceOB.field)) {
+                if (sameFields(short.rookSource, sourcePieceOB.field.boardFieldIdx())) {
                     castleFlags_.setCastleFlag(color, short.castleType, false)
                 }
             }
             if (castleFlags_.getCastleFlag(color, castleType.long)) {
                 let long = this.castle(color, castleType.long)
-                if (sameFields(long.rookSource, sourcePieceOB.field)) {
+                if (sameFields(long.rookSource, sourcePieceOB.field.boardFieldIdx())) {
                     castleFlags_.setCastleFlag(color, long.castleType, false)
                 }
             }

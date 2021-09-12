@@ -2,10 +2,10 @@
 import { EncodedPositionKey, encodeType } from './encode-position-key'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color, otherColor } from './chess-color'
-import { pieceOnBoard, boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
+import { boardFieldIdx, offsets, shiftField } from './chess-board-internal-types'
 import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
-import { ChessBoardRepresentation } from './chess-board-representation'
+import { ChessBoardRepresentation, pieceOnBoard } from './chess-board-representation'
 
 // TODO split into several files (resolve circular references)
 // TODO push FEN / PGN into a separate structure/class
@@ -319,13 +319,13 @@ export class ChessBoard {
                         let pResult = charFENToPiece(fenRow[p])
                         if (!pResult.valid) throw new Error('loadFEN(): unexpected piece')
                         if (colIdx >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
-                        this.board.setPiece(pResult.piece, { colIdx: colIdx++, rowIdx: rowIdx })
+                        this.board.setPiece(pResult.piece, this.board.field(colIdx++, rowIdx))
                         //this._board[colIdx++][rowIdx] = pResult.piece
                     }
                     else {
                         if (digit <= 0 || digit > 8 - colIdx) throw new Error('loadFEN(): unexpected digit in position')
                         while (digit > 0 && colIdx < 8) {
-                            this.board.setPiece(Piece.none(), { colIdx: colIdx++, rowIdx: rowIdx })
+                            this.board.setPiece(Piece.none(), this.board.field(colIdx++, rowIdx))
                             //this._board[colIdx++][rowIdx] = Piece.none()
                             digit--
                         }
@@ -695,14 +695,14 @@ export class ChessBoard {
                 let targetingPieces: pieceOnBoard[] = []
                 for (let p of candidates) {
                     if (this.board.validateMove(p, target).isValid) {
-                        if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) ||
-                            (typeof sourceRowIdx !== 'undefined' && p.field.rowIdx == sourceRowIdx) ||
+                        if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) ||
+                            (typeof sourceRowIdx !== 'undefined' && p.field.rank == sourceRowIdx) ||
                             (typeof sourceColIdx === 'undefined' && typeof sourceRowIdx === 'undefined'))
                             targetingPieces.push(p)
                     }
                 }
                 if (targetingPieces.length != 1) return undefined
-                return targetingPieces[0].field
+                return targetingPieces[0].field.boardFieldIdx()
 
             case pieceKind.Pawn:
                 // TODO shift this to PawnMovesRaw class
@@ -728,14 +728,14 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = shiftField(target, offsets.NE)
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         for (p of candidatesP) {
@@ -744,7 +744,7 @@ export class ChessBoard {
                             }
                         }
                         if (targetingP.length != 1) return undefined
-                        return targetingP[0].field
+                        return targetingP[0].field.boardFieldIdx()
 
                     case color.white:
                         field = shiftField(target, offsets.S)
@@ -763,14 +763,14 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = shiftField(target, offsets.SE)
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.colIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         for (p of candidatesP) {
@@ -779,7 +779,7 @@ export class ChessBoard {
                             }
                         }
                         if (targetingP.length != 1) return undefined
-                        return targetingP[0].field
+                        return targetingP[0].field.boardFieldIdx()
                 }
         }
         return undefined

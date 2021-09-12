@@ -1,7 +1,7 @@
-import { pieceOnBoard, boardFieldIdx, sameFields } from './chess-board-internal-types'
+import { IField, pieceOnBoard } from './chess-board-representation'
 
 type attackedBy = {
-    field: boardFieldIdx,  // attacked field
+    field: IField,  // attacked field
     attackingPieces: pieceOnBoard[]
 }
 export class AttackedFields {
@@ -9,8 +9,8 @@ export class AttackedFields {
     constructor() {
         this._fields = []
     }
-    add(attackedField: boardFieldIdx, attackingPiece: pieceOnBoard) {
-        let found = this._fields.find(x => sameFields(x.field, attackedField))
+    add(attackedField: IField, attackingPiece: pieceOnBoard) {
+        let found = this._fields.find(x => x.field.same(attackedField))
         if (found)
             found.attackingPieces.push(attackingPiece)
         else
@@ -19,12 +19,12 @@ export class AttackedFields {
     clear() {
         this._fields = []
     }
-    isAttacked(field: boardFieldIdx): boolean {
-        let found = this._fields.find(x => sameFields(x.field, field))
+    isAttacked(field: IField): boolean {
+        let found = this._fields.find(x => x.field.same(field))
         return (typeof found !== 'undefined')
     }
-    attackersOn(field: boardFieldIdx): pieceOnBoard[] {
-        let found = this._fields.find(x => sameFields(x.field, field))
+    attackersOn(field: IField): pieceOnBoard[] {
+        let found = this._fields.find(x => x.field.same(field))
         if (typeof found == 'undefined') return []
         return found!.attackingPieces
     }

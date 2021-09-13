@@ -13,11 +13,15 @@ import * as repl from "repl"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-console.log('#')
-//let cb = new chessBoard.ChessBoard()
-console.log('##')
+let cb = new chessBoard.ChessBoard("6k1/8/4B2Q/8/8/8/8/K7 b - - 0 100")
+//let cb = new chessBoard.ChessBoard("5k2/8/4B2Q/8/8/8/8/K7 b - - 0 100")
+//let cb = new chessBoard.ChessBoard("5k2/8/5Q2/8/8/8/8/K7 b - - 0 100")
+cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+console.log(cb.toASCII())
+console.log(cb.move('h4'))
+//console.log(cb.isCheck())
+//console.log(cb.isMate())
 //cb.loadFEN(cb.initialBoardFEN);
-//console.log(cb.toASCII())
 //console.log(cb.move("Nf3"))
 //console.log(cb.toASCII())
 process.exit()
@@ -25,7 +29,7 @@ process.exit()
 
 
 const prompt = 'ChessTools >'
-let cb = new chessBoard.ChessBoard()
+//let cb = new chessBoard.ChessBoard()
 cb.loadFEN(cb.initialBoardFEN);
 const replServer = repl.start({ prompt: prompt, useColors: true }) // .context.m = msg
 

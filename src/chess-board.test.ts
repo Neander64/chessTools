@@ -365,41 +365,53 @@ describe('Testing chess-board', () => {
 Object {
   "black": Map {
     Piece {
+      "_FEN": "r",
       "_key": 9,
     } => 2,
     Piece {
+      "_FEN": "n",
       "_key": 10,
     } => 2,
     Piece {
+      "_FEN": "b",
       "_key": 11,
     } => 2,
     Piece {
+      "_FEN": "q",
       "_key": 12,
     } => 1,
     Piece {
+      "_FEN": "k",
       "_key": 13,
     } => 1,
     Piece {
+      "_FEN": "p",
       "_key": 14,
     } => 8,
   },
   "white": Map {
     Piece {
+      "_FEN": "P",
       "_key": 6,
     } => 8,
     Piece {
+      "_FEN": "R",
       "_key": 1,
     } => 2,
     Piece {
+      "_FEN": "N",
       "_key": 2,
     } => 2,
     Piece {
+      "_FEN": "B",
       "_key": 3,
     } => 2,
     Piece {
+      "_FEN": "Q",
       "_key": 4,
     } => 1,
     Piece {
+      "_FEN": "K",
       "_key": 5,
     } => 1,
   },

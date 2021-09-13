@@ -1,4 +1,4 @@
-import { IField, Field } from './chess-board-representation'
+import { IField } from './chess-board-representation'
 import { offsetsEnum } from './chess-board-offsets'
 
 export const enum bishopRay { // 1-2,3-4 are opposites
@@ -44,39 +44,7 @@ export class BishopMovesRaw {
         return []; // unreachable
     }
 }
-/* optional implementation with iterator
-export class BishopRayIt implements IterableIterator<boardFieldIdx> {
-    private _startField: boardFieldIdx;
-    private _curOffset: { colOffset: number, rowOffset: number };
-    private _offset: { colOffset: number, rowOffset: number };
 
-    constructor(startField: boardFieldIdx, diag: bishopRay) {
-        this._startField = startField;
-        switch (diag) {
-            case bishopRay.ray1: this._offset = { colOffset: 1, rowOffset: 1 }; break;
-            case bishopRay.ray2: this._offset = { colOffset: -1, rowOffset: -1 }; break;
-            case bishopRay.ray3: this._offset = { colOffset: 1, rowOffset: -1 }; break;
-            case bishopRay.ray4: this._offset = { colOffset: -1, rowOffset: 1 }; break;
-        }
-        this._curOffset = { colOffset: this._offset.colOffset, rowOffset: this._offset.rowOffset };
-    }
-
-    public next(): IteratorResult<boardFieldIdx> {
-        let newCol = this._startField.colIdx + this._curOffset.colOffset;
-        let newRow = this._startField.rowIdx + this._curOffset.rowOffset;
-        this._curOffset.colOffset += this._offset.colOffset;
-        this._curOffset.rowOffset += this._offset.rowOffset;
-        if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) {
-            return { done: false, value: { colIdx: newCol, rowIdx: newRow } }
-        }
-        return { done: true, value: null };
-    }
-
-    [Symbol.iterator](): IterableIterator<boardFieldIdx> {
-        return this;
-    }
-}
-*/
 export function isOffsetBishopLike(source: IField, target: IField): bishopRay | undefined {
     let dir = source.isDiagonal(target)
     switch (dir) {

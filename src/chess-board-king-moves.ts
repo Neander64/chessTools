@@ -1,4 +1,3 @@
-import { sameFields } from './chess-board-internal-types'
 import { IChessBoardRepresentation, IField, pieceOnBoard } from './chess-board-representation'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
@@ -137,6 +136,7 @@ export class KingMovesRaw {
     static castle(color_: color, type_: castleType, cbr: IChessBoardRepresentation): castleData {
         let rowIdx_ = (color_ == color.black) ? 0 : 7
         // TODO make this use static data
+        // TODO use rank/file instead of field
         return {
             castleType: type_,
             kingSource: cbr.field((type_ == castleType.short) ? 4 : 4, rowIdx_),

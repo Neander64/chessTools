@@ -33,16 +33,27 @@ export const enum pieceKind {
 //const COLOR_FLAG = 0b1000 // +8
 const PIECE_MASK = 0b0111
 
+const pieceKindPGN = new Map<number, string>([
+    // map piece to string, usage: pieceKindPGN.get(p /*:pieceKind*/)
+    [pieceKind.Rook, 'R'],
+    [pieceKind.Knight, 'N'],
+    [pieceKind.Bishop, 'B'],
+    [pieceKind.Queen, 'Q'],
+    [pieceKind.King, 'K'],
+    [pieceKind.Pawn, 'P'],
+    [pieceKind.none, ' '],
+])
+
 export class Piece {
-    //    private _kind: pieceKind
-    //    private _color?: color
     // yes, I should separate this type from encoding, But, nay
     private _key: pieceKeyType // encoding kind & color -- value of pieceKey
+    private _FEN: string
 
     constructor(key: number) {
-        //        this._kind = kind_
-        //        this._color = color_
         this._key = key
+        this._FEN = pieceKindPGN.get(this.kind) || ' '
+        if (this.color == color.black) this._FEN = this._FEN.toLowerCase()
+        //        console.log("key: ", key, " FEN:", this._FEN, "color:", (this.color == color.black) ? 'black' : 'white')
     }
     get kind(): pieceKind {
         return this._key & PIECE_MASK
@@ -55,9 +66,15 @@ export class Piece {
     get isNone() { return this._key === pieceKey.none }
     get isEmpty() { return this._key === pieceKey.none }
     get isPiece() { return this._key !== pieceKey.none }
-    //same(p: Piece) { return this._kind == p.kind && this._color == p.color }
     same(p: Piece) { return this._key == p._key }
     get key() { return this._key }
+
+    get FEN(): string {
+        return this._FEN
+    }
+    get PGN(): string {
+        return this._FEN.toUpperCase()
+    }
 
     private static _none = new Piece(pieceKey.none)
     private static _blackRook = new Piece(pieceKey.r)
@@ -132,5 +149,38 @@ export class Piece {
             }
         }
         return Piece.none() // unreachable
+    }
+}
+
+const charFENtoPieceMap = new Map<string, Piece>([
+    ['R', Piece.whiteRook()],
+    ['N', Piece.whiteKnight()],
+    ['B', Piece.whiteBishop()],
+    ['Q', Piece.whiteQueen()],
+    ['K', Piece.whiteKing()],
+    ['P', Piece.whitePawn()],
+
+    ['r', Piece.blackRook()],
+    ['n', Piece.blackKnight()],
+    ['b', Piece.blackBishop()],
+    ['q', Piece.blackQueen()],
+    ['k', Piece.blackKing()],
+    ['p', Piece.blackPawn()],
+])
+export function charFENToPiece(pieceStr: string): Piece {
+    return charFENtoPieceMap.get(pieceStr) || Piece.none()
+}
+export function charPGNToPiece(pieceStr: string, color_: color): Piece {
+
+    switch (pieceStr) {
+        case 'R': return (color_ == color.black) ? Piece.blackRook() : Piece.whiteRook()
+        case 'N': return (color_ == color.black) ? Piece.blackKnight() : Piece.whiteKnight()
+        case 'B': return (color_ == color.black) ? Piece.blackBishop() : Piece.whiteBishop()
+        case 'Q': return (color_ == color.black) ? Piece.blackQueen() : Piece.whiteQueen()
+        case 'K': return (color_ == color.black) ? Piece.blackKing() : Piece.whiteKing()
+        case 'P': return (color_ == color.black) ? Piece.blackPawn() : Piece.whitePawn()
+
+        default:
+            return Piece.none()
     }
 }

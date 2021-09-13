@@ -10,3 +10,7 @@ export function otherColor(color_: color) {
         case color.white: return color.black;
     }
 }
+
+export function colorStr(color_: color) {
+    return color_.toString()
+}

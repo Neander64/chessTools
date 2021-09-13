@@ -1,200 +1,39 @@
 
 import { EncodedPositionKey, encodeType } from './encode-position-key'
-import { Piece, pieceKind } from './chess-board-pieces'
-import { color, otherColor } from './chess-color'
-import { boardFieldIdx } from './chess-board-internal-types'
+import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces'
+import { color, otherColor, colorStr } from './chess-color'
 import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
 import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './chess-board-representation'
 import { offsetsEnum } from './chess-board-offsets'
 
-// TODO split into several files (resolve circular references)
 // TODO push FEN / PGN into a separate structure/class
 // TODO moveToSAN
 // TODO getLegalMoves -> SAN
 // TODO getAttackedFields -> Notation
 // TODO generate PGN
 
-function colorStr(color_: color) {
-    return color_.toString()
-}
-
-const pieceKindPGN = new Map<number, string>([
-    // map piece to string, usage: pieceKindPGN.get(p /*:pieceKind*/)
-    [pieceKind.Rook, 'R'],
-    [pieceKind.Knight, 'N'],
-    [pieceKind.Bishop, 'B'],
-    [pieceKind.Queen, 'Q'],
-    [pieceKind.King, 'K'],
-    [pieceKind.Pawn, 'P'],
-    [pieceKind.none, ' '],
-])
-/*
-function isLegalPromotionPiece(kind_: pieceKind): boolean {
-    //return kind_ != pieceKind.none && kind_ != pieceKind.Pawn && kind_ != pieceKind.King
-    return kind_ < pieceKind.King
-}
-*/
-/*
-function doForColor(color_: color, blackFct: () => void, whiteFct: () => void) {
-    switch (color_) {
-        case color.black: blackFct(); break
-        case color.white: whiteFct(); break
-    }
-}
-*/
-
-function pieceToChar(p: Piece): string {
-    let result = pieceKindPGN.get(p.kind) || ' '
-    if (p.isPiece) {
-        if (p.color == color.black) result = result.toLocaleLowerCase()
-        //doForColor(p.color!, () => { result = _kindStr!.toLocaleLowerCase() }, () => result = _kindStr!.toUpperCase())
-    }
-    /*
-    switch (p.kind) {
-        case pieceKind.Rook:
-            if (p.color == color.white) result = 'R'
-            else result = 'r';
-            break;
-        case pieceKind.Knight:
-            if (p.color == color.white) result = 'N'
-            else result = 'n';
-            break;
-        case pieceKind.Bishop:
-            if (p.color == color.white) result = 'B'
-            else result = 'b';
-            break;
-        case pieceKind.Queen:
-            if (p.color == color.white) result = 'Q'
-            else result = 'q';
-            break;
-        case pieceKind.King:
-            if (p.color == color.white) result = 'K'
-            else result = 'k';
-            break;
-        case pieceKind.Pawn:
-            if (p.color == color.white) result = 'P'
-            else result = 'p';
-            break;
-        case pieceKind.none:
-            result = ' ';
-            break;
-    }
-    */
-    return result;
-}
-
-const charFENtoPieceMap = new Map<string, Piece>([
-    ['R', Piece.whiteRook()],
-    ['N', Piece.whiteKnight()],
-    ['B', Piece.whiteBishop()],
-    ['Q', Piece.whiteQueen()],
-    ['K', Piece.whiteKing()],
-    ['P', Piece.whitePawn()],
-
-    ['r', Piece.blackRook()],
-    ['n', Piece.blackKnight()],
-    ['b', Piece.blackBishop()],
-    ['q', Piece.blackQueen()],
-    ['k', Piece.blackKing()],
-    ['p', Piece.blackPawn()],
-])
-export function charFENToPiece(pieceStr: string): { valid: boolean, piece: Piece } {
-    if (charFENtoPieceMap.has(pieceStr))
-        return { valid: true, piece: charFENtoPieceMap.get(pieceStr)! }
-    /*
-    switch (pieceStr) {
-        case 'R': return { valid: true, piece: Piece.whiteRook() }
-        case 'N': return { valid: true, piece: Piece.whiteKnight() }
-        case 'B': return { valid: true, piece: Piece.whiteBishop() }
-        case 'Q': return { valid: true, piece: Piece.whiteQueen() }
-        case 'K': return { valid: true, piece: Piece.whiteKing() }
-        case 'P': return { valid: true, piece: Piece.whitePawn() }
-
-        case 'r': return { valid: true, piece: Piece.blackRook() }
-        case 'n': return { valid: true, piece: Piece.blackKnight() }
-        case 'b': return { valid: true, piece: Piece.blackBishop() }
-        case 'q': return { valid: true, piece: Piece.blackQueen() }
-        case 'k': return { valid: true, piece: Piece.blackKing() }
-        case 'p': return { valid: true, piece: Piece.blackPawn() }
-
-        default:
-            return { valid: false, piece: Piece.none() }
-    }*/
-    return { valid: false, piece: Piece.none() }
-}
-function charPGNToPiece(pieceStr: string, color_: color): { valid: boolean, piece: Piece } {
-
-    switch (pieceStr) {
-        case 'R': return { valid: true, piece: (color_ == color.black) ? Piece.blackRook() : Piece.whiteRook() }
-        case 'N': return { valid: true, piece: (color_ == color.black) ? Piece.blackKnight() : Piece.whiteKnight() }
-        case 'B': return { valid: true, piece: (color_ == color.black) ? Piece.blackBishop() : Piece.whiteBishop() }
-        case 'Q': return { valid: true, piece: (color_ == color.black) ? Piece.blackQueen() : Piece.whiteQueen() }
-        case 'K': return { valid: true, piece: (color_ == color.black) ? Piece.blackKing() : Piece.whiteKing() }
-        case 'P': return { valid: true, piece: (color_ == color.black) ? Piece.blackPawn() : Piece.whitePawn() }
-
-        default:
-            return { valid: false, piece: Piece.none() }
-    }
-}
-
-
-export function strToFieldIdx(fieldStr: string): boardFieldIdx {
-    if (fieldStr.length != 2)
-        throw new Error('unexpected string length for field (should be 2)')
-    // convert chess notation of field (like e4) to index on board
-    const colidx = getColIdx(fieldStr) //(fieldStr[0].charCodeAt(0) - 'a'.charCodeAt(0))
-    const rowidx = getRowIdx(fieldStr) //8 - parseInt(fieldStr[1], 10)
-    if (colidx < 0 || colidx >= 8)
-        throw new Error('unexpected column')
-    if (rowidx < 0 || rowidx >= 8)
-        throw new Error('unexpected row')
-    return { colIdx: colidx, rowIdx: rowidx }
-}
-function strToFieldIdxQuiet(fieldStr: string): boardFieldIdx | undefined {
-    try {
-        return strToFieldIdx(fieldStr)
-    }
-    catch (err) {
-        return undefined
-    }
-}
 function getColIdx(str: string, idx: number = 0): number {
     return (str[0].charCodeAt(idx) - 'a'.charCodeAt(idx))
 }
 function getRowIdx(str: string, idx: number = 1): number {
     return 8 - parseInt(str[idx], 10)
 }
-function fieldIdxToNotation(field: boardFieldIdx): string {
-    // convert internal field representation to normal string representation
-    const cols = 'abcdefgh'
-    let result = cols[field.colIdx] + (8 - field.rowIdx).toString()
-    return result
-}
-export function fieldIdxArrToNotation(fields: boardFieldIdx[]): string[] {
-    let result: string[] = []
-    for (let f of fields) result.push(fieldIdxToNotation(f))
-    return result
-}
-
-
 
 export type moveOnBoard = { // Data to do/undo moves
     pieceOB: pieceOnBoard,
-    target: boardFieldIdx,
+    target: IField,
     // pawn promotion
     promotionPiece?: pieceKind;
     // castle
     pieceRook?: pieceOnBoard,
-    targetRook?: boardFieldIdx,
+    targetRook?: IField,
     // captured/replaced Piece
     pieceCaptured?: pieceOnBoard,
 
     // position key to check for move repetition
     boardKey?: /*number[] |*/ BigInt,
 };
-
-
 
 export const enum GameResult {
     white_wins = "1-0",
@@ -245,11 +84,6 @@ export class ChessBoardData implements IChessBoardData {
         this.nextMoveBy = color.white
         this.castleFlags.noCastle(color.white)
         this.castleFlags.noCastle(color.black)
-        // this.canCastleShortWhite = false
-        // this.canCastleLongWhite = false
-        // this.canCastleShortBlack = false
-        // this.canCastleLongBlack = false
-        // this.enPassantPossible = false
         this.enPassantField = undefined
         this.halfMoves50 = 0
         this.moveNumber = 1
@@ -302,24 +136,22 @@ export class ChessBoard {
             //1. piece positions
             let boardRows = fenTokens[0].split('/')
             if (boardRows.length !== 8) throw new Error('loadFEN(): unexpected number of rows in position')
-            for (let rowIdx = 0; rowIdx < 8; rowIdx++) {
-                const fenRow = boardRows[rowIdx]
+            for (let rank = 0; rank < 8; rank++) {
+                const fenRow = boardRows[rank]
                 if (fenRow.length > 8 || fenRow.length === 0) throw new Error('loadFEN(): unexpected number of columns in position')
-                let colIdx = 0
+                let file = 0
                 for (let p = 0; p < fenRow.length; p++) {
                     let digit = parseInt(fenRow[p], 10)
                     if (isNaN(digit)) { // it's a piece
-                        let pResult = charFENToPiece(fenRow[p])
-                        if (!pResult.valid) throw new Error('loadFEN(): unexpected piece')
-                        if (colIdx >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
-                        this.board.setPiece(pResult.piece, this.board.field(colIdx++, rowIdx))
-                        //this._board[colIdx++][rowIdx] = pResult.piece
+                        let piece = charFENToPiece(fenRow[p])
+                        if (typeof piece == 'undefined') throw new Error('loadFEN(): unexpected piece')
+                        if (file >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
+                        this.board.setPieceI(piece, file++, rank)
                     }
                     else {
-                        if (digit <= 0 || digit > 8 - colIdx) throw new Error('loadFEN(): unexpected digit in position')
-                        while (digit > 0 && colIdx < 8) {
-                            this.board.setPiece(Piece.none(), this.board.field(colIdx++, rowIdx))
-                            //this._board[colIdx++][rowIdx] = Piece.none()
+                        if (digit <= 0 || digit > 8 - file) throw new Error('loadFEN(): unexpected digit in position')
+                        while (digit > 0 && file < 8) {
+                            this.board.setPieceI(Piece.none(), file++, rank)
                             digit--
                         }
                     }
@@ -386,14 +218,14 @@ export class ChessBoard {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (!this.board.isPiece(col, row))//this._board[col][row].isEmpty)
+                if (!this.board.isPieceI(col, row))
                     emptyCount++
                 else {
                     if (emptyCount > 0) {
                         fen += emptyCount
                         emptyCount = 0
                     }
-                    fen += pieceToChar(this.board.peekField(this.board.field(col, row)))
+                    fen += this.board.peekFieldI(col, row).FEN
                 }
             }
             if (emptyCount > 0)
@@ -445,7 +277,7 @@ export class ChessBoard {
             //for (let row = 7; row >= 0; row--) { // as Black
             let line = "| "
             for (let col = 0; col < 8; col++) {
-                line += pieceToChar(this.board.peekField(this.board.field(col, row))) + (col < 7 ? ' | ' : ' |')
+                line += this.board.peekFieldI(col, row).FEN + (col < 7 ? ' | ' : ' |')
             }
             result.push(line)
             result.push(' -------------------------------')
@@ -631,16 +463,18 @@ export class ChessBoard {
                 var from = matches[2]
                 var to = matches[3]
                 var promotion = matches[4]
-                let { valid: validPiece, piece: piece_ } = charPGNToPiece(piece, this._data.nextMoveBy)
+                let piece_ = charPGNToPiece(piece, this._data.nextMoveBy)
+                let validPiece = piece_.isPiece
                 if (!validPiece) { // maybe a pawn
                     piece_ = (this._data.nextMoveBy == color.black) ? Piece.blackPawn() : Piece.whitePawn()
                 }
                 if (!to) return false
                 let target = this.board.fieldFromNotationQuiet(to)
                 if (!target) return false
-                let promotionPiece_: Piece = Piece.none()
+                let promotionPiece_ = Piece.none()
                 if (!validPiece /* is a pawn */ && promotion) {
-                    let { valid: validPiecePromo, piece: promotionPieceIn } = charFENToPiece(promotion);
+                    let promotionPieceIn = charFENToPiece(promotion)
+                    let validPiecePromo = promotionPieceIn.isPiece
                     if (!validPiecePromo || (validPiecePromo && !PawnMovesRaw.isLegalPromotionPieceKind(promotionPieceIn.kind)))
                         return false
                     promotionPiece_ = promotionPieceIn

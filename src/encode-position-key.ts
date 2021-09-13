@@ -124,8 +124,8 @@ export class EncodedPositionKey {
         let result = 1n // adding 1 Bit to avoid cutting leading zeros
         for (let row = 0; row < 8; row++)
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row)) {
-                    let b = BigInt((this.mapPieceKey(board_.pieceKey(col, row)) << 6) | this.encodeField(row, col))
+                if (board_.isPieceI(col, row)) {
+                    let b = BigInt((this.mapPieceKey(board_.pieceKeyI(col, row)) << 6) | this.encodeField(row, col))
                     result = (result << 11n) | b
                 }
             }
@@ -137,12 +137,12 @@ export class EncodedPositionKey {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row)) {
+                if (board_.isPieceI(col, row)) {
                     if (emptyCount > 0) {
                         result = (result << 3n) | BigInt(emptyCount)
                         emptyCount = 0
                     }
-                    result = (result << 3n) | BigInt(this.mapPieceKey(board_.pieceKey(col, row)))
+                    result = (result << 3n) | BigInt(this.mapPieceKey(board_.pieceKeyI(col, row)))
                 }
                 else emptyCount++
             }
@@ -157,12 +157,12 @@ export class EncodedPositionKey {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row)) {
+                if (board_.isPieceI(col, row)) {
                     if (emptyCount > 0) {
                         result = (result << 5n) | BigInt(emptyCount | 0b10000)
                         emptyCount = 0
                     }
-                    result = (result << 5n) | BigInt(this.mapPieceKey(board_.pieceKey(col, row)))
+                    result = (result << 5n) | BigInt(this.mapPieceKey(board_.pieceKeyI(col, row)))
                 }
                 else emptyCount++
             }
@@ -177,8 +177,8 @@ export class EncodedPositionKey {
         let result: number[] = []
         for (let row = 0; row < 8; row++)
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row))
-                    result.push((this.mapPieceKey(board_.pieceKey(col, row)) << 6) | this.encodeField(row, col))
+                if (board_.isPieceI(col, row))
+                    result.push((this.mapPieceKey(board_.pieceKeyI(col, row)) << 6) | this.encodeField(row, col))
             }
         result.push(header)
         return result
@@ -187,8 +187,8 @@ export class EncodedPositionKey {
         let result: number[] = []
         for (let row = 0; row < 8; row++)
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row))
-                    result.push((this.mapPieceKey(board_.pieceKey(col, row)) << 6) | this.encodeField(row, col))
+                if (board_.isPieceI(col, row))
+                    result.push((this.mapPieceKey(board_.pieceKeyI(col, row)) << 6) | this.encodeField(row, col))
             }
         result = this.compress(result, 10) // 4:key + 6:field
         result.push(header)
@@ -205,12 +205,12 @@ export class EncodedPositionKey {
         for (let row = 0; row < 8; row++) {
             let emptyCount = 0
             for (let col = 0; col < 8; col++) {
-                if (board_.isPiece(col, row)) {
+                if (board_.isPieceI(col, row)) {
                     if (emptyCount > 0) {
                         result.push(emptyCount | 0b10000)
                         emptyCount = 0
                     }
-                    result.push(this.mapPieceKey(board_.pieceKey(col, row)))
+                    result.push(this.mapPieceKey(board_.pieceKeyI(col, row)))
                 }
                 else emptyCount++
             }

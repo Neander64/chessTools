@@ -6,9 +6,8 @@ import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
 import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './chess-board-representation'
 import { offsetsEnum } from './chess-board-offsets'
+import { AttackedFields } from './chess-board-attacked-fields'
 
-// TODO push FEN / PGN into a separate structure/class
-// TODO moveToSAN
 // TODO getLegalMoves -> SAN
 // TODO getAttackedFields -> Notation
 // TODO generate PGN
@@ -33,6 +32,12 @@ export type moveOnBoard = { // Data to do/undo moves
 
     // position key to check for move repetition
     boardKey?: /*number[] |*/ BigInt,
+
+    isCheck?: boolean
+    isMate?: boolean
+    notationLong?: string
+    notation?: string // SAN
+    previousStatus?: ChessGameStatusData
 };
 
 export const enum GameResult {
@@ -51,80 +56,101 @@ function gameResult(r: GameResult): string {
         }*/
 }
 
-export interface IChessBoardData {
-    isWhitesMove: boolean
+
+
+export class ChessGameStatusData {
+    get isWhitesMove() { return this.nextMoveBy == color.white }
     castleFlags: CastleFlags
-    get enPassantPossible(): boolean
-    enPassantField: IField | undefined
+    get enPassantPossible(): boolean { return typeof this.enPassantField !== 'undefined' }
+    enPassantField?: IField
 
-    nextMoveBy: color // not sure if this or isWhitsMove should be in the interface...
-    halfMoves50: number
-    moveNumber: number
-    gameOver: boolean // meaning: no further moves are allowed.
-    canCastle(color_: color, type_: castleType): boolean
-}
-
-export class ChessBoardData implements IChessBoardData {
+    firstMoveBy!: color
     nextMoveBy!: color
-    castleFlags: CastleFlags
-    //enPassantPossible!: boolean
-    enPassantField: IField | undefined
     halfMoves50!: number
+    firstHalfMoves50!: number
     moveNumber!: number
+    firstMoveNumber!: number
+
     gameOver!: boolean // meaning: no further moves are allowed.
     gameResult!: GameResult
     drawPossible50MovesRule!: boolean
     drawPossibleThreefoldRepetion!: boolean
+    isCheck!: boolean
+    isMate!: boolean
     constructor() {
         this.castleFlags = new CastleFlags()
         this.init()
     }
-    get enPassantPossible(): boolean { return typeof this.enPassantField !== 'undefined' }
     init() {
         this.nextMoveBy = color.white
+        this.firstMoveBy = color.white
         this.castleFlags.noCastle(color.white)
         this.castleFlags.noCastle(color.black)
         this.enPassantField = undefined
         this.halfMoves50 = 0
+        this.firstHalfMoves50 = 0
         this.moveNumber = 1
+        this.firstMoveNumber = 1
         this.gameOver = true
         this.gameResult = GameResult.none
         this.drawPossible50MovesRule = false
         this.drawPossibleThreefoldRepetion = false
+        this.isCheck = false
+        this.isMate = false
     }
-    get isWhitesMove() { return this.nextMoveBy == color.white }
     canCastle(color_: color, type_: castleType): boolean { return this.castleFlags.getCastleFlag(color_, type_) }
+    copy(): ChessGameStatusData {
+        let result = new ChessGameStatusData()
+        result.castleFlags = new CastleFlags(this.castleFlags)
+        result.enPassantField = this.enPassantField
+        result.firstMoveBy = this.firstMoveBy
+        result.nextMoveBy = this.nextMoveBy
+        result.halfMoves50 = this.halfMoves50
+        result.firstHalfMoves50 = this.firstHalfMoves50
+        result.moveNumber = this.moveNumber
+        result.firstMoveNumber = this.firstMoveNumber
+        result.gameOver = this.gameOver
+        result.gameResult = this.gameResult
+        result.drawPossible50MovesRule = this.drawPossible50MovesRule
+        result.drawPossibleThreefoldRepetion = this.drawPossibleThreefoldRepetion
+        result.isCheck = this.isCheck
+        result.isMate = this.isMate
+        return result
+    }
 }
 export class ChessBoard {
 
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
     //private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
-    private _b: ChessBoardRepresentation
-    private _history: moveOnBoard[] = []
-    private _data: ChessBoardData
+    private _cbr: ChessBoardRepresentation
+    private _moves: moveOnBoard[] = []
+    private _data: ChessGameStatusData
 
 
     constructor(fen?: string) {
-        this._data = new ChessBoardData()
-        this._b = new ChessBoardRepresentation(this._data)
+        this._data = new ChessGameStatusData()
+        this._cbr = new ChessBoardRepresentation(this._data)
         this.clearBoard()
         if (fen) this.loadFEN(fen);
     }
     get board(): ChessBoardRepresentation {
-        return this._b
+        return this._cbr
     }
-    get data(): ChessBoardData {
+    get data(): ChessGameStatusData {
         return this._data
     }
-    private addMoveToHistory(move_: moveOnBoard) {
+    private addMoveToGame(move_: moveOnBoard) {
         move_.boardKey = EncodedPositionKey.encodeBoard(this.board, this.data, encodeType.FENlikeLongBigInt) as BigInt
-        this._history.push(move_)
+        move_.isCheck = this.board.isCheck()
+        move_.isMate = this.board.isMate()
+        this._moves.push(move_)
     }
+
 
     clearBoard() {
         this.board.clearBoard()
-        this._history = []
+        this._moves = []
         this._data.init()
     }
 
@@ -178,6 +204,7 @@ export class ChessBoard {
                 case 'b': this._data.nextMoveBy = color.black; break
                 default: throw new Error('loadFEN(): illegal player to move')
             }
+            this._data.firstMoveBy = this._data.nextMoveBy
 
             //3. castle options
             this._data.castleFlags.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
@@ -196,10 +223,12 @@ export class ChessBoard {
 
             //5. number of half-moves since last capture or pawn move
             this._data.halfMoves50 = parseInt(fenTokens[4], 10)
+            this._data.firstHalfMoves50 = this._data.halfMoves50
             if (isNaN(this._data.halfMoves50)) throw new Error('loadFEN(): number of half-moves NAN')
 
             //6. next move number
             this._data.moveNumber = parseInt(fenTokens[5], 10)
+            this._data.firstMoveNumber = this._data.moveNumber
             if (isNaN(this._data.moveNumber)) throw new Error('loadFEN(): moveNumber NAN')
             if (this._data.moveNumber <= 0) throw new Error('loadFEN(): moveNumber negative/zero')
 
@@ -314,7 +343,7 @@ export class ChessBoard {
         }
     }
     private check50MovesRule(): boolean {
-        // no pawn has moven and no capture for 50 Moves
+        // no pawn has moved and no capture for 50 Moves
         // game maybe continued if the player does not claim draw.
         return this._data.halfMoves50 >= 50 * 2
     }
@@ -328,7 +357,7 @@ export class ChessBoard {
         // game maybe continued if the player does not claim draw.
         // TODO: This could be done, when inserting a new move (i.e. store repetition count there)
         let positionCount: { key: BigInt, count: number }[] = []
-        for (let m of this._history) {
+        for (let m of this._moves) {
             let found = positionCount.find(x => x.key == m.boardKey)
             if (found) {
                 found.count++
@@ -343,7 +372,7 @@ export class ChessBoard {
     private fivefoldRepetition(): boolean {
         // FIDE Rule (since 1.July 2014) forced and automatic end of game by draw after the 5th positional repetion
         let positionCount: { key: BigInt, count: number }[] = []
-        for (let m of this._history) {
+        for (let m of this._moves) {
             let found = positionCount.find(x => x.key == m.boardKey)
             if (found) {
                 found.count++
@@ -394,11 +423,16 @@ export class ChessBoard {
         let kingField = this.board.getKingField(otherColor(color_))
         if (this.board.isPieceAttackedOn(kingField, color_)) { // we have the move and it's already check. NOPE, we consider this as finished
             this.setWinningColor(color_)
+            this.data.isMate = true
             return true
         }
         if (this.board.isMate()) {
             this.setWinningColor(otherColor(color_))
+            this.data.isMate = true
             return true
+        }
+        if (this.board.isCheck()) {
+            this.data.isCheck = true
         }
         if (this.board.isStaleMate()) {
             this._data.gameResult = GameResult.draw
@@ -422,15 +456,44 @@ export class ChessBoard {
             this._data.gameResult = GameResult.draw
             return true
         }
-        return false// this.
+        return false
     }
 
+
+    moves(): string[] { // for debugging
+        let result: string[] = []
+        for (let m of this._moves) {
+            let s = m.notation || ''
+            if (m.isMate) s += '#'
+            else if (m.isCheck) s += '+'
+            result.push(s)
+
+        }
+        return result
+    }
+    legalMoves(): moveOnBoard[] {
+        return this._cbr.getLegalMoves()
+    }
+    legalMovesNotationLong(): string[] {
+        return this._cbr.getLegalMoves().map(x => x.notationLong!)
+    }
+    attackedMoves(): AttackedFields {
+        return this._cbr.getAttackedFields()
+    }
+
+    undoMove() {
+        let lastMove = this._moves.pop()
+        if (!lastMove) return
+        this._cbr.revokeMove(lastMove)
+        this._data = lastMove.previousStatus! // TODO: I don't like this double adjustment of values, see representation
+    }
     move(move: string): boolean {
         // allow SAN like formats (not very strict as long as it is parsable, it'll be processed)
         // Strip additional information
 
         let result = false
         let moveOB: moveOnBoard | undefined
+        let previousStatus = this._data.copy()
         if (this._data.gameOver) return false // no moves on a finished game
 
         let moveCleanedUp = move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
@@ -438,7 +501,8 @@ export class ChessBoard {
             moveOB = this.board.moveCastle(castleType.short)
             result = (moveOB !== undefined)
             if (result) {
-                this.addMoveToHistory(moveOB!)
+                moveOB!.previousStatus = previousStatus
+                this.addMoveToGame(moveOB!)
                 this._data.gameOver = this.isGameOver()
             }
         }
@@ -446,7 +510,8 @@ export class ChessBoard {
             moveOB = this.board.moveCastle(castleType.long)
             result = (moveOB !== undefined)
             if (result) {
-                this.addMoveToHistory(moveOB!)
+                moveOB!.previousStatus = previousStatus
+                this.addMoveToGame(moveOB!)
                 this._data.gameOver = this.isGameOver()
             }
         } else {
@@ -493,7 +558,8 @@ export class ChessBoard {
                 moveOB = this.board.move(source!, target, { promotionPieceKind: promotionPiece_.kind })
                 result = (moveOB !== undefined)
                 if (result) {
-                    this.addMoveToHistory(moveOB!)
+                    moveOB!.previousStatus = previousStatus
+                    this.addMoveToGame(moveOB!)
                     this._data.gameOver = this.isGameOver()
                 }
             }
@@ -502,6 +568,7 @@ export class ChessBoard {
     }
 
     private findSourceByTarget(from: string, target: IField, piece_: Piece, promotionPiece: pieceKind = pieceKind.none): IField | undefined {
+        // TODO move this mainly to the board implementation
         let sourceColIdx: number | undefined = undefined
         let sourceRowIdx: number | undefined = undefined
         if (from.length == 1) {

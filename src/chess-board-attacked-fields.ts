@@ -28,6 +28,17 @@ export class AttackedFields {
         if (typeof found == 'undefined') return []
         return found!.attackingPieces
     }
+    get notation(): string[] {
+        let result: string[] = []
+        for (let f of this._fields) {
+            let s = f.field.notation + ' <= ['
+            for (let a of f.attackingPieces)
+                s += a.piece.FEN + a.field.notation + ','
+            s += ']'
+            result.push(s)
+        }
+        return result
+    }
     /*
     attackedFields(): boardFieldIdx[] {
         let result: boardFieldIdx[] = []

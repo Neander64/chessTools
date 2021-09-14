@@ -1,5 +1,5 @@
 import { ChessBoardRepresentation, Field } from './chess-board-representation'
-import { ChessBoardData } from './chess-board'
+import { ChessGameStatusData } from './chess-board'
 import { Piece, pieceKind } from './chess-board-pieces'
 import { color } from './chess-color'
 import { offsetsEnum } from './chess-board-offsets'
@@ -61,7 +61,7 @@ describe('Testing chess-board-representation', () => {
 
     test('testing validation (Rook)', () => {
 
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         cbr.clearBoard()
         data.nextMoveBy = color.black
@@ -171,7 +171,7 @@ describe('Testing chess-board-representation', () => {
 
 
     test('testing validation (Knight)', () => {
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         cbr.clearBoard()
         let p = Piece.blackKnight()
@@ -272,7 +272,7 @@ describe('Testing chess-board-representation', () => {
     })
 
     test('testing validation (Bishop)', () => {
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         cbr.clearBoard()
         let p = Piece.blackBishop()
@@ -531,7 +531,7 @@ describe('Testing chess-board-representation', () => {
     })
 
     test('testing validation (Queen)', () => {
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         let p = Piece.blackQueen()
         data.nextMoveBy = color.black
@@ -639,7 +639,7 @@ describe('Testing chess-board-representation', () => {
     })
 
     test('testing validation (King)', () => {
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         let p = Piece.blackKing()
         data.nextMoveBy = color.black
@@ -851,7 +851,7 @@ Array [
     })
 
     test('testing validation (Pawn)', () => {
-        let data = new ChessBoardData()
+        let data = new ChessGameStatusData()
         let cbr = new ChessBoardRepresentation(data)
         let p = Piece.blackPawn()
         data.nextMoveBy = color.black
@@ -1029,5 +1029,10 @@ Array [
         cbr.setPiece(Piece.whiteKing(), cbr.field(4, 7))
         pob = cbr.peekFieldPieceOB(source)
         expect(cbr.validateMove(pob, target).isValid).toBe(false)
+
+        let n = cbr.peekFieldPieceOB(cbr.field(0, 0))
+        expect(cbr.getAttackedFieldsByPiece(n)).toStrictEqual([])
     })
+
+
 })

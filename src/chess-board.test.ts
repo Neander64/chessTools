@@ -48,6 +48,27 @@ describe('Testing chess-board', () => {
     expect(cb.isGameOver()).toBe(true)
     expect(cb.data.gameResult).toBe(chessBoard.GameResult.draw)
     expect(cb.move('Nf6')).toBe(false)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "Nf3",
+  "Nf6",
+  "Ng1",
+  "Ng8",
+  "Nf3",
+  "Nf6",
+  "Ng1",
+  "Ng8",
+  "Nf3",
+  "Nf6",
+  "Ng1",
+  "Ng8",
+  "Nf3",
+  "Nf6",
+  "Ng1",
+  "Ng8",
+  "Nf3",
+]
+`)
   });
 
 
@@ -141,6 +162,15 @@ describe('Testing chess-board', () => {
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "Rxg7+",
+  "Kh8",
+  "Rxh7+",
+  "Kg8",
+  "Rbg7#",
+]
+`)
 
     // Boden's
     cb.loadFEN("2kr4/3p4/B7/8/5B2/8/8/K7 b - - 0 100")
@@ -186,6 +216,13 @@ describe('Testing chess-board', () => {
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "Nd7+",
+  "Ka8",
+  "Nxc7#",
+]
+`)
 
     // Dovetail
     cb.loadFEN("8/8/1Q6/8/6pk/5q2/8/6K1 w - - 0 100")
@@ -198,6 +235,13 @@ describe('Testing chess-board', () => {
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "Qh6+",
+  "Kg3",
+  "Qh2#",
+]
+`)
 
     //Epaulette
     cb.loadFEN("3rkr2/7Q/4K3/8/8/8/8/8 w - - 0 100")
@@ -308,6 +352,15 @@ describe('Testing chess-board', () => {
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "Rg1+",
+  "Kh8",
+  "Bg7+",
+  "Kg8",
+  "Bxf6#",
+]
+`)
 
     // Queen mate
     cb.loadFEN("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 100")
@@ -426,7 +479,162 @@ Object {
     expect(cb.move('e5')).toBe(true)
     expect(cb.move('Nf3')).toBe(true)
     expect(cb.move('Nc6')).toBe(true)
+    let moves1 = cb.moves()
     expect(cb.move('Bb5')).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "e4",
+  "e5",
+  "Nf3",
+  "Nc6",
+  "Bb5",
+]
+`)
+
+    expect(cb.toASCII()).toMatchInlineSnapshot(`
+Array [
+  " -------------------------------",
+  "| r |   | b | q | k | b | n | r |",
+  " -------------------------------",
+  "| p | p | p | p |   | p | p | p |",
+  " -------------------------------",
+  "|   |   | n |   |   |   |   |   |",
+  " -------------------------------",
+  "|   | B |   |   | p |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   | P |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   |   | N |   |   |",
+  " -------------------------------",
+  "| P | P | P | P |   | P | P | P |",
+  " -------------------------------",
+  "| R | N | B | Q | K |   |   | R |",
+  " -------------------------------",
+  "next move color: Black",
+  "Possible Castle White O-O:Y, O-O-O:Y",
+  "Possible Castle Black O-O:Y, O-O-O:Y",
+  "moves without pawn or capture: 3",
+  "move number: 3",
+  "Game Result: *",
+]
+`)
+    expect(cb.attackedMoves().notation).toMatchInlineSnapshot(`
+Array [
+  "b8 <= [ra8,nc6,]",
+  "c8 <= [ra8,qd8,]",
+  "a7 <= [ra8,nc6,]",
+  "b7 <= [bc8,]",
+  "d7 <= [bc8,qd8,ke8,]",
+  "e8 <= [qd8,]",
+  "c7 <= [qd8,]",
+  "e7 <= [qd8,ke8,bf8,ng8,nc6,]",
+  "f6 <= [qd8,ng8,pg7,]",
+  "g5 <= [qd8,]",
+  "h4 <= [qd8,]",
+  "f8 <= [ke8,]",
+  "d8 <= [ke8,nc6,]",
+  "f7 <= [ke8,]",
+  "d6 <= [bf8,pc7,]",
+  "c5 <= [bf8,]",
+  "b4 <= [bf8,nc6,]",
+  "a3 <= [bf8,]",
+  "g7 <= [bf8,]",
+  "h6 <= [ng8,pg7,]",
+  "g8 <= [rh8,]",
+  "h7 <= [rh8,]",
+  "b6 <= [pa7,pc7,]",
+  "c6 <= [pb7,pd7,]",
+  "a6 <= [pb7,]",
+  "e6 <= [pd7,pf7,]",
+  "g6 <= [pf7,ph7,]",
+  "d4 <= [nc6,pe5,]",
+  "a5 <= [nc6,]",
+  "e5 <= [nc6,]",
+  "f4 <= [pe5,]",
+]
+`)
+    cb.undoMove()
+    expect(moves1).toMatchInlineSnapshot(`
+Array [
+  "e4",
+  "e5",
+  "Nf3",
+  "Nc6",
+]
+`)
+    expect(cb.move('Bb5')).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "e4",
+  "e5",
+  "Nf3",
+  "Nc6",
+  "Bb5",
+]
+`)
+
+    expect(cb.toASCII()).toMatchInlineSnapshot(`
+Array [
+  " -------------------------------",
+  "| r |   | b | q | k | b | n | r |",
+  " -------------------------------",
+  "| p | p | p | p |   | p | p | p |",
+  " -------------------------------",
+  "|   |   | n |   |   |   |   |   |",
+  " -------------------------------",
+  "|   | B |   |   | p |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   | P |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   |   | N |   |   |",
+  " -------------------------------",
+  "| P | P | P | P |   | P | P | P |",
+  " -------------------------------",
+  "| R | N | B | Q | K |   |   | R |",
+  " -------------------------------",
+  "next move color: Black",
+  "Possible Castle White O-O:Y, O-O-O:Y",
+  "Possible Castle Black O-O:Y, O-O-O:Y",
+  "moves without pawn or capture: 3",
+  "move number: 3",
+  "Game Result: *",
+]
+`)
+    expect(cb.attackedMoves().notation).toMatchInlineSnapshot(`
+Array [
+  "b8 <= [ra8,nc6,]",
+  "c8 <= [ra8,qd8,]",
+  "a7 <= [ra8,nc6,]",
+  "b7 <= [bc8,]",
+  "d7 <= [bc8,qd8,ke8,]",
+  "e8 <= [qd8,]",
+  "c7 <= [qd8,]",
+  "e7 <= [qd8,ke8,bf8,ng8,nc6,]",
+  "f6 <= [qd8,ng8,pg7,]",
+  "g5 <= [qd8,]",
+  "h4 <= [qd8,]",
+  "f8 <= [ke8,]",
+  "d8 <= [ke8,nc6,]",
+  "f7 <= [ke8,]",
+  "d6 <= [bf8,pc7,]",
+  "c5 <= [bf8,]",
+  "b4 <= [bf8,nc6,]",
+  "a3 <= [bf8,]",
+  "g7 <= [bf8,]",
+  "h6 <= [ng8,pg7,]",
+  "g8 <= [rh8,]",
+  "h7 <= [rh8,]",
+  "b6 <= [pa7,pc7,]",
+  "c6 <= [pb7,pd7,]",
+  "a6 <= [pb7,]",
+  "e6 <= [pd7,pf7,]",
+  "g6 <= [pf7,ph7,]",
+  "d4 <= [nc6,pe5,]",
+  "a5 <= [nc6,]",
+  "e5 <= [nc6,]",
+  "f4 <= [pe5,]",
+]
+`)
 
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.move('d2d4')).toBe(true)
@@ -446,6 +654,27 @@ Object {
     expect(cb.move('d5!?')).toBe(true)
     expect(cb.move('c5')).toBe(true)
     expect(cb.move('Nd2!')).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "d4",
+  "d6",
+  "Nf3",
+  "Bg4",
+  "e3",
+  "g6",
+  "Be2",
+  "Bg7",
+  "c4",
+  "Nf6",
+  "Nc3",
+  "O-O",
+  "O-O",
+  "Bf5",
+  "d5",
+  "c5",
+  "Nd2",
+]
+`)
 
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.move('e4')).toBe(true)
@@ -457,6 +686,71 @@ Object {
     expect(cb.move('exf4')).toBe(true)
     cb.loadFEN(p)
     expect(cb.move('e5f4')).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "exf4",
+]
+`)
+    expect(cb.toASCII()).toMatchInlineSnapshot(`
+Array [
+  " -------------------------------",
+  "| r | n | b | q | k | b | n | r |",
+  " -------------------------------",
+  "| p | p | p | p |   | p | p | p |",
+  " -------------------------------",
+  "|   |   |   |   |   |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   |   |   |   |   |",
+  " -------------------------------",
+  "|   |   |   |   | P | p |   |   |",
+  " -------------------------------",
+  "|   |   |   |   |   |   |   |   |",
+  " -------------------------------",
+  "| P | P | P | P |   |   | P | P |",
+  " -------------------------------",
+  "| R | N | B | Q | K | B | N | R |",
+  " -------------------------------",
+  "next move color: White",
+  "Possible Castle White O-O:Y, O-O-O:Y",
+  "Possible Castle Black O-O:Y, O-O-O:Y",
+  "moves without pawn or capture: 0",
+  "move number: 3",
+  "Game Result: *",
+]
+`)
+    expect(cb.legalMovesNotationLong()).toMatchInlineSnapshot(`
+Array [
+  "e4-e5",
+  "a2-a3",
+  "a2-a4",
+  "b2-b3",
+  "b2-b4",
+  "c2-c3",
+  "c2-c4",
+  "d2-d3",
+  "d2-d4",
+  "g2-g3",
+  "g2-g4",
+  "h2-h3",
+  "h2-h4",
+  "Nb1-c3",
+  "Nb1-a3",
+  "Qd1-e2",
+  "Qd1-f3",
+  "Qd1-g4",
+  "Qd1-h5",
+  "Ke1-f2",
+  "Ke1-e2",
+  "Bf1-e2",
+  "Bf1-d3",
+  "Bf1-c4",
+  "Bf1-b5",
+  "Bf1-a6",
+  "Ng1-h3",
+  "Ng1-f3",
+  "Ng1-e2",
+]
+`)
 
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.move('e5')).toBe(false)
@@ -467,6 +761,11 @@ Object {
     expect(cb.move('e1')).toBe(false)
     expect(cb.move('a7')).toBe(false)
     expect(cb.move('e3')).toBe(true)
+    expect(cb.moves()).toMatchInlineSnapshot(`
+Array [
+  "e3",
+]
+`)
 
     cb.loadFEN(cb.initialBoardFEN)
     expect(cb.move('Ne2')).toBe(false)

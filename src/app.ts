@@ -16,9 +16,10 @@ import * as repl from "repl"
 let cb = new chessBoard.ChessBoard("6k1/8/4B2Q/8/8/8/8/K7 b - - 0 100")
 //let cb = new chessBoard.ChessBoard("5k2/8/4B2Q/8/8/8/8/K7 b - - 0 100")
 //let cb = new chessBoard.ChessBoard("5k2/8/5Q2/8/8/8/8/K7 b - - 0 100")
-cb.loadFEN("k7/8/8/8/8/8/7P/K7 w K - 4 50");
+cb.loadFEN("5rk1/1R2R1pp/8/8/8/8/8/K7 w - - 0 100")
 console.log(cb.toASCII())
-console.log(cb.move('h4'))
+cb.move('Rxg7+')
+console.log(cb.moves())
 //console.log(cb.isCheck())
 //console.log(cb.isMate())
 //cb.loadFEN(cb.initialBoardFEN);

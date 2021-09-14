@@ -1,4 +1,4 @@
-import { IChessBoardData } from "./chess-board"
+import { ChessGameStatusData } from "./chess-board"
 import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces"
 import { IChessBoardRepresentation, IField } from './chess-board-representation'
 
@@ -75,7 +75,7 @@ export class EncodedPositionKey {
     static readonly QUEENSIDE_CASTLE_BLACK = 0b000000000010000
     static readonly ENPASSANT = 0b000000000100000
 
-    static makeFlags(cbData: IChessBoardData): number {
+    static makeFlags(cbData: ChessGameStatusData): number {
         let result = 0x0000
         if (cbData.isWhitesMove) result |= this.IS_WHITE_MOVE
         if (cbData.castleFlags.canCastleShortBlack) result |= this.KINGSIDE_CASTLE_BLACK
@@ -100,7 +100,7 @@ export class EncodedPositionKey {
     //}
 
 
-    static encodeBoard(board_: IChessBoardRepresentation, cbData: IChessBoardData, encodeType_: encodeType): number[] | BigInt {
+    static encodeBoard(board_: IChessBoardRepresentation, cbData: ChessGameStatusData, encodeType_: encodeType): number[] | BigInt {
         let header = this.makeFlags(cbData)
         switch (encodeType_) {
             case encodeType.Simple:

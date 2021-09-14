@@ -6,7 +6,7 @@ import { RookMovesRaw, isOffsetRookLike } from './chess-board-rook-moves'
 import { CastleFlags, castleType, KingMovesRaw } from './chess-board-king-moves'
 import { KnightMovesRaw } from './chess-board-knight-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
-import { moveOnBoard, IChessBoardData } from './chess-board'
+import { moveOnBoard, ChessGameStatusData } from './chess-board'
 import { offsetsEnum } from './chess-board-offsets'
 
 export type fileType = number
@@ -142,6 +142,7 @@ export class ValidatedMove { // Data to do/undo moves as a result after validati
 
     // castle
     isCastle: boolean
+    castleType?: castleType
     pieceRook?: pieceOnBoard
     targetRook?: IField
     // captured/replaced Piece
@@ -149,20 +150,22 @@ export class ValidatedMove { // Data to do/undo moves as a result after validati
 
     // data to be updated
     castleFlags: CastleFlags
-    enPassantField: IField | undefined
+    enPassantField?: IField
     halfMoves50: number
+    _notation: string
 
-
-    constructor(pieceOB_: pieceOnBoard, target_: IField, data_: IChessBoardData) {
+    constructor(pieceOB_: pieceOnBoard, target_: IField, data_: ChessGameStatusData) {
         this.isValid = false
         this.sourcePieceOB = pieceOB_
         this.target = target_
         this.captureEP = false
         this.isPromotion = false
         this.isCastle = false
+        this.castleType = undefined
         this.castleFlags = new CastleFlags(data_.castleFlags)
         this.enPassantField = data_.enPassantField
         this.halfMoves50 = data_.halfMoves50
+        this._notation = ''
     }
     get color(): color { return this.sourcePieceOB.piece.color }
     get source(): IField { return this.sourcePieceOB.field }
@@ -171,11 +174,13 @@ export class ValidatedMove { // Data to do/undo moves as a result after validati
     get capturedKind(): pieceKind { return this.pieceCaptured?.piece.kind! }
     get capturedColor(): color { return this.pieceCaptured?.piece.color! }
     get capturedField(): IField { return this.pieceCaptured?.field! }
-
-    updateData(data_: IChessBoardData) {
+    get isPawn(): boolean { return this.sourcePieceOB.piece.kind == pieceKind.Pawn }
+    get isCapture(): boolean { return (typeof this.pieceCaptured != 'undefined') }
+    updateData(data_: ChessGameStatusData, cbr: IChessBoardRepresentation) {
         data_.castleFlags.set(this.castleFlags)
         data_.enPassantField = this.enPassantField
         data_.halfMoves50 = this.halfMoves50
+        this._notation = this.notation(cbr)
     }
     get moveOnBoard(): moveOnBoard {
         return {
@@ -184,8 +189,64 @@ export class ValidatedMove { // Data to do/undo moves as a result after validati
             promotionPiece: this.promotionPieceKind,
             pieceRook: this.pieceRook,
             targetRook: this.targetRook,
-            pieceCaptured: this.pieceCaptured
+            pieceCaptured: this.pieceCaptured,
+            notationLong: this.notationLong,
+            notation: this._notation
         }
+    }
+    private get notationLong(): string {
+        let result = ''
+        if (this.isCastle) {
+            switch (this.castleType) {
+                case castleType.short: return KingMovesRaw.CASTLE_SHORT_STR
+                case castleType.long: return KingMovesRaw.CASTLE_LONG_STR
+            }
+            // return 'invalid castle'
+        }
+        else {
+            if (!this.isPawn) {
+                result += this.sourcePieceOB.piece.PGN
+            }
+            result += this.sourcePieceOB.field.notation
+            result += (this.isCapture || this.captureEP) ? 'x' : '-'
+            result += this.target.notation
+            if (this.isPawn && this.isPromotion) {
+                result += '=' + Piece.getPiece(this.promotionPieceKind!, this.color).PGN
+            }
+        }
+        return result
+    }
+    private notation(cbr: IChessBoardRepresentation): string {
+        let result = ''
+        if (this.isCastle) {
+            switch (this.castleType) {
+                case castleType.short: return KingMovesRaw.CASTLE_SHORT_STR
+                case castleType.long: return KingMovesRaw.CASTLE_LONG_STR
+            }
+            // return 'invalid castle'
+        }
+        else {
+            if (!this.isPawn) {
+                result += this.piece.PGN
+                let sourceNota = this.source.notation
+                let others = cbr.getAttackersOfKindOn(this.target, this.kind, this.color)
+                let unifier = ''
+                for (let a of others) {
+                    if (a.field.same(this.source)) continue
+                    if (a.field.rank == this.source.rank) unifier += sourceNota.charAt(0) // add file
+                    if (a.field.file == this.source.file) unifier += sourceNota.charAt(1) // add rank
+                }
+                result += unifier + ((this.isCapture || this.captureEP) ? 'x' : '')
+            }
+            else {
+                if (this.isCapture || this.captureEP) result += this.source.notation.charAt(0) + 'x'
+            }
+            result += this.target.notation
+            if (this.isPawn && this.isPromotion) {
+                result += '=' + Piece.getPiece(this.promotionPieceKind!, this.color).PGN
+            }
+        }
+        return result
     }
 };
 
@@ -215,15 +276,29 @@ export interface IChessBoardRepresentation {
     isCaptureOn(field_: IField, color_: color): boolean
     currentPieceSpectrum(): pieceStat
 
+    isPieceAttackedOn(field: IField, attackingColor: color): boolean
+    getAttackersOn(field: IField, attackingColor: color): pieceOnBoard[]
+    getAttackersOfKindOn(field: IField, kind: pieceKind, attackingColor: color): pieceOnBoard[]
+    getLegalMovesOfPiece(piece_: pieceOnBoard): moveOnBoard[]
+    getLegalMoves(): moveOnBoard[]
+    validateMove(sourcePieceOB: pieceOnBoard, target: IField, promotionPieceKind?: pieceKind): ValidatedMove
+    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined
+    //doMove(validatedMove: ValidatedMove): void
+    //undoMove(validatedMove: ValidatedMove): void
+    revokeMove(moveOb: moveOnBoard): void
+
+    isCheck(): boolean
+    isMate(): boolean
+    isStaleMate(): boolean
 }
 export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
     private _fieldsAttackedByBlack: AttackedFields
     private _fieldsAttackedByWhite: AttackedFields
-    private _data: IChessBoardData
+    private _data: ChessGameStatusData
 
-    constructor(data: IChessBoardData) {
+    constructor(data: ChessGameStatusData) {
         this._data = data
         for (let file = 0; file < 8; file++) {
             this._board[file] = []
@@ -421,7 +496,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
     }
 
-    getAttackedFields(attackingColor: color): AttackedFields {
+    getAttackedFieldsByColor(attackingColor: color): AttackedFields {
         switch (attackingColor) {
             case color.black:
                 if (!this._fieldsAttackedByBlack.hasData()) {
@@ -450,11 +525,18 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         this._fieldsAttackedByWhite.clear()
     }
 
+    getAttackedFields(): AttackedFields {
+        return this.getAttackedFieldsByColor(this._data.nextMoveBy)
+    }
+
     isPieceAttackedOn(field: IField, attackingColor: color): boolean {
-        return this.getAttackedFields(attackingColor).isAttacked(field)
+        return this.getAttackedFieldsByColor(attackingColor).isAttacked(field)
     }
     getAttackersOn(field: IField, attackingColor: color): pieceOnBoard[] {
-        return this.getAttackedFields(attackingColor).attackersOn(field)
+        return this.getAttackedFieldsByColor(attackingColor).attackersOn(field)
+    }
+    getAttackersOfKindOn(field: IField, kind: pieceKind, attackingColor: color): pieceOnBoard[] {
+        return this.getAttackedFieldsByColor(attackingColor).attackersOn(field).filter(x => x.piece.kind == kind)
     }
 
     // ------------------ Legal Moves -------------------
@@ -546,6 +628,10 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                 if (m.isValid) result.push(m.moveOnBoard)
             }
         }
+        if (pawnMovesRaw.bigMove) {
+            let m = this.validateMove(pieceOB_, pawnMovesRaw.bigMove)
+            if (m.isValid) result.push(m.moveOnBoard)
+        }
         for (let pawnAttack of pawnMovesRaw.attacks) {
             if (pawnAttack.isPromotion) {
                 for (let promoKind of PawnMovesRaw.promotionPieces) {
@@ -575,7 +661,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                 return this.getLegalMovesOfKing(piece_)
             case pieceKind.Pawn:
                 return this.getLegalMovesOfPawn(piece_)
-            case pieceKind.none:
+            //case pieceKind.none:
         }
         return result
     }
@@ -706,6 +792,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             validatedMove.halfMoves50++
             validatedMove.enPassantField = undefined
             validatedMove.isCastle = true
+            validatedMove.castleType = castle.castleType
         }
         else {
             let kingMovesRaw = new KingMovesRaw(validatedMove.source)
@@ -787,10 +874,9 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
                     validatedMove.promotionPieceKind = promotionPieceKind
                     this.validateMoveOfPawn(validatedMove)
                     break
-                case pieceKind.none:
+                //case pieceKind.none:
             }
         }
-
         return validatedMove
     }
 
@@ -807,12 +893,11 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
         let validatedMove = this.validateMove(sourcePieceOB, target, promotionPieceKind)
         if (validatedMove.isValid && !validateOnly) {
+            validatedMove.updateData(this._data, this)
             this.doMove(validatedMove)
-            validatedMove.updateData(this._data)
             this._data.nextMoveBy = otherColor(this._data.nextMoveBy)
             if (this._data.nextMoveBy == color.white) this._data.moveNumber++
             this.clearAttackedFields()
-
         }
         return validatedMove.isValid ? validatedMove.moveOnBoard : undefined
     }
@@ -822,9 +907,16 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return this.move(castleData.kingSource, castleData.kingTarget)
     }
 
+    revokeMove(moveOb: moveOnBoard) {
+        let validatedMove = this.validateMove(moveOb.pieceOB, moveOb.target, moveOb.promotionPiece)
+        this.undoMove(validatedMove)
+        this._data = moveOb.previousStatus! // TODO: I don't like this double adjustment of values, see chess-board
+        this.clearAttackedFields()
+    }
+
     // ------------------ Move on Board -------------------
 
-    doMove(validatedMove: ValidatedMove) {
+    private doMove(validatedMove: ValidatedMove) {
         if (validatedMove.isCastle) {
             this.setPiece(validatedMove.piece, validatedMove.target as Field)
             this.removePiece(validatedMove.source as Field)
@@ -842,8 +934,19 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
         }
     }
-    undoMove(validatedMove: ValidatedMove) {
-        // TODO add implementation
+    private undoMove(validatedMove: ValidatedMove) {
+        if (validatedMove.isCastle) {
+            this.setPiece(validatedMove.piece, validatedMove.source as Field)
+            this.removePiece(validatedMove.target as Field)
+            this.setPiece(validatedMove.pieceRook?.piece!, validatedMove.pieceRook?.field as Field)
+            this.removePiece(validatedMove.targetRook! as Field)
+        }
+        else {
+            this.setPiece(validatedMove.piece, validatedMove.source as Field)
+            this.removePiece(validatedMove.target as Field)
+            if (validatedMove.captureEP)
+                this.setPiece(validatedMove.pieceCaptured?.piece!, validatedMove.pieceCaptured?.field! as Field)
+        }
     }
 
 

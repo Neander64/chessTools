@@ -1,4 +1,3 @@
-import { resourceLimits } from "worker_threads";
 
 const PIECE = 'RNBKQ';
 const COLUMNS = 'abcdefgh';

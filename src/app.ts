@@ -5,7 +5,7 @@ import * as os from "os"
 import * as path from "path"
 //import * as chessGame from "./chess-game"
 //import { parseChessable as Parser } from "./parseChessable"
-import * as chessBoard from "./chess-board"
+import * as chessBoard from "./chess-board/chess-board"
 //import { Piece, pieceKind } from './chess-board-pieces'
 
 import * as repl from "repl"

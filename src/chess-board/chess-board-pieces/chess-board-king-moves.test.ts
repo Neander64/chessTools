@@ -1,5 +1,5 @@
 import { CastleFlags, castleType } from './chess-board-king-moves'
-import { color } from './chess-color'
+import { color } from '../../chess-color'
 
 describe('Testing chess-board-representation', () => {
 

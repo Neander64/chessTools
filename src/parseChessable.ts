@@ -1,6 +1,6 @@
 import { debug } from "console";
 import * as chessGame from "./chess-game"
-import { lineParser, parseResult } from "./lineParser"
+import { lineParser, parseResult } from "./parser/lineParser"
 
 // TODO maybe, just maybe, RegEx could simplify some topic...
 // TODO allow spaces between move token, so you can parse other sources as well.

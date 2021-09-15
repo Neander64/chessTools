@@ -1,5 +1,5 @@
-import { IField } from './chess-board-representation'
-import { offsetsEnum } from './chess-board-offsets'
+import { IField } from '../representation/chess-board-representation'
+import { offsetsEnum } from '../chess-board-offsets'
 
 export class KnightMovesRaw {
     moves: IField[]

@@ -1,5 +1,5 @@
 import { moveOnBoard } from "./chess-board"
-import { pieceOnBoard } from "./chess-board-representation"
+import { pieceOnBoard } from "./representation/chess-board-representation"
 
 export class LegalMovesCache {
     private _legalMovesCached: Map<pieceOnBoard, moveOnBoard[]>

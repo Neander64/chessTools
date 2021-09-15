@@ -1,4 +1,4 @@
-import { IField, pieceOnBoard } from './chess-board-representation'
+import { IField, pieceOnBoard } from './representation/chess-board-representation'
 
 type attackedBy = {
     field: IField,  // attacked field

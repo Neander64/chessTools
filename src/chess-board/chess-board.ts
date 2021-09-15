@@ -1,12 +1,12 @@
 
 import { EncodedPositionKey, encodeType } from './encode-position-key'
-import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces'
-import { color, otherColor, colorStr } from './chess-color'
-import { castleType, CastleFlags, KingMovesRaw } from './chess-board-king-moves'
-import { PawnMovesRaw } from './chess-board-pawn-moves'
-import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './chess-board-representation'
+import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces/chess-board-pieces'
+import { color, otherColor, colorStr } from '../chess-color'
+import { castleType, CastleFlags, KingMovesRaw } from './chess-board-pieces/chess-board-king-moves'
+import { PawnMovesRaw } from './chess-board-pieces/chess-board-pawn-moves'
+import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './representation/chess-board-representation'
 import { offsetsEnum } from './chess-board-offsets'
-import { AttackedFields } from './chess-board-attacked-fields'
+import { AttackedFields } from './chess-board-attacked-fields-cache'
 
 // TODO generate PGN
 

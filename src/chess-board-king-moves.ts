@@ -115,6 +115,7 @@ export class KingMovesRaw {
     static readonly CASTLE_LONG_STR = 'O-O-O'
     static readonly kingsTargetColCastleShort = 6
     static readonly kingsTargetColCastleLong = 2
+    private static _castleDataMap = new Map<{ color: color, type: castleType }, castleData>()
 
     moves: IField[]
 
@@ -134,10 +135,12 @@ export class KingMovesRaw {
     }
 
     static castle(color_: color, type_: castleType, cbr: IChessBoardRepresentation): castleData {
+        let result: castleData
+        let result_cached = this._castleDataMap.get({ color: color_, type: type_ })
+        if (result_cached) return result_cached
+
         let rowIdx_ = (color_ == color.black) ? 0 : 7
-        // TODO make this use static data
-        // TODO use rank/file instead of field
-        return {
+        result = {
             castleType: type_,
             kingSource: cbr.field((type_ == castleType.short) ? 4 : 4, rowIdx_),
             kingTarget: cbr.field((type_ == castleType.short) ? KingMovesRaw.kingsTargetColCastleShort : KingMovesRaw.kingsTargetColCastleLong, rowIdx_),
@@ -149,6 +152,8 @@ export class KingMovesRaw {
             kingPathCols: { start: (type_ == castleType.short) ? 4 : 2, end: (type_ == castleType.short) ? 6 : 4 },
             betweenPathCols: { start: (type_ == castleType.short) ? 5 : 1, end: (type_ == castleType.short) ? 6 : 3 }
         }
+        this._castleDataMap.set({ color: color_, type: type_ }, result)
+        return result
     }
 
     static isMoveCastle(sourcePieceOB: pieceOnBoard, target: IField, cbr: IChessBoardRepresentation): castleData | undefined {

@@ -8,8 +8,6 @@ import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './chess-b
 import { offsetsEnum } from './chess-board-offsets'
 import { AttackedFields } from './chess-board-attacked-fields'
 
-// TODO getLegalMoves -> SAN
-// TODO getAttackedFields -> Notation
 // TODO generate PGN
 
 function getColIdx(str: string, idx: number = 0): number {

@@ -1,9 +1,9 @@
-import { CastleFlags, castleType } from './chess-board-king-moves'
+import { CastleFlags, castleType } from "./CastleFlags"
 import { color } from '../../chess-color'
 
 describe('Testing chess-board-representation', () => {
 
-    test('testing validation (Rook)', () => {
+    test('testing validation (King)', () => {
         let data = new CastleFlags()
         data.setFlags(true, true, true, true)
         let data2 = new CastleFlags()

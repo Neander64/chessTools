@@ -1,4 +1,4 @@
-import { Piece, pieceKind, pieceKey } from './chess-board-pieces'
+import { Piece, pieceKind, pieceKey } from './Piece'
 import { color } from '../../chess-color'
 
 describe('Testing chess-board', () => {

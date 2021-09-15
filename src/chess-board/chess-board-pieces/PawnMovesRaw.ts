@@ -1,5 +1,5 @@
-import { IField } from '../representation/chess-board-representation'
-import { pieceKind } from './chess-board-pieces'
+import { IField } from "../representation/IField"
+import { pieceKind } from './Piece'
 import { color, otherColor } from '../../chess-color'
 import { offsetsEnum } from '../chess-board-offsets'
 

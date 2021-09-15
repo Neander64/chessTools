@@ -1,6 +1,7 @@
-import { ChessGameStatusData } from "./chess-board"
-import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces/chess-board-pieces"
-import { IChessBoardRepresentation, IField } from './representation/chess-board-representation'
+import { ChessGameStatusData } from "./ChessGameStatusData"
+import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces/Piece"
+import { IChessBoardRepresentation } from "./representation/IChessBoardRepresentation"
+import { IField } from "./representation/IField"
 
 export enum encodeType {
     Simple,

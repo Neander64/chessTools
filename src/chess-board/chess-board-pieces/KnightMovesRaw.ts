@@ -1,4 +1,4 @@
-import { IField } from '../representation/chess-board-representation'
+import { IField } from "../representation/IField";
 import { offsetsEnum } from '../chess-board-offsets'
 
 export class KnightMovesRaw {

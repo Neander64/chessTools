@@ -1,5 +1,5 @@
-import { Field } from '../representation/chess-board-representation'
-import { KnightMovesRaw } from './chess-board-knight-moves'
+import { Field } from "../representation/fileType"
+import { KnightMovesRaw } from './KnightMovesRaw'
 
 describe('Testing chess-board-bishop-moves', () => {
 

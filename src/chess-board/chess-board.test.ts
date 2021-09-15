@@ -1,4 +1,5 @@
 import * as chessBoard from './chess-board'
+import * as GameResult from "./GameResult";
 
 
 describe('Testing chess-board', () => {
@@ -46,7 +47,7 @@ describe('Testing chess-board', () => {
     expect(cb.isGameOver()).toBe(false)
     expect(cb.move('Nf3')).toBe(true) // #5 Rep -- automatic draw
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.data.gameResult).toBe(chessBoard.GameResult.draw)
+    expect(cb.data.gameResult).toBe(GameResult.GameResult.draw)
     expect(cb.move('Nf6')).toBe(false)
     expect(cb.moves()).toMatchInlineSnapshot(`
 Array [

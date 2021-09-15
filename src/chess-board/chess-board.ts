@@ -1,12 +1,19 @@
 
 import { EncodedPositionKey, encodeType } from './encode-position-key'
-import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces/chess-board-pieces'
+import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces/Piece'
 import { color, otherColor, colorStr } from '../chess-color'
-import { castleType, CastleFlags, KingMovesRaw } from './chess-board-pieces/chess-board-king-moves'
-import { PawnMovesRaw } from './chess-board-pieces/chess-board-pawn-moves'
-import { ChessBoardRepresentation, Field, IField, pieceOnBoard } from './representation/chess-board-representation'
+import { KingMovesRaw } from './chess-board-pieces/KingMovesRaw'
+import { castleType } from "./chess-board-pieces/CastleFlags"
+import { PawnMovesRaw } from './chess-board-pieces/PawnMovesRaw'
+import { ChessBoardRepresentation } from './representation/ChessBoardRepresentation'
+import { Field } from "./representation/fileType"
+import { pieceOnBoard } from "./representation/pieceOnBoard"
+import { IField } from "./representation/IField"
 import { offsetsEnum } from './chess-board-offsets'
 import { AttackedFields } from './chess-board-attacked-fields-cache'
+import { moveOnBoard } from './moveOnBoard'
+import { GameResult, gameResult } from './GameResult'
+import { ChessGameStatusData } from './ChessGameStatusData'
 
 // TODO generate PGN
 
@@ -17,105 +24,6 @@ function getRowIdx(str: string, idx: number = 1): number {
     return 8 - parseInt(str[idx], 10)
 }
 
-export type moveOnBoard = { // Data to do/undo moves
-    pieceOB: pieceOnBoard,
-    target: IField,
-    // pawn promotion
-    promotionPiece?: pieceKind;
-    // castle
-    pieceRook?: pieceOnBoard,
-    targetRook?: IField,
-    // captured/replaced Piece
-    pieceCaptured?: pieceOnBoard,
-
-    // position key to check for move repetition
-    boardKey?: /*number[] |*/ BigInt,
-
-    isCheck?: boolean
-    isMate?: boolean
-    notationLong?: string
-    notation?: string // SAN
-    previousStatus?: ChessGameStatusData
-};
-
-export const enum GameResult {
-    white_wins = "1-0",
-    black_wins = "0-1",
-    draw = "1/2-1/2",
-    none = "*"
-}
-function gameResult(r: GameResult): string {
-    return r.toString()
-    /*    switch (r) {
-            case GameResult.white_wins: return "1-0"
-            case GameResult.black_wins: return "0-1"
-            case GameResult.draw: return "1/2-1/2"
-            case GameResult.none: return "*"
-        }*/
-}
-
-
-
-export class ChessGameStatusData {
-    get isWhitesMove() { return this.nextMoveBy == color.white }
-    castleFlags: CastleFlags
-    get enPassantPossible(): boolean { return typeof this.enPassantField !== 'undefined' }
-    enPassantField?: IField
-
-    firstMoveBy!: color
-    nextMoveBy!: color
-    halfMoves50!: number
-    firstHalfMoves50!: number
-    moveNumber!: number
-    firstMoveNumber!: number
-
-    gameOver!: boolean // meaning: no further moves are allowed.
-    gameResult!: GameResult
-    drawPossible50MovesRule!: boolean
-    drawPossibleThreefoldRepetion!: boolean
-    isCheck!: boolean
-    isMate!: boolean
-    constructor() {
-        this.castleFlags = new CastleFlags()
-        this.init()
-    }
-    init() {
-        this.nextMoveBy = color.white
-        this.firstMoveBy = color.white
-        this.castleFlags.noCastle(color.white)
-        this.castleFlags.noCastle(color.black)
-        this.enPassantField = undefined
-        this.halfMoves50 = 0
-        this.firstHalfMoves50 = 0
-        this.moveNumber = 1
-        this.firstMoveNumber = 1
-        this.gameOver = true
-        this.gameResult = GameResult.none
-        this.drawPossible50MovesRule = false
-        this.drawPossibleThreefoldRepetion = false
-        this.isCheck = false
-        this.isMate = false
-    }
-    canCastle(color_: color, type_: castleType): boolean { return this.castleFlags.getCastleFlag(color_, type_) }
-    copy(): ChessGameStatusData {
-        let result = new ChessGameStatusData()
-        result.castleFlags = new CastleFlags(this.castleFlags)
-        result.enPassantField = this.enPassantField
-        result.firstMoveBy = this.firstMoveBy
-        result.nextMoveBy = this.nextMoveBy
-        result.halfMoves50 = this.halfMoves50
-        result.firstHalfMoves50 = this.firstHalfMoves50
-        result.moveNumber = this.moveNumber
-        result.firstMoveNumber = this.firstMoveNumber
-        result.gameOver = this.gameOver
-        result.gameResult = this.gameResult
-        result.drawPossible50MovesRule = this.drawPossible50MovesRule
-        result.drawPossibleThreefoldRepetion = this.drawPossibleThreefoldRepetion
-        result.isCheck = this.isCheck
-        result.isMate = this.isMate
-        return result
-    }
-}
 export class ChessBoard {
 
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'

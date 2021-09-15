@@ -8,6 +8,7 @@ import { KnightMovesRaw } from './chess-board-knight-moves'
 import { PawnMovesRaw } from './chess-board-pawn-moves'
 import { moveOnBoard, ChessGameStatusData } from './chess-board'
 import { offsetsEnum } from './chess-board-offsets'
+import { LegalMovesCache } from './chess-board-legal-moves-cache'
 
 export type fileType = number
 export type fileNotationType = string
@@ -294,9 +295,11 @@ export interface IChessBoardRepresentation {
 export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
+    private _data: ChessGameStatusData
+    // internal caches, avoid re-evaluation
     private _fieldsAttackedByBlack: AttackedFields
     private _fieldsAttackedByWhite: AttackedFields
-    private _data: ChessGameStatusData
+    private _legalMoveCache: LegalMovesCache
 
     constructor(data: ChessGameStatusData) {
         this._data = data
@@ -308,6 +311,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         this._fieldsAttackedByBlack = new AttackedFields()
         this._fieldsAttackedByWhite = new AttackedFields()
+        this._legalMoveCache = new LegalMovesCache()
     }
 
     // Interface implementation
@@ -348,6 +352,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             }
         }
         this.clearAttackedFields()
+        this._legalMoveCache.clear()
     }
     setBoard(board: Piece[][]) {
         for (let col = 0; col < 8; col++) {
@@ -594,7 +599,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    getLegalMovesOfKing(pieceOB_: pieceOnBoard): moveOnBoard[] {
+    private getLegalMovesOfKing(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
         let kingMoves = new KingMovesRaw(pieceOB_.field)
         for (let target of kingMoves.moves) {
@@ -613,7 +618,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    getLegalMovesOfPawn(pieceOB_: pieceOnBoard): moveOnBoard[] {
+    private getLegalMovesOfPawn(pieceOB_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
         let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color!)
         for (let pawnMove of pawnMovesRaw.moves) {
@@ -648,34 +653,50 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     getLegalMovesOfPiece(piece_: pieceOnBoard): moveOnBoard[] {
         let result: moveOnBoard[] = []
+        let cached = this._legalMoveCache.getMovesOfPiece(piece_)
+        if (cached) return cached
         switch (piece_.piece.kind) {
             case pieceKind.Rook:
-                return this.getLegalMovesOfRook(piece_)
+                result = this.getLegalMovesOfRook(piece_)
+                break
             case pieceKind.Knight:
-                return this.getLegalMovesOfKnight(piece_)
+                result = this.getLegalMovesOfKnight(piece_)
+                break
             case pieceKind.Bishop:
-                return this.getLegalMovesOfBishop(piece_)
+                result = this.getLegalMovesOfBishop(piece_)
+                break
             case pieceKind.Queen:
-                return this.getLegalMovesOfQueen(piece_)
+                result = this.getLegalMovesOfQueen(piece_)
+                break
             case pieceKind.King:
-                return this.getLegalMovesOfKing(piece_)
+                result = this.getLegalMovesOfKing(piece_)
+                break
             case pieceKind.Pawn:
-                return this.getLegalMovesOfPawn(piece_)
+                result = this.getLegalMovesOfPawn(piece_)
+                break
             //case pieceKind.none:
         }
+        this._legalMoveCache.setMovesOfPiece(piece_, result)
         return result
     }
     getLegalMoves(): moveOnBoard[] {
         let result: moveOnBoard[] = []
+        let cached = this._legalMoveCache.getAllMoves()
+        if (cached) return cached
         let movingPieces = this.currentPiecesOnBoard(this._data.nextMoveBy)
         for (let piece_ of movingPieces) {
             result = result.concat(this.getLegalMovesOfPiece(piece_))
         }
+        this._legalMoveCache.setAllMoves(result)
         return result
+    }
+    hasLegalMoves(): boolean {
+        return this.getLegalMoves().length != 0
     }
 
 
     // ------------------ Validate Move -----------------
+    // Legal moves use these validations, so don't use legalmoves in this section!
 
     private validateMoveOfPiece(validatedMove: ValidatedMove): boolean {
         // no castle or pawn move here!
@@ -898,6 +919,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
             this._data.nextMoveBy = otherColor(this._data.nextMoveBy)
             if (this._data.nextMoveBy == color.white) this._data.moveNumber++
             this.clearAttackedFields()
+            this._legalMoveCache.clear()
         }
         return validatedMove.isValid ? validatedMove.moveOnBoard : undefined
     }
@@ -912,6 +934,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         this.undoMove(validatedMove)
         this._data = moveOb.previousStatus! // TODO: I don't like this double adjustment of values, see chess-board
         this.clearAttackedFields()
+        this._legalMoveCache.clear()
     }
 
     // ------------------ Move on Board -------------------
@@ -957,11 +980,11 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
     isMate(): boolean {
         // TODO enhance performance
-        return this.isCheck() && this.getLegalMoves().length == 0
+        return this.isCheck() && !this.hasLegalMoves()
     }
     isStaleMate(): boolean {
         // TODO: a specific hasLegalMoves could be more performant
-        return !this.isCheck() && this.getLegalMoves().length == 0
+        return !this.isCheck() && !this.hasLegalMoves()
     }
 
 }

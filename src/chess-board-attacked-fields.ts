@@ -28,7 +28,7 @@ export class AttackedFields {
         if (typeof found == 'undefined') return []
         return found!.attackingPieces
     }
-    get notation(): string[] {
+    get notation(): string[] { // for testing and debugging
         let result: string[] = []
         for (let f of this._fields) {
             let s = f.field.notation + ' <= ['

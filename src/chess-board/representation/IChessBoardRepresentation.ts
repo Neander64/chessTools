@@ -1,9 +1,8 @@
-import { Piece, pieceKeyType, pieceKind } from '../chess-board-pieces/Piece';
-import { color } from '../../chess-color';
+import { Piece, pieceKeyType, pieceKind } from '../pieces/Piece';
+import { color } from '../../common/chess-color';
 import { moveOnBoard } from "../moveOnBoard";
-import { IField } from './IField';
+import { fileType, rankType, IField } from './IField';
 import { pieceOnBoard } from './pieceOnBoard';
-import { fileType, rankType } from './fileType';
 import { ValidatedMove } from './ValidatedMove';
 import { pieceStat } from './ChessBoardRepresentation';
 

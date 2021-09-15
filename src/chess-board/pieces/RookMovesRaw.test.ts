@@ -1,5 +1,5 @@
 import { RookMovesRaw, rookRay } from './RookMovesRaw'
-import { Field } from "../representation/fileType"
+import { Field } from "../representation/Field"
 
 describe('Testing chess-board-rook-moves', () => {
 

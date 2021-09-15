@@ -2,8 +2,8 @@ import { IChessBoardRepresentation } from "../representation/IChessBoardRepresen
 import { pieceOnBoard } from "../representation/pieceOnBoard"
 import { IField } from "../representation/IField"
 import { Piece, pieceKind } from './Piece'
-import { color } from '../../chess-color'
-import { offsetsEnum } from '../chess-board-offsets'
+import { color } from '../../common/chess-color'
+import { offsetsEnum } from '../offsetsEnum'
 import { castleType, castleData, CastleFlags } from "./CastleFlags"
 
 export class KingMovesRaw {

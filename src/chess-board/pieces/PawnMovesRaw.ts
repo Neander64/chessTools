@@ -1,7 +1,7 @@
 import { IField } from "../representation/IField"
 import { pieceKind } from './Piece'
-import { color, otherColor } from '../../chess-color'
-import { offsetsEnum } from '../chess-board-offsets'
+import { color, otherColor } from '../../common/chess-color'
+import { offsetsEnum } from '../offsetsEnum'
 
 export type pawnTarget = {
     target: IField,

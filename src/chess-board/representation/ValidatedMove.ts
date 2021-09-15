@@ -1,7 +1,7 @@
-import { Piece, pieceKind } from '../chess-board-pieces/Piece';
-import { color } from '../../chess-color';
-import { KingMovesRaw } from '../chess-board-pieces/KingMovesRaw';
-import { CastleFlags, castleType } from "../chess-board-pieces/CastleFlags";
+import { Piece, pieceKind } from '../pieces/Piece';
+import { color } from '../../common/chess-color';
+import { KingMovesRaw } from '../pieces/KingMovesRaw';
+import { CastleFlags, castleType } from "../pieces/CastleFlags";
 import { ChessGameStatusData } from "../ChessGameStatusData";
 import { moveOnBoard } from "../moveOnBoard";
 import { IField } from './IField';

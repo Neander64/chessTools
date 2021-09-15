@@ -1,11 +1,6 @@
-import { offsetsEnum } from '../chess-board-offsets';
-import { IField } from './IField';
-import { fieldOffsetN } from './fieldOffsetN';
-
-
-export type fileType = number;
-export type fileNotationType = string;
-export type rankType = number;
+import { offsetsEnum } from '../offsetsEnum';
+import { fileType, IField, rankType } from './IField';
+import { fieldOffset } from './fieldOffset';
 
 export class Field implements IField {
     private _file: fileType;
@@ -36,8 +31,8 @@ export class Field implements IField {
     get notation(): string {
         return 'abcdefgh'.charAt(this._file) + '87654321'.charAt(this._rank);
     }
-    static offset(offset_: offsetsEnum): fieldOffsetN {
-        const mapOffsets: Map<offsetsEnum, fieldOffsetN> = new Map([
+    static offset(offset_: offsetsEnum): fieldOffset {
+        const mapOffsets: Map<offsetsEnum, fieldOffset> = new Map([
             [offsetsEnum.N, { d_file: 0, d_rank: -1 }],
             [offsetsEnum.W, { d_file: -1, d_rank: 0 }],
             [offsetsEnum.S, { d_file: 0, d_rank: 1 }],

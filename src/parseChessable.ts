@@ -1,5 +1,5 @@
-import { debug } from "console";
-import * as chessGame from "./chess-game"
+import { ChessBoardPiece, ChessMoveEvaluation, ChessPositionalEvaluation, PgnResult, pgnSTR } from './pgn'
+import { ChessGame } from "./chess-game";
 import { lineParser, parseResult } from "./parser/lineParser"
 
 // TODO maybe, just maybe, RegEx could simplify some topic...
@@ -17,30 +17,30 @@ const NOVELTY = 'N';
 const PROMOTE = '=';
 
 const MOVE_EVALS = [
-    { str: '??', id: chessGame.ChessMoveEvaluation.blunder },
-    { str: '?!', id: chessGame.ChessMoveEvaluation.dubious },
-    { str: '!?', id: chessGame.ChessMoveEvaluation.interesting },
-    { str: '!!', id: chessGame.ChessMoveEvaluation.brilliant },
-    { str: '?', id: chessGame.ChessMoveEvaluation.mistake },
-    { str: '!', id: chessGame.ChessMoveEvaluation.good },
+    { str: '??', id: ChessMoveEvaluation.blunder },
+    { str: '?!', id: ChessMoveEvaluation.dubious },
+    { str: '!?', id: ChessMoveEvaluation.interesting },
+    { str: '!!', id: ChessMoveEvaluation.brilliant },
+    { str: '?', id: ChessMoveEvaluation.mistake },
+    { str: '!', id: ChessMoveEvaluation.good },
 ];
 const POSITIONAL_EVALS = [
-    { str: '⩲', id: chessGame.ChessPositionalEvaluation.slightAdvantageWhite },
-    { str: '⩱', id: chessGame.ChessPositionalEvaluation.slightAdvantageBlack },
-    { str: '±', id: chessGame.ChessPositionalEvaluation.clearAdvantageWhite },
-    { str: '∓', id: chessGame.ChessPositionalEvaluation.clearAdvantageBlack },
-    { str: '+-', id: chessGame.ChessPositionalEvaluation.decisiveAdvantageWhite },
-    { str: '-+', id: chessGame.ChessPositionalEvaluation.decisiveAdvantageBlack },
+    { str: '⩲', id: ChessPositionalEvaluation.slightAdvantageWhite },
+    { str: '⩱', id: ChessPositionalEvaluation.slightAdvantageBlack },
+    { str: '±', id: ChessPositionalEvaluation.clearAdvantageWhite },
+    { str: '∓', id: ChessPositionalEvaluation.clearAdvantageBlack },
+    { str: '+-', id: ChessPositionalEvaluation.decisiveAdvantageWhite },
+    { str: '-+', id: ChessPositionalEvaluation.decisiveAdvantageBlack },
     //    { str : '=/∞', id : chessGame.ChessPositionalEvaluation.compensation },
-    { str: '=', id: chessGame.ChessPositionalEvaluation.equal },
-    { str: '∞', id: chessGame.ChessPositionalEvaluation.unclear },
+    { str: '=', id: ChessPositionalEvaluation.equal },
+    { str: '∞', id: ChessPositionalEvaluation.unclear },
 ];
 const PIECE_CB = [
-    { str: 'R', id: chessGame.ChessBoardPiece.Rook },
-    { str: 'N', id: chessGame.ChessBoardPiece.Knight },
-    { str: 'B', id: chessGame.ChessBoardPiece.Bishop },
-    { str: 'K', id: chessGame.ChessBoardPiece.King },
-    { str: 'Q', id: chessGame.ChessBoardPiece.Queen },
+    { str: 'R', id: ChessBoardPiece.Rook },
+    { str: 'N', id: ChessBoardPiece.Knight },
+    { str: 'B', id: ChessBoardPiece.Bishop },
+    { str: 'K', id: ChessBoardPiece.King },
+    { str: 'Q', id: ChessBoardPiece.Queen },
 ];
 const enum Token {
     MoveNumberBlack = 'MoveNumberBlack',
@@ -79,10 +79,10 @@ class ScanData {
 
 export class parseChessable {
 
-    private _game: chessGame.ChessGame;
+    private _game: ChessGame;
     private _scanData: ScanData;
 
-    constructor(game: chessGame.ChessGame) {
+    constructor(game: ChessGame) {
         this._game = game;
         this._scanData = new ScanData();
         //this.inititializeParser();

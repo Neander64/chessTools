@@ -1,5 +1,5 @@
 import { IField } from "../representation/IField"
-import { offsetsEnum } from '../chess-board-offsets'
+import { offsetsEnum } from '../offsetsEnum'
 
 
 export const enum rookRay {

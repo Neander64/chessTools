@@ -1,21 +1,19 @@
 
 import { EncodedPositionKey, encodeType } from './encode-position-key'
-import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './chess-board-pieces/Piece'
-import { color, otherColor, colorStr } from '../chess-color'
-import { KingMovesRaw } from './chess-board-pieces/KingMovesRaw'
-import { castleType } from "./chess-board-pieces/CastleFlags"
-import { PawnMovesRaw } from './chess-board-pieces/PawnMovesRaw'
+import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './pieces/Piece'
+import { color, otherColor, colorStr } from '../common/chess-color'
+import { KingMovesRaw } from './pieces/KingMovesRaw'
+import { castleType } from "./pieces/CastleFlags"
+import { PawnMovesRaw } from './pieces/PawnMovesRaw'
 import { ChessBoardRepresentation } from './representation/ChessBoardRepresentation'
-import { Field } from "./representation/fileType"
+import { Field } from "./representation/Field"
 import { pieceOnBoard } from "./representation/pieceOnBoard"
 import { IField } from "./representation/IField"
-import { offsetsEnum } from './chess-board-offsets'
-import { AttackedFields } from './chess-board-attacked-fields-cache'
+import { offsetsEnum } from './offsetsEnum'
+import { AttackedFields } from './AttackedFields'
 import { moveOnBoard } from './moveOnBoard'
 import { GameResult, gameResult } from './GameResult'
 import { ChessGameStatusData } from './ChessGameStatusData'
-
-// TODO generate PGN
 
 function getColIdx(str: string, idx: number = 0): number {
     return (str[0].charCodeAt(idx) - 'a'.charCodeAt(idx))
@@ -25,6 +23,11 @@ function getRowIdx(str: string, idx: number = 1): number {
 }
 
 export class ChessBoard {
+    // ChessBoard is a Position on the board
+    // it allows to use a FEN-String to set it up
+    // it evaluates the status on the board (check, mate, stalemate, 50-moves-rule, etc.)
+    // it keeps track of moves on the board (to find out repetitions), thus it is almost a game (but not quite)
+    // it delegates activities on the board to the board implementation
 
     readonly initialBoardFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -584,8 +587,4 @@ export class ChessBoard {
         }
         return undefined
     }
-
-
-    //TODO doMove, undoMove using moveOnBoard structure
-
 }

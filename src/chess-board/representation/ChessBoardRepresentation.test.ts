@@ -1,9 +1,9 @@
 import { ChessBoardRepresentation } from './ChessBoardRepresentation'
-import { Field } from "./fileType"
+import { Field } from "./Field"
 import { ChessGameStatusData } from "../ChessGameStatusData"
-import { Piece, pieceKind } from '../chess-board-pieces/Piece'
-import { color } from '../../chess-color'
-import { offsetsEnum } from '../chess-board-offsets'
+import { Piece, pieceKind } from '../pieces/Piece'
+import { color } from '../../common/chess-color'
+import { offsetsEnum } from '../offsetsEnum'
 
 describe('Testing chess-board-representation', () => {
 

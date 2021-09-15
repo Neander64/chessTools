@@ -1,4 +1,4 @@
-import { Piece } from '../chess-board-pieces/Piece';
+import { Piece } from '../pieces/Piece';
 import { IField } from './IField';
 
 

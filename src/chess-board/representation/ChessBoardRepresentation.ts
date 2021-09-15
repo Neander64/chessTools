@@ -1,18 +1,18 @@
-import { Piece, pieceKind } from '../chess-board-pieces/Piece'
-import { color, otherColor } from '../../chess-color'
-import { AttackedFields } from '../chess-board-attacked-fields-cache'
-import { BishopMovesRaw, isOffsetBishopLike } from '../chess-board-pieces/BishopMovesRaw'
-import { RookMovesRaw, isOffsetRookLike } from '../chess-board-pieces/RookMovesRaw'
-import { KingMovesRaw } from '../chess-board-pieces/KingMovesRaw'
-import { castleType } from "../chess-board-pieces/CastleFlags"
-import { KnightMovesRaw } from '../chess-board-pieces/KnightMovesRaw'
-import { PawnMovesRaw } from '../chess-board-pieces/PawnMovesRaw'
+import { Piece, pieceKind } from '../pieces/Piece'
+import { color, otherColor } from '../../common/chess-color'
+import { AttackedFields } from '../AttackedFields'
+import { BishopMovesRaw, isOffsetBishopLike } from '../pieces/BishopMovesRaw'
+import { RookMovesRaw, isOffsetRookLike } from '../pieces/RookMovesRaw'
+import { KingMovesRaw } from '../pieces/KingMovesRaw'
+import { castleType } from "../pieces/CastleFlags"
+import { KnightMovesRaw } from '../pieces/KnightMovesRaw'
+import { PawnMovesRaw } from '../pieces/PawnMovesRaw'
 import { ChessGameStatusData } from "../ChessGameStatusData"
 import { moveOnBoard } from "../moveOnBoard"
-import { LegalMovesCache } from '../chess-board-legal-moves-cache'
-import { IField } from './IField'
+import { LegalMovesCache } from '../LegalMovesCache'
+import { fileType, rankType, IField } from './IField'
 import { pieceOnBoard, createPieceOB } from './pieceOnBoard'
-import { fileType, rankType, Field } from './fileType'
+import { Field } from './Field'
 import { ValidatedMove } from './ValidatedMove'
 import { IChessBoardRepresentation } from './IChessBoardRepresentation'
 

@@ -1,4 +1,4 @@
-import { color } from '../../chess-color'
+import { color } from '../../common/chess-color'
 
 export type pieceKeyType = number
 

@@ -1,4 +1,4 @@
-import * as chessBoard from './chess-board'
+import * as chessBoard from './ChessBoard'
 import * as GameResult from "./GameResult";
 
 

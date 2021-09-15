@@ -1,5 +1,5 @@
 import { ChessGameStatusData } from "./ChessGameStatusData"
-import { pieceKeyType as piecesPieceKeyType } from "./chess-board-pieces/Piece"
+import { pieceKeyType as piecesPieceKeyType } from "./pieces/Piece"
 import { IChessBoardRepresentation } from "./representation/IChessBoardRepresentation"
 import { IField } from "./representation/IField"
 

@@ -1,4 +1,4 @@
-import { pieceKind } from './chess-board-pieces/Piece';
+import { pieceKind } from './pieces/Piece';
 import { pieceOnBoard } from "./representation/pieceOnBoard";
 import { IField } from "./representation/IField";
 import { ChessGameStatusData } from "./ChessGameStatusData";

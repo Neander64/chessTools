@@ -1,6 +1,8 @@
-import { offsetsEnum } from '../chess-board-offsets';
-import { fileType, rankType } from "./fileType";
+import { offsetsEnum } from '../offsetsEnum';
 
+export type fileType = number;
+export type fileNotationType = string;
+export type rankType = number;
 
 export interface IField {
     shift(offset: offsetsEnum, factor?: number): IField;

@@ -1,5 +1,5 @@
-import { color } from '../chess-color';
-import { castleType, CastleFlags } from "./chess-board-pieces/CastleFlags";
+import { color } from '../common/chess-color';
+import { castleType, CastleFlags } from "./pieces/CastleFlags";
 import { IField } from "./representation/IField";
 import { GameResult } from './GameResult';
 

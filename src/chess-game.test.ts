@@ -1,5 +1,5 @@
-import exp from "constants";
-import * as chessGame from "./chess-game"
+import { ChessGame } from "./chess-game"
+import { ChessBoardPiece, ChessMoveColor, ChessMoveEvaluation, ChessPositionalEvaluation, pgn } from "./pgn";
 import { parseChessable as Parser } from "./parseChessable"
 
 describe('Testing chess-game', () => {
@@ -26,11 +26,11 @@ describe('Testing chess-game', () => {
       "14.Nd4!Nc415.b3!Bxh2+16.Kh1∞",
       "Material has been equalized, but Black's coordination is horrendous, his pieces are loose, and White will easily complete his development with Bc1-b2 once the c4-knight leaves. The machines are claiming White is much better, and I won't argue with them.",
     ];
-    var game: chessGame.ChessGame = new chessGame.ChessGame;
+    var game: ChessGame = new ChessGame;
     var p: Parser = new Parser(game);
     p.scanGameText(gameArray);
-    let pgn = new chessGame.pgn(game);
-    var pgnArray = pgn.exportPGN();
+    let pgn_ = new pgn(game);
+    var pgnArray = pgn_.exportPGN();
     expect(pgnArray).toMatchInlineSnapshot(`
 Array [
   "[Event \\"?\\"]",
@@ -82,7 +82,7 @@ Array [
 ]
 `);
 
-    var pgnArray = pgn.exportPGN(true);
+    var pgnArray = pgn_.exportPGN(true);
     expect(pgnArray).toMatchInlineSnapshot(`
 Array [
   "[Event \\"?\\"]",
@@ -99,7 +99,7 @@ Array [
 ]
 `);
 
-    var pgnArray = pgn.exportPGN(true, true);
+    var pgnArray = pgn_.exportPGN(true, true);
     expect(pgnArray).toMatchInlineSnapshot(`
 Array [
   "[Event \\"?\\"]",
@@ -403,12 +403,12 @@ ChessGame {
   });
 
   test('testing general features', () => {
-    var game: chessGame.ChessGame = new chessGame.ChessGame;
+    var game: ChessGame = new ChessGame;
     // empty game
     expect(game.hasMoves).toBe(false);
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(true);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.white);
+    expect(game.nextColor).toBe(ChessMoveColor.white);
     expect(game.moveNumber).toBe(1);
     expect(game).toMatchInlineSnapshot(`
 ChessGame {
@@ -430,24 +430,24 @@ ChessGame {
 `);
 
     // set move attributes
-    game.setMovePiece(chessGame.ChessBoardPiece.King);
+    game.setMovePiece(ChessBoardPiece.King);
     expect(game.isTmpInitial).toBe(false);
     game.setMoveSourceField({ row: '5', column: 'h' });
     game.setMoveTargetField({ row: '6', column: 'h' });
-    game.setMovePromotionTarget(chessGame.ChessBoardPiece.Bishop);
+    game.setMovePromotionTarget(ChessBoardPiece.Bishop);
     game.setMoveIsCapture();
     game.setMoveIsCheck();
     game.setMoveIsMate();
     game.setMoveIsNovelty();
-    game.setMovePositionalEvaluation(chessGame.ChessPositionalEvaluation.clearAdvantageBlack);
-    game.setMoveEvaluation(chessGame.ChessMoveEvaluation.interesting);
+    game.setMovePositionalEvaluation(ChessPositionalEvaluation.clearAdvantageBlack);
+    game.setMoveEvaluation(ChessMoveEvaluation.interesting);
     game.setMoveComment("comment text");
     expect(game.isTmpInitial).toBe(false);
     game.addMove();
     expect(game.hasMoves).toBe(true);
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(false);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.black);
+    expect(game.nextColor).toBe(ChessMoveColor.black);
     expect(game.moveNumber).toBe(1);
     expect(game).toMatchInlineSnapshot(`
 ChessGame {
@@ -491,7 +491,7 @@ ChessGame {
 `);
 
     // black move
-    game.setMovePiece(chessGame.ChessBoardPiece.King);
+    game.setMovePiece(ChessBoardPiece.King);
     expect(game.isTmpInitial).toBe(false);
     game.setMoveTargetField({ row: '6', column: 'h' });
     expect(game.isTmpInitial).toBe(false);
@@ -500,7 +500,7 @@ ChessGame {
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(true);
     expect(game.isWhiteToMove).toBe(true);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.white);
+    expect(game.nextColor).toBe(ChessMoveColor.white);
     expect(game.moveNumber).toBe(2);
     expect(game).toMatchInlineSnapshot(`
 ChessGame {
@@ -558,7 +558,7 @@ ChessGame {
     game.addMove();
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(false);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.black);
+    expect(game.nextColor).toBe(ChessMoveColor.black);
     expect(game.hasMoves).toBe(true);
     expect(game.moveNumber).toBe(2);
     expect(game).toMatchInlineSnapshot(`
@@ -622,7 +622,7 @@ ChessGame {
     expect(game.hasMoves).toBe(false);
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(true);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.white);
+    expect(game.nextColor).toBe(ChessMoveColor.white);
     expect(game.moveNumber).toBe(1);
     expect(game).toMatchInlineSnapshot(`
 ChessGame {
@@ -647,7 +647,7 @@ ChessGame {
     expect(game.hasMoves).toBe(false);
     expect(game.isTmpInitial).toBe(true);
     expect(game.isWhiteToMove).toBe(true);
-    expect(game.nextColor).toBe(chessGame.ChessMoveColor.white);
+    expect(game.nextColor).toBe(ChessMoveColor.white);
     expect(game.moveNumber).toBe(1);
     expect(game).toMatchInlineSnapshot(`
 ChessGame {

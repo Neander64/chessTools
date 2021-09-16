@@ -1,4 +1,4 @@
-import { Field } from "../representation/Field"
+import { Field } from "../../common/Field"
 import { KnightMovesRaw } from './KnightMovesRaw'
 
 describe('Testing chess-board-bishop-moves', () => {

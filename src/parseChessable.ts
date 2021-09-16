@@ -1,6 +1,7 @@
-import { ChessBoardPiece, ChessMoveEvaluation, ChessPositionalEvaluation, PgnResult, pgnSTR } from './pgn'
+import { ChessBoardPiece, PgnResult, pgnSTR } from './pgn'
 import { ChessGame } from "./chess-game";
 import { lineParser, parseResult } from "./parser/lineParser"
+import { ChessMoveEvaluation, ChessPositionalEvaluation } from './common/moveOnBoard';
 
 // TODO maybe, just maybe, RegEx could simplify some topic...
 // TODO allow spaces between move token, so you can parse other sources as well.
@@ -351,12 +352,12 @@ export class parseChessable {
                     break;
                 case Token.Source:
                     if (tmp.value[1] == ' ') // only one value will be set
-                        this._game.setMoveSourceField({ column: tmp.value[0] });
+                        this._game.setMoveSourceField({ file: tmp.value[0] });
                     else
-                        this._game.setMoveSourceField({ row: tmp.value[1] });
+                        this._game.setMoveSourceField({ rank: tmp.value[1] });
                     break;
                 case Token.Target:
-                    this._game.setMoveTargetField({ column: tmp.value[0], row: tmp.value[1] });
+                    this._game.setMoveTargetField({ file: tmp.value[0], rank: tmp.value[1] });
                     break;
                 case Token.Captures:
                     this._game.setMoveIsCapture();

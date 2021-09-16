@@ -1,11 +1,11 @@
-import { Piece, pieceKind } from '../pieces/Piece';
+import { Piece, pieceKind } from '../../common/Piece';
 import { color } from '../../common/chess-color';
 import { KingMovesRaw } from '../pieces/KingMovesRaw';
-import { CastleFlags, castleType } from "../pieces/CastleFlags";
-import { ChessGameStatusData } from "../ChessGameStatusData";
-import { moveOnBoard } from "../moveOnBoard";
-import { IField } from './IField';
-import { pieceOnBoard } from './pieceOnBoard';
+import { CastleFlags, castleType } from "../../common/CastleFlags";
+import { ChessGameStatusData } from "../../common/ChessGameStatusData";
+import { MoveOnBoard } from "../../common/moveOnBoard";
+import { IField } from '../../common/IField';
+import { pieceOnBoard } from '../../common/pieceOnBoard';
 import { IChessBoardRepresentation } from "./IChessBoardRepresentation";
 
 
@@ -60,17 +60,15 @@ export class ValidatedMove {
         data_.halfMoves50 = this.halfMoves50;
         this._notation = this.notation(cbr);
     }
-    get moveOnBoard(): moveOnBoard {
-        return {
-            pieceOB: this.sourcePieceOB,
-            target: this.target,
-            promotionPiece: this.promotionPieceKind,
-            pieceRook: this.pieceRook,
-            targetRook: this.targetRook,
-            pieceCaptured: this.pieceCaptured,
-            notationLong: this.notationLong,
-            notation: this._notation
-        };
+    get moveOnBoard(): MoveOnBoard {
+        let mob = new MoveOnBoard(this.sourcePieceOB, this.target)
+        mob.promotionPiece = this.promotionPieceKind
+        mob.pieceRook = this.pieceRook
+        mob.targetRook = this.targetRook
+        mob.pieceCaptured = this.pieceCaptured
+        mob.notationLong = this.notationLong
+        mob.notation = this._notation
+        return mob
     }
     private get notationLong(): string {
         let result = '';
@@ -112,9 +110,9 @@ export class ValidatedMove {
                 for (let a of others) {
                     if (a.field.same(this.source))
                         continue;
-                    if (a.field.rank == this.source.rank)
+                    if (a.field.rankIdx == this.source.rankIdx)
                         unifier += sourceNota.charAt(0); // add file
-                    if (a.field.file == this.source.file)
+                    if (a.field.fileIdx == this.source.fileIdx)
                         unifier += sourceNota.charAt(1); // add rank
                 }
                 result += unifier + ((this.isCapture || this.captureEP) ? 'x' : '');

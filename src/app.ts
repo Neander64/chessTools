@@ -9,28 +9,19 @@ import * as chessBoard from "./chess-board/ChessBoard"
 //import { Piece, pieceKind } from './chess-board-pieces'
 
 import * as repl from "repl"
+import { CommonField } from "./common/chess-field"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let cb = new chessBoard.ChessBoard("6k1/8/4B2Q/8/8/8/8/K7 b - - 0 100")
-//let cb = new chessBoard.ChessBoard("5k2/8/4B2Q/8/8/8/8/K7 b - - 0 100")
-//let cb = new chessBoard.ChessBoard("5k2/8/5Q2/8/8/8/8/K7 b - - 0 100")
-cb.loadFEN("5rk1/1R2R1pp/8/8/8/8/8/K7 w - - 0 100")
-console.log(cb.toASCII())
-cb.move('Rxg7+')
-console.log(cb.moves())
-//console.log(cb.isCheck())
-//console.log(cb.isMate())
-//cb.loadFEN(cb.initialBoardFEN);
-//console.log(cb.move("Nf3"))
-//console.log(cb.toASCII())
+let f = CommonField.fromField063Idx(-1)
+console.log('onBoard:', f.isOnBoard)
 process.exit()
 
 
 
 const prompt = 'ChessTools >'
-//let cb = new chessBoard.ChessBoard()
+let cb = new chessBoard.ChessBoard()
 cb.loadFEN(cb.initialBoardFEN);
 const replServer = repl.start({ prompt: prompt, useColors: true }) // .context.m = msg
 

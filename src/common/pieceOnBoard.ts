@@ -1,4 +1,4 @@
-import { Piece } from '../pieces/Piece';
+import { Piece } from './Piece';
 import { IField } from './IField';
 
 

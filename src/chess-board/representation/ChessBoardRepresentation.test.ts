@@ -1,17 +1,17 @@
 import { ChessBoardRepresentation } from './ChessBoardRepresentation'
-import { Field } from "./Field"
-import { ChessGameStatusData } from "../ChessGameStatusData"
-import { Piece, pieceKind } from '../pieces/Piece'
+import { Field } from "../../common/Field"
+import { ChessGameStatusData } from "../../common/ChessGameStatusData"
+import { Piece, pieceKind } from '../../common/Piece'
 import { color } from '../../common/chess-color'
-import { offsetsEnum } from '../offsetsEnum'
+import { offsetsEnum } from '../../common/offsetsEnum'
 
 describe('Testing chess-board-representation', () => {
 
     test('testing Field implementation', () => {
         let f = new Field(0, 0)
         expect(f.isOnBoard()).toBe(true)
-        expect(f.file).toBe(0)
-        expect(f.rank).toBe(0)
+        expect(f.fileIdx).toBe(0)
+        expect(f.rankIdx).toBe(0)
         expect(f.notation).toBe('a8')
         let f1 = f.shift(offsetsEnum.N)
         expect(f1.isOnBoard()).toBe(false)

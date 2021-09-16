@@ -1,5 +1,5 @@
 import { BishopMovesRaw, isOffsetBishopLike, bishopRay } from './BishopMovesRaw'
-import { Field } from "../representation/Field"
+import { Field } from "../../common/Field"
 
 describe('Testing chess-board-bishop-moves', () => {
 
@@ -128,7 +128,7 @@ Array [
         }
         let r = b.getRay(bishopRay.NE)
         for (let x of r) {
-            test[x.file][x.rank] = true
+            test[x.fileIdx][x.rankIdx] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -158,7 +158,7 @@ Array [
         }
         r = b.getRay(bishopRay.SE)
         for (let x of r) {
-            test[x.file][x.rank] = true
+            test[x.fileIdx][x.rankIdx] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -188,7 +188,7 @@ Array [
         }
         r = b.getRay(bishopRay.NW)
         for (let x of r) {
-            test[x.file][x.rank] = true
+            test[x.fileIdx][x.rankIdx] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {
@@ -218,7 +218,7 @@ Array [
         }
         r = b.getRay(bishopRay.SW)
         for (let x of r) {
-            test[x.file][x.rank] = true
+            test[x.fileIdx][x.rankIdx] = true
         }
         result = []
         for (let r = 0; r < 8; r++) {

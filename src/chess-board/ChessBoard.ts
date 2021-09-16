@@ -1,19 +1,19 @@
 
 import { EncodedPositionKey, encodeType } from './encode-position-key'
-import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from './pieces/Piece'
+import { charFENToPiece, charPGNToPiece, Piece, pieceKind } from '../common/Piece'
 import { color, otherColor, colorStr } from '../common/chess-color'
 import { KingMovesRaw } from './pieces/KingMovesRaw'
-import { castleType } from "./pieces/CastleFlags"
+import { castleType } from "../common/CastleFlags"
 import { PawnMovesRaw } from './pieces/PawnMovesRaw'
 import { ChessBoardRepresentation } from './representation/ChessBoardRepresentation'
-import { Field } from "./representation/Field"
-import { pieceOnBoard } from "./representation/pieceOnBoard"
-import { IField } from "./representation/IField"
-import { offsetsEnum } from './offsetsEnum'
+import { Field } from "../common/Field"
+import { pieceOnBoard } from "../common/pieceOnBoard"
+import { IField } from "../common/IField"
+import { offsetsEnum } from '../common/offsetsEnum'
 import { AttackedFields } from './AttackedFields'
-import { moveOnBoard } from './moveOnBoard'
-import { GameResult, gameResult } from './GameResult'
-import { ChessGameStatusData } from './ChessGameStatusData'
+import { MoveOnBoard } from '../common/moveOnBoard'
+import { GameResult, gameResult } from '../common/GameResult'
+import { ChessGameStatusData } from '../common/ChessGameStatusData'
 
 function getColIdx(str: string, idx: number = 0): number {
     return (str[0].charCodeAt(idx) - 'a'.charCodeAt(idx))
@@ -33,7 +33,7 @@ export class ChessBoard {
 
     //private _board: Piece[][] = [] // col/row : [0][0]="a8" .. [7][7]="h1"
     private _cbr: ChessBoardRepresentation
-    private _moves: moveOnBoard[] = []
+    private _moves: MoveOnBoard[] = []
     private _data: ChessGameStatusData
 
 
@@ -49,7 +49,7 @@ export class ChessBoard {
     get data(): ChessGameStatusData {
         return this._data
     }
-    private addMoveToGame(move_: moveOnBoard) {
+    private addMoveToGame(move_: MoveOnBoard) {
         move_.boardKey = EncodedPositionKey.encodeBoard(this.board, this.data, encodeType.FENlikeLongBigInt) as BigInt
         move_.isCheck = this.board.isCheck()
         move_.isMate = this.board.isMate()
@@ -380,7 +380,7 @@ export class ChessBoard {
         }
         return result
     }
-    legalMoves(): moveOnBoard[] {
+    legalMoves(): MoveOnBoard[] {
         return this._cbr.getLegalMoves()
     }
     legalMovesNotationLong(): string[] {
@@ -401,7 +401,7 @@ export class ChessBoard {
         // Strip additional information
 
         let result = false
-        let moveOB: moveOnBoard | undefined
+        let moveOB: MoveOnBoard | undefined
         let previousStatus = this._data.copy()
         if (this._data.gameOver) return false // no moves on a finished game
 
@@ -498,8 +498,8 @@ export class ChessBoard {
                 let targetingPieces: pieceOnBoard[] = []
                 for (let p of candidates) {
                     if (this.board.validateMove(p, target).isValid) {
-                        if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) ||
-                            (typeof sourceRowIdx !== 'undefined' && p.field.rank == sourceRowIdx) ||
+                        if ((typeof sourceColIdx !== 'undefined' && p.field.fileIdx == sourceColIdx) ||
+                            (typeof sourceRowIdx !== 'undefined' && p.field.rankIdx == sourceRowIdx) ||
                             (typeof sourceColIdx === 'undefined' && typeof sourceRowIdx === 'undefined'))
                             targetingPieces.push(p)
                     }
@@ -519,7 +519,7 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
-                            else if (target.rank == 3 && p.piece.kind == pieceKind.none) {
+                            else if (target.rankIdx == 3 && p.piece.kind == pieceKind.none) {
                                 field = field.shift(offsetsEnum.N)
                                 if (this.board.isFieldOnBoard(field)) {
                                     p = this.board.peekFieldPieceOB(field)
@@ -531,14 +531,14 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.fileIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = target.shift(offsetsEnum.NE) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.fileIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         for (p of candidatesP) {
@@ -554,7 +554,7 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn) candidatesP.push(p)
-                            else if (target.rank == 4 && p.piece.kind == pieceKind.none) {
+                            else if (target.rankIdx == 4 && p.piece.kind == pieceKind.none) {
                                 field = field.shift(offsetsEnum.S)
                                 if (this.board.isFieldOnBoard(field)) {
                                     p = this.board.peekFieldPieceOB(field)
@@ -566,14 +566,14 @@ export class ChessBoard {
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.fileIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         field = target.shift(offsetsEnum.SE) as Field
                         if (this.board.isFieldOnBoard(field)) {
                             p = this.board.peekFieldPieceOB(field)
                             if (p.piece.kind == pieceKind.Pawn)
-                                if ((typeof sourceColIdx !== 'undefined' && p.field.file == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
+                                if ((typeof sourceColIdx !== 'undefined' && p.field.fileIdx == sourceColIdx) || (typeof sourceColIdx == 'undefined'))
                                     candidatesP.push(p)
                         }
                         for (p of candidatesP) {

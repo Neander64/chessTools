@@ -1,7 +1,7 @@
-import { ChessGameStatusData } from "./ChessGameStatusData"
-import { pieceKeyType as piecesPieceKeyType } from "./pieces/Piece"
+import { ChessGameStatusData } from "../common/ChessGameStatusData"
+import { pieceKeyType as piecesPieceKeyType } from "../common/Piece"
 import { IChessBoardRepresentation } from "./representation/IChessBoardRepresentation"
-import { IField } from "./representation/IField"
+import { IField } from "../common/IField"
 
 export enum encodeType {
     Simple,
@@ -64,7 +64,7 @@ export class EncodedPositionKey {
         return rowIdx * 8 + colIdx /* 0..63 */
     }
     static encodeFieldIdx(f: IField): number {
-        return f.rank * 8 + f.file /* 0..63 */
+        return f.rankIdx * 8 + f.fileIdx /* 0..63 */
     }
     static mapPieceKey(key_: piecesPieceKeyType): pieceKeyType { // insert mapping of pieceTypes to our representaton if different
         return key_

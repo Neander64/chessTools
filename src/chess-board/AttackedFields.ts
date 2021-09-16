@@ -1,5 +1,5 @@
-import { pieceOnBoard } from "./representation/pieceOnBoard"
-import { IField } from "./representation/IField"
+import { pieceOnBoard } from "../common/pieceOnBoard"
+import { IField } from "../common/IField"
 
 type attackedBy = {
     field: IField,  // attacked field

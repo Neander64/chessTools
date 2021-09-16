@@ -1,5 +1,5 @@
-import { IField } from "../representation/IField";
-import { offsetsEnum } from '../offsetsEnum'
+import { IField } from "../../common/IField";
+import { offsetsEnum } from '../../common/offsetsEnum'
 
 export class KnightMovesRaw {
     moves: IField[]

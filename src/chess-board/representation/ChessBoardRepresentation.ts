@@ -1,18 +1,18 @@
-import { Piece, pieceKind } from '../pieces/Piece'
+import { Piece, pieceKind } from '../../common/Piece'
 import { color, otherColor } from '../../common/chess-color'
 import { AttackedFields } from '../AttackedFields'
 import { BishopMovesRaw, isOffsetBishopLike } from '../pieces/BishopMovesRaw'
 import { RookMovesRaw, isOffsetRookLike } from '../pieces/RookMovesRaw'
 import { KingMovesRaw } from '../pieces/KingMovesRaw'
-import { castleType } from "../pieces/CastleFlags"
+import { castleType } from "../../common/CastleFlags"
 import { KnightMovesRaw } from '../pieces/KnightMovesRaw'
 import { PawnMovesRaw } from '../pieces/PawnMovesRaw'
-import { ChessGameStatusData } from "../ChessGameStatusData"
-import { moveOnBoard } from "../moveOnBoard"
+import { ChessGameStatusData } from "../../common/ChessGameStatusData"
+import { MoveOnBoard } from "../../common/moveOnBoard"
 import { LegalMovesCache } from '../LegalMovesCache'
-import { fileType, rankType, IField } from './IField'
-import { pieceOnBoard, createPieceOB } from './pieceOnBoard'
-import { Field } from './Field'
+import { fileIdxType, rankIdxType, IField } from '../../common/IField'
+import { pieceOnBoard, createPieceOB } from '../../common/pieceOnBoard'
+import { Field } from '../../common/Field'
 import { ValidatedMove } from './ValidatedMove'
 import { IChessBoardRepresentation } from './IChessBoardRepresentation'
 
@@ -44,18 +44,18 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     }
 
     // Interface implementation
-    isPieceI(file: fileType, rank: rankType) { return this._board[file][rank].isPiece }
-    pieceKeyI(file: fileType, rank: rankType) { return this._board[file][rank].key }
-    isFieldOnBoard(field: Field) { return (field.file >= 0 && field.file < 8 && field.rank >= 0 && field.rank < 8) }
-    setPiece(piece_: Piece, field: Field) { this._board[field.file][field.rank] = piece_ }
-    setPieceI(piece_: Piece, file: fileType, rank: rankType) { this._board[file][rank] = piece_ }
-    removePiece(field: Field) { this._board[field.file][field.rank] = Piece.none() }
-    peekField(field: Field): Piece { return this._board[field.file][field.rank] }
-    peekFieldI(file: fileType, rank: rankType): Piece { return this._board[file][rank] }
+    isPieceI(file: fileIdxType, rank: rankIdxType) { return this._board[file][rank].isPiece }
+    pieceKeyI(file: fileIdxType, rank: rankIdxType) { return this._board[file][rank].key }
+    isFieldOnBoard(field: Field) { return (field.fileIdx >= 0 && field.fileIdx < 8 && field.rankIdx >= 0 && field.rankIdx < 8) }
+    setPiece(piece_: Piece, field: Field) { this._board[field.fileIdx][field.rankIdx] = piece_ }
+    setPieceI(piece_: Piece, file: fileIdxType, rank: rankIdxType) { this._board[file][rank] = piece_ }
+    removePiece(field: Field) { this._board[field.fileIdx][field.rankIdx] = Piece.none() }
+    peekField(field: Field): Piece { return this._board[field.fileIdx][field.rankIdx] }
+    peekFieldI(file: fileIdxType, rank: rankIdxType): Piece { return this._board[file][rank] }
     peekFieldPieceOB(field_: Field): pieceOnBoard { return createPieceOB(this.peekField(field_), field_) }
     isFieldEmpty(field: Field): boolean { return this.peekField(field).isEmpty }
-    field(file_: fileType, rank_: rankType): Field { return new Field(file_, rank_) }
-    fieldF(f: Field): Field { return new Field(f.file, f.rank) }
+    field(file_: fileIdxType, rank_: rankIdxType): Field { return new Field(file_, rank_) }
+    fieldF(f: Field): Field { return new Field(f.fileIdx, f.rankIdx) }
     fieldFromNotation(fieldStr: string): Field {
         if (fieldStr.length != 2)
             throw new Error('unexpected string length for field (should be 2)')
@@ -275,8 +275,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     // ------------------ Legal Moves -------------------
 
-    private getLegalMovesOfRook(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfRook(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
@@ -287,8 +287,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    private getLegalMovesOfKnight(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfKnight(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let knightMoves = new KnightMovesRaw(pieceOB_.field)
         for (let target of knightMoves.moves) {
             let m = this.validateMove(pieceOB_, target) // TODO adjust after migration
@@ -296,8 +296,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    private getLegalMovesOfBishop(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfBishop(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let bishopMovesRaw = new BishopMovesRaw(pieceOB_.field)
         for (const ray of BishopMovesRaw.rays) {
             for (let target of bishopMovesRaw.getRay(ray)) {
@@ -308,8 +308,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    private getLegalMovesOfQueen(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfQueen(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let rookMovesRaw = new RookMovesRaw(pieceOB_.field)
         for (const ray of RookMovesRaw.rays) {
             for (let target of rookMovesRaw.getRay(ray)) {
@@ -328,8 +328,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    private getLegalMovesOfKing(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfKing(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let kingMoves = new KingMovesRaw(pieceOB_.field)
         for (let target of kingMoves.moves) {
             let m = this.validateMove(pieceOB_, target)
@@ -347,8 +347,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    private getLegalMovesOfPawn(pieceOB_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    private getLegalMovesOfPawn(pieceOB_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let pawnMovesRaw = new PawnMovesRaw(pieceOB_.field, pieceOB_.piece.color!)
         for (let pawnMove of pawnMovesRaw.moves) {
             if (pawnMove.isPromotion) {
@@ -380,8 +380,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         }
         return result
     }
-    getLegalMovesOfPiece(piece_: pieceOnBoard): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    getLegalMovesOfPiece(piece_: pieceOnBoard): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let cached = this._legalMoveCache.getMovesOfPiece(piece_)
         if (cached) return cached
         switch (piece_.piece.kind) {
@@ -408,8 +408,8 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         this._legalMoveCache.setMovesOfPiece(piece_, result)
         return result
     }
-    getLegalMoves(): moveOnBoard[] {
-        let result: moveOnBoard[] = []
+    getLegalMoves(): MoveOnBoard[] {
+        let result: MoveOnBoard[] = []
         let cached = this._legalMoveCache.getAllMoves()
         if (cached) return cached
         let movingPieces = this.currentPiecesOnBoard(this._data.nextMoveBy)
@@ -632,7 +632,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
 
     // ------------------ Board Moves -------------------
 
-    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): moveOnBoard | undefined {
+    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind, validateOnly?: boolean }): MoveOnBoard | undefined {
         let validateOnly = false;
         let promotionPieceKind = undefined;
         if (optionals && typeof optionals.validateOnly !== 'undefined') validateOnly = optionals.validateOnly
@@ -653,12 +653,12 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
         return validatedMove.isValid ? validatedMove.moveOnBoard : undefined
     }
 
-    moveCastle(castleType: castleType): moveOnBoard | undefined {
+    moveCastle(castleType: castleType): MoveOnBoard | undefined {
         let castleData = KingMovesRaw.castle(this._data.nextMoveBy, castleType, this)
         return this.move(castleData.kingSource, castleData.kingTarget)
     }
 
-    revokeMove(moveOb: moveOnBoard) {
+    revokeMove(moveOb: MoveOnBoard) {
         let validatedMove = this.validateMove(moveOb.pieceOB, moveOb.target, moveOb.promotionPiece)
         this.undoMove(validatedMove)
         this._data = moveOb.previousStatus! // TODO: I don't like this double adjustment of values, see chess-board

@@ -1,11 +1,11 @@
-import { offsetsEnum } from '../offsetsEnum';
-import { fileType, IField, rankType } from './IField';
+import { offsetsEnum } from './offsetsEnum';
+import { fileIdxType, IField, rankIdxType } from './IField';
 import { fieldOffset } from './fieldOffset';
 
 export class Field implements IField {
-    private _file: fileType;
-    private _rank: rankType;
-    constructor(file_: fileType, rank_: rankType) {
+    private _file: fileIdxType;
+    private _rank: rankIdxType;
+    constructor(file_: fileIdxType, rank_: rankIdxType) {
         this._file = file_;
         this._rank = rank_;
     }
@@ -16,18 +16,18 @@ export class Field implements IField {
     same(f: Field): boolean {
         return this._file == f._file && this._rank == f._rank;
     }
-    sameI(file_: fileType, rank_: rankType): boolean {
+    sameI(file_: fileIdxType, rank_: rankIdxType): boolean {
         return this._file == file_ && this._rank == rank_;
     }
     isOnBoard(): boolean {
         return (this._file >= 0 && this._file < 8 && this._rank >= 0 && this._rank < 8);
     }
-    createField(file_: fileType, rank_: rankType): Field {
+    fromFieldIdx(file_: fileIdxType, rank_: rankIdxType): Field {
         return new Field(file_, rank_);
     }
 
-    get file(): fileType { return this._file; }
-    get rank(): rankType { return this._rank; }
+    get fileIdx(): fileIdxType { return this._file; }
+    get rankIdx(): rankIdxType { return this._rank; }
     get notation(): string {
         return 'abcdefgh'.charAt(this._file) + '87654321'.charAt(this._rank);
     }
@@ -59,15 +59,15 @@ export class Field implements IField {
     // fieldFrom(file/*col*/: fileNotationType, rank/*row*/: rankType): Field {
     // }
     isDiagonal(target: Field): offsetsEnum | undefined {
-        if (Math.abs(this.rank - target.rank) == Math.abs(this.file - target.file)) {
-            if (this.file > target.file) {
-                if (this.rank > target.rank) // - -
+        if (Math.abs(this.rankIdx - target.rankIdx) == Math.abs(this.fileIdx - target.fileIdx)) {
+            if (this.fileIdx > target.fileIdx) {
+                if (this.rankIdx > target.rankIdx) // - -
                     return offsetsEnum.NW;
                 else // - +
                     return offsetsEnum.SW;
             }
             else {
-                if (this.rank > target.rank) // + -
+                if (this.rankIdx > target.rankIdx) // + -
                     return offsetsEnum.NE;
                 else // + +
                     return offsetsEnum.SE;
@@ -77,16 +77,16 @@ export class Field implements IField {
     }
 
     isHorizontalVertical(target: Field): offsetsEnum | undefined {
-        if ((this.rank == target.rank) || (this.file == target.file)) {
-            if (this.file == target.file) {
-                if (this.rank < target.rank)
+        if ((this.rankIdx == target.rankIdx) || (this.fileIdx == target.fileIdx)) {
+            if (this.fileIdx == target.fileIdx) {
+                if (this.rankIdx < target.rankIdx)
                     return offsetsEnum.S; // 0 +
 
                 else
                     return offsetsEnum.N; // 0 -
             }
             else { // source.rowIdx == target.rowIdx
-                if (this.file < target.file)
+                if (this.fileIdx < target.fileIdx)
                     return offsetsEnum.E; // + 0
 
                 else

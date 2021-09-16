@@ -1,6 +1,6 @@
-import { IField } from "../representation/IField";
+import { IField } from "./IField";
 import { Piece } from './Piece';
-import { color } from '../../common/chess-color';
+import { color } from './chess-color';
 
 
 export enum castleType {

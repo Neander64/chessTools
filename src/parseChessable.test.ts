@@ -58,8 +58,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -68,8 +68,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -137,8 +137,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -147,8 +147,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
   ],
@@ -183,8 +183,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -193,8 +193,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
   ],
@@ -230,8 +230,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -240,8 +240,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
   ],
@@ -303,8 +303,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -313,8 +313,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "5",
+        "file": "e",
+        "rank": "5",
       },
     },
   ],
@@ -350,8 +350,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -360,8 +360,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "5",
+        "file": "e",
+        "rank": "5",
       },
     },
   ],
@@ -402,8 +402,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -411,8 +411,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "5",
+        "file": "e",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -421,8 +421,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -432,8 +432,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -441,8 +441,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -452,8 +452,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -461,8 +461,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -471,8 +471,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -480,8 +480,8 @@ ChessGame {
       "moveNumber": 5,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -490,11 +490,11 @@ ChessGame {
       "moveNumber": 5,
       "piece": "N",
       "sourceField": Object {
-        "row": "1",
+        "rank": "1",
       },
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -502,8 +502,8 @@ ChessGame {
       "moveNumber": 6,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -512,11 +512,11 @@ ChessGame {
       "moveNumber": 6,
       "piece": "N",
       "sourceField": Object {
-        "column": "b",
+        "file": "b",
       },
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -525,8 +525,8 @@ ChessGame {
       "moveNumber": 7,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -535,8 +535,8 @@ ChessGame {
       "moveNumber": 7,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
   ],
@@ -584,8 +584,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "4",
+        "file": "e",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -594,8 +594,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "5",
+        "file": "c",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -604,8 +604,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "P",
       "targetField": Object {
-        "column": "g",
-        "row": "3",
+        "file": "g",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -613,8 +613,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "6",
+        "file": "c",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -622,8 +622,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "B",
       "targetField": Object {
-        "column": "g",
-        "row": "2",
+        "file": "g",
+        "rank": "2",
       },
     },
     ChessHalfMove {
@@ -632,8 +632,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "P",
       "targetField": Object {
-        "column": "g",
-        "row": "6",
+        "file": "g",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -641,8 +641,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "N",
       "targetField": Object {
-        "column": "e",
-        "row": "2",
+        "file": "e",
+        "rank": "2",
       },
     },
     ChessHalfMove {
@@ -650,8 +650,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "B",
       "targetField": Object {
-        "column": "g",
-        "row": "7",
+        "file": "g",
+        "rank": "7",
       },
     },
     ChessHalfMove {
@@ -668,8 +668,8 @@ ChessGame {
       "moveNumber": 5,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "5",
+        "file": "e",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -677,8 +677,8 @@ ChessGame {
       "moveNumber": 6,
       "piece": "P",
       "targetField": Object {
-        "column": "d",
-        "row": "3",
+        "file": "d",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -686,11 +686,11 @@ ChessGame {
       "moveNumber": 6,
       "piece": "N",
       "sourceField": Object {
-        "column": "g",
+        "file": "g",
       },
       "targetField": Object {
-        "column": "e",
-        "row": "7",
+        "file": "e",
+        "rank": "7",
       },
     },
     ChessHalfMove {
@@ -698,8 +698,8 @@ ChessGame {
       "moveNumber": 7,
       "piece": "P",
       "targetField": Object {
-        "column": "f",
-        "row": "4",
+        "file": "f",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -707,8 +707,8 @@ ChessGame {
       "moveNumber": 7,
       "piece": "P",
       "targetField": Object {
-        "column": "d",
-        "row": "6",
+        "file": "d",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -717,11 +717,11 @@ ChessGame {
       "moveNumber": 8,
       "piece": "N",
       "sourceField": Object {
-        "column": "b",
+        "file": "b",
       },
       "targetField": Object {
-        "column": "c",
-        "row": "3",
+        "file": "c",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -780,8 +780,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "d",
-        "row": "4",
+        "file": "d",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -789,8 +789,8 @@ ChessGame {
       "moveNumber": 1,
       "piece": "P",
       "targetField": Object {
-        "column": "d",
-        "row": "5",
+        "file": "d",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -798,8 +798,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "4",
+        "file": "c",
+        "rank": "4",
       },
     },
     ChessHalfMove {
@@ -808,8 +808,8 @@ ChessGame {
       "moveNumber": 2,
       "piece": "P",
       "targetField": Object {
-        "column": "c",
-        "row": "6",
+        "file": "c",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -818,8 +818,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "N",
       "targetField": Object {
-        "column": "c",
-        "row": "3",
+        "file": "c",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -827,8 +827,8 @@ ChessGame {
       "moveNumber": 3,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "6",
+        "file": "e",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -837,8 +837,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "P",
       "targetField": Object {
-        "column": "e",
-        "row": "3",
+        "file": "e",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -847,8 +847,8 @@ ChessGame {
       "moveNumber": 4,
       "piece": "P",
       "targetField": Object {
-        "column": "f",
-        "row": "5",
+        "file": "f",
+        "rank": "5",
       },
     },
     ChessHalfMove {
@@ -856,8 +856,8 @@ ChessGame {
       "moveNumber": 5,
       "piece": "N",
       "targetField": Object {
-        "column": "f",
-        "row": "3",
+        "file": "f",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -866,8 +866,8 @@ ChessGame {
       "moveNumber": 5,
       "piece": "N",
       "targetField": Object {
-        "column": "d",
-        "row": "7",
+        "file": "d",
+        "rank": "7",
       },
     },
     ChessHalfMove {
@@ -875,8 +875,8 @@ ChessGame {
       "moveNumber": 6,
       "piece": "B",
       "targetField": Object {
-        "column": "d",
-        "row": "3",
+        "file": "d",
+        "rank": "3",
       },
     },
     ChessHalfMove {
@@ -885,8 +885,8 @@ ChessGame {
       "moveNumber": 6,
       "piece": "N",
       "targetField": Object {
-        "column": "h",
-        "row": "6",
+        "file": "h",
+        "rank": "6",
       },
     },
     ChessHalfMove {
@@ -896,8 +896,8 @@ ChessGame {
       "moveNumber": 7,
       "piece": "Q",
       "targetField": Object {
-        "column": "c",
-        "row": "2",
+        "file": "c",
+        "rank": "2",
       },
     },
   ],

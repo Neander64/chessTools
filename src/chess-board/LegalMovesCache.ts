@@ -1,28 +1,28 @@
-import { moveOnBoard } from "./moveOnBoard"
-import { pieceOnBoard } from "./representation/pieceOnBoard"
+import { MoveOnBoard } from "../common/moveOnBoard"
+import { pieceOnBoard } from "../common/pieceOnBoard"
 
 export class LegalMovesCache {
-    private _legalMovesCached: Map<pieceOnBoard, moveOnBoard[]>
-    private _allMoves?: moveOnBoard[]
+    private _legalMovesCached: Map<pieceOnBoard, MoveOnBoard[]>
+    private _allMoves?: MoveOnBoard[]
 
     constructor() {
-        this._legalMovesCached = new Map<pieceOnBoard, moveOnBoard[]>()
+        this._legalMovesCached = new Map<pieceOnBoard, MoveOnBoard[]>()
         this._allMoves = undefined
     }
     clear() {
         this._allMoves = undefined
     }
 
-    getMovesOfPiece(piece_: pieceOnBoard): moveOnBoard[] | undefined {
+    getMovesOfPiece(piece_: pieceOnBoard): MoveOnBoard[] | undefined {
         return this._legalMovesCached.get(piece_)
     }
-    setMovesOfPiece(piece_: pieceOnBoard, moves: moveOnBoard[]) {
+    setMovesOfPiece(piece_: pieceOnBoard, moves: MoveOnBoard[]) {
         return this._legalMovesCached.set(piece_, moves)
     }
-    setAllMoves(moves: moveOnBoard[]) {
+    setAllMoves(moves: MoveOnBoard[]) {
         this._allMoves = moves
     }
-    getAllMoves(): moveOnBoard[] | undefined {
+    getAllMoves(): MoveOnBoard[] | undefined {
         return this._allMoves
     }
     // getAllMoves(): moveOnBoard[] {

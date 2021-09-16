@@ -1,4 +1,5 @@
 import { ChessGame } from "./chess-game";
+import { ChessMoveEvaluation, ChessPositionalEvaluation } from "./common/moveOnBoard";
 
 export const CASTLE_LONG = 'O-O-O';
 export const CASTLE_SHORT = 'O-O';
@@ -15,29 +16,6 @@ export const enum ChessBoardPiece {
     Bishop = 'B',
     Queen = 'Q',
     King = 'K',
-}
-export const enum ChessMoveEvaluation {
-    // move evaluation
-    blunder = '??',         // $4
-    mistake = '?',          // $2
-    dubious = '?!',         // $6
-    interesting = '!?',     // $5
-    good = '!',             // $1
-    brilliant = '!!',       // $3
-}
-
-
-export const enum ChessPositionalEvaluation {
-    // positional
-    equal = '=',                    // $10
-    slightAdvantageWhite = '⩲',   // $14 ⩲
-    slightAdvantageBlack = '⩱',   // $15 ⩱
-    clearAdvantageWhite = '±',    // $16 ± moderate
-    clearAdvantageBlack = '∓',    // $17 ∓
-    decisiveAdvantageWhite = '+-',  // $18 +-
-    decisiveAdvantageBlack = '-+',  // $19 -+
-    unclear = '∞',                  // $13 ∞
-    // ToDo: add further evaluations
 }
 
 
@@ -103,14 +81,14 @@ export class pgn {
             else {
                 if (move.piece != ChessBoardPiece.Pawn)
                     moveToken += move.piece;
-                if (move.sourceField?.column)
-                    moveToken += move.sourceField.column;
-                if (move.sourceField?.row)
-                    moveToken += move.sourceField.row;
+                if (move.sourceField?.file)
+                    moveToken += move.sourceField.file;
+                if (move.sourceField?.rank)
+                    moveToken += move.sourceField.rank;
                 if (move.isCapture)
                     moveToken += 'x';
                 if (move.targetField) {
-                    moveToken += ((move.targetField.column || '') + (move.targetField.row || ''));
+                    moveToken += ((move.targetField.file || '') + (move.targetField.rank || ''));
                 }
                 if (move.isCheck)
                     moveToken += '+';

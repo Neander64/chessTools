@@ -1,25 +1,25 @@
-import { Piece, pieceKeyType, pieceKind } from '../pieces/Piece';
+import { Piece, pieceKeyType, pieceKind } from '../../common/Piece';
 import { color } from '../../common/chess-color';
-import { moveOnBoard } from "../moveOnBoard";
-import { fileType, rankType, IField } from './IField';
-import { pieceOnBoard } from './pieceOnBoard';
+import { MoveOnBoard } from "../../common/moveOnBoard";
+import { fileIdxType, rankIdxType, IField } from '../../common/IField';
+import { pieceOnBoard } from '../../common/pieceOnBoard';
 import { ValidatedMove } from './ValidatedMove';
 import { pieceStat } from './ChessBoardRepresentation';
 
 
 export interface IChessBoardRepresentation {
-    isPieceI(file: fileType, rank: rankType): boolean;
-    pieceKeyI(file: fileType, rank: rankType): pieceKeyType;
+    isPieceI(file: fileIdxType, rank: rankIdxType): boolean;
+    pieceKeyI(file: fileIdxType, rank: rankIdxType): pieceKeyType;
 
     isFieldOnBoard(field: IField): boolean; // check validity of boardFieldIdx
     setPiece(piece_: Piece, field: IField): void;
-    setPieceI(piece_: Piece, file: fileType, rank: rankType): void;
+    setPieceI(piece_: Piece, file: fileIdxType, rank: rankIdxType): void;
     removePiece(field: IField): void;
     peekField(field: IField): Piece;
-    peekFieldI(file: fileType, rank: rankType): Piece;
+    peekFieldI(file: fileIdxType, rank: rankIdxType): Piece;
     peekFieldPieceOB(field_: IField): pieceOnBoard;
     isFieldEmpty(field: IField): boolean;
-    field(file_: fileType, rank_: rankType): IField;
+    field(file_: fileIdxType, rank_: rankIdxType): IField;
     fieldFromNotation(s: string): IField;
     fieldFromNotationQuiet(fieldStr: string): IField | undefined;
 
@@ -31,13 +31,13 @@ export interface IChessBoardRepresentation {
     isPieceAttackedOn(field: IField, attackingColor: color): boolean;
     getAttackersOn(field: IField, attackingColor: color): pieceOnBoard[];
     getAttackersOfKindOn(field: IField, kind: pieceKind, attackingColor: color): pieceOnBoard[];
-    getLegalMovesOfPiece(piece_: pieceOnBoard): moveOnBoard[];
-    getLegalMoves(): moveOnBoard[];
+    getLegalMovesOfPiece(piece_: pieceOnBoard): MoveOnBoard[];
+    getLegalMoves(): MoveOnBoard[];
     validateMove(sourcePieceOB: pieceOnBoard, target: IField, promotionPieceKind?: pieceKind): ValidatedMove;
-    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind; validateOnly?: boolean; }): moveOnBoard | undefined;
+    move(source: IField, target: IField, optionals?: { promotionPieceKind?: pieceKind; validateOnly?: boolean; }): MoveOnBoard | undefined;
     //doMove(validatedMove: ValidatedMove): void
     //undoMove(validatedMove: ValidatedMove): void
-    revokeMove(moveOb: moveOnBoard): void;
+    revokeMove(moveOb: MoveOnBoard): void;
 
     isCheck(): boolean;
     isMate(): boolean;

@@ -1,4 +1,4 @@
-import { color } from '../../common/chess-color'
+import { color } from './chess-color'
 
 export type pieceKeyType = number
 
@@ -45,6 +45,9 @@ const pieceKindPGN = new Map<number, string>([
 ])
 
 export class Piece {
+    // Piece represents a piece on Board
+    // with a color and a kind
+
     // yes, I should separate this type from encoding, But, nay
     private _key: pieceKeyType // encoding kind & color -- value of pieceKey
     private _FEN: string
@@ -148,7 +151,7 @@ export class Piece {
                 case pieceKind.Pawn: return Piece.whitePawn()
             }
         }
-        return Piece.none() // unreachable
+        return Piece.none() // unreachable, but TS can't identify we handled none already and issues an error
     }
 }
 

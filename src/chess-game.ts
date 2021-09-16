@@ -1,11 +1,12 @@
-import { ChessBoardPiece, ChessMoveColor, ChessMoveEvaluation, ChessPositionalEvaluation, PgnResult, pgnSTR } from './pgn'
+import { ChessMoveEvaluation, ChessPositionalEvaluation } from './common/moveOnBoard';
+import { ChessBoardPiece, ChessMoveColor, PgnResult, pgnSTR } from './pgn'
 
 const COLUMNS = 'abcdefgh';
 const ROWS = '12345678';
 
 export class ChessBoardField {
-    row?: string;
-    column?: string;
+    rank?: string;
+    file?: string;
 }
 
 class ChessHalfMove {
@@ -110,11 +111,11 @@ export class ChessGame {
         //ToDo: throw exeption if wrong values
         let colOkay: boolean = true;
         let rowOkay: boolean = true;
-        if (sourceField.column) {
-            colOkay = this.checkLegalColumns(sourceField.column);
+        if (sourceField.file) {
+            colOkay = this.checkLegalColumns(sourceField.file);
         }
-        if (sourceField.row) {
-            rowOkay = this.checkLegalRows(sourceField.row);
+        if (sourceField.rank) {
+            rowOkay = this.checkLegalRows(sourceField.rank);
         }
         if (colOkay && rowOkay) {
             this._tmpMove.sourceField = sourceField;
@@ -128,11 +129,11 @@ export class ChessGame {
         //ToDo: check if Check / Mate
         let colOkay: boolean = true;
         let rowOkay: boolean = true;
-        if (targetField.column) {
-            colOkay = this.checkLegalColumns(targetField.column);
+        if (targetField.file) {
+            colOkay = this.checkLegalColumns(targetField.file);
         }
-        if (targetField.row) {
-            rowOkay = this.checkLegalRows(targetField.row);
+        if (targetField.rank) {
+            rowOkay = this.checkLegalRows(targetField.rank);
         }
         if (colOkay && rowOkay) {
             this._tmpMove.targetField = targetField;

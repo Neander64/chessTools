@@ -1,5 +1,5 @@
 import * as chessBoard from './ChessBoard'
-import * as GameResult from "./GameResult";
+import * as GameResult from "../common/GameResult";
 
 
 describe('Testing chess-board', () => {

@@ -1,7 +1,7 @@
-import { IField } from "../representation/IField"
-import { pieceKind } from './Piece'
+import { IField } from "../../common/IField"
+import { pieceKind } from '../../common/Piece'
 import { color, otherColor } from '../../common/chess-color'
-import { offsetsEnum } from '../offsetsEnum'
+import { offsetsEnum } from '../../common/offsetsEnum'
 
 export type pawnTarget = {
     target: IField,
@@ -48,21 +48,21 @@ export class PawnMovesRaw {
 
         let cfg = PawnMovesRaw.config[color_]
         let target: IField
-        if (startField.rank == cfg.startRow) {
+        if (startField.rankIdx == cfg.startRow) {
             target = startField.shift(cfg.direction, 2)
             this.bigMove = target
         }
         target = startField.shift(cfg.direction)
         if (target.isOnBoard())
-            this.moves.push({ target: target, isPromotion: target.rank == cfg.promotionRow })
+            this.moves.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
         target = startField.shift(cfg.capture_left)
         if (target.isOnBoard())
-            this.attacks.push({ target: target, isPromotion: target.rank == cfg.promotionRow })
+            this.attacks.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
         target = startField.shift(cfg.capture_right)
         if (target.isOnBoard())
-            this.attacks.push({ target: target, isPromotion: target.rank == cfg.promotionRow })
+            this.attacks.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
     }
 
@@ -78,12 +78,12 @@ export class PawnMovesRaw {
         let _enPassantField: IField | undefined = undefined
         let _isCapture = false
         let cfg = PawnMovesRaw.config[color_]
-        if (source.file == target.file) { // forward
+        if (source.fileIdx == target.fileIdx) { // forward
             let t1 = source.shift(cfg.direction) // 1-step
             if (target.same(t1)) {
-                if (target.rank == cfg.promotionRow) _isPromotion = true
+                if (target.rankIdx == cfg.promotionRow) _isPromotion = true
             }
-            else if (source.rank == cfg.startRow) {
+            else if (source.rankIdx == cfg.startRow) {
                 let t2 = source.shift(cfg.direction, 2) // 2-step
                 if (target.same(t2)) {
                     _enPassantField = t1
@@ -97,7 +97,7 @@ export class PawnMovesRaw {
             let tr = source.shift(cfg.capture_right)
             if (target.same(tl) || target.same(tr)) {
                 _isCapture = true
-                if (target.rank == cfg.promotionRow) _isPromotion = true
+                if (target.rankIdx == cfg.promotionRow) _isPromotion = true
             }
             else return undefined
         }

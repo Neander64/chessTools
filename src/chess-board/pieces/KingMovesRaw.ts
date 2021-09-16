@@ -1,10 +1,10 @@
 import { IChessBoardRepresentation } from "../representation/IChessBoardRepresentation"
-import { pieceOnBoard } from "../representation/pieceOnBoard"
-import { IField } from "../representation/IField"
-import { Piece, pieceKind } from './Piece'
+import { pieceOnBoard } from "../../common/pieceOnBoard"
+import { IField } from "../../common/IField"
+import { Piece, pieceKind } from '../../common/Piece'
 import { color } from '../../common/chess-color'
-import { offsetsEnum } from '../offsetsEnum'
-import { castleType, castleData, CastleFlags } from "./CastleFlags"
+import { offsetsEnum } from '../../common/offsetsEnum'
+import { castleType, castleData, CastleFlags } from "../../common/CastleFlags"
 
 export class KingMovesRaw {
     static readonly CASTLE_SHORT_STR = 'O-O'

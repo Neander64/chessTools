@@ -1,6 +1,6 @@
-import { color } from '../common/chess-color';
-import { castleType, CastleFlags } from "./pieces/CastleFlags";
-import { IField } from "./representation/IField";
+import { color } from './chess-color';
+import { castleType, CastleFlags } from "./CastleFlags";
+import { IField } from "./IField";
 import { GameResult } from './GameResult';
 
 

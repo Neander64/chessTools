@@ -9,13 +9,13 @@ describe('Testing chess-board-representation', () => {
 
     test('testing Field implementation', () => {
         let f = new Field(0, 0)
-        expect(f.isOnBoard()).toBe(true)
+        expect(f.isOnBoard).toBe(true)
         expect(f.fileIdx).toBe(0)
         expect(f.rankIdx).toBe(0)
         expect(f.notation).toBe('a8')
         let f1 = f.shift(offsetsEnum.N)
-        expect(f1.isOnBoard()).toBe(false)
-        expect(f1.same(f)).toBe(false)
+        expect(f1.isOnBoard).toBe(false)
+        expect(() => f1.same(f)).toThrowError(Error)
         expect(f.same(f1)).toBe(false)
 
         f = new Field(5, 5)

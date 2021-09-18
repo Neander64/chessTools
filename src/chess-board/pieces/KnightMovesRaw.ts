@@ -14,7 +14,7 @@ export class KnightMovesRaw {
         this.moves = []
         for (const f of offsetsKnight) {
             let newField = startField.shift(f)
-            if (newField.isOnBoard()) {
+            if (newField.isOnBoard) {
                 this.moves.push(newField)
             }
         }

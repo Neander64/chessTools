@@ -24,7 +24,7 @@ export class KingMovesRaw {
         this.moves = [];
         for (const off of offsetsKing) {
             let newField = startField.shift(off)
-            if (newField.isOnBoard()) {
+            if (newField.isOnBoard) {
                 this.moves.push(newField)
             }
         }

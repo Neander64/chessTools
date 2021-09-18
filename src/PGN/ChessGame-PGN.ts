@@ -1,117 +1,81 @@
-import { ChessGame } from "./chess-game";
-import { ChessMoveEvaluation, ChessPositionalEvaluation } from "./common/moveOnBoard";
+import { ChessGame } from "../ChessGame"
+import { castleType } from "../common/CastleFlags"
+import { color } from "../common/chess-color"
+import { gameHeaderDateType } from "../common/GameData"
+import { GameResult } from "../common/GameResult"
+import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOnBoard"
 
-export const CASTLE_LONG = 'O-O-O';
-export const CASTLE_SHORT = 'O-O';
+//TODO use FEN as start position
+//TODO allow to parse PGN,
 
+export class Pgn {
+    static readonly ESCAPE = '%'
+    static readonly UNKNOWN = '?'
+    static readonly PGN_MAX_LINELEN = 79
 
-export const enum ChessMoveColor {
-    white = 'white',
-    black = 'black',
-}
-export const enum ChessBoardPiece {
-    Pawn = 'P',
-    Rook = 'R',
-    Knight = 'N',
-    Bishop = 'B',
-    Queen = 'Q',
-    King = 'K',
-}
-
-
-export class pgn {
-    static readonly ESCAPE = '%';
-    static readonly UNKNOWN = '?';
-    static readonly PGN_MAX_LINELEN = 79;
-
-    private _game: ChessGame;
-
-    constructor(g: ChessGame) {
-        this._game = g;
-    }
-
-    set game(g: ChessGame) {
-        this._game = g;
-    }
-
-    private moveEvalNAG(evaluation: string): string {
-        let result = '';
-        let m = mapMoveEvaluation2NAG.find(e => e.eval == evaluation);
-        if (m)
-            result = m.nag;
-        return result;
-    }
-    private positionalEvalNAG(evaluation: string): string {
-        let result = '';
-        let m = mapPositionalEvaluation2NAG.find(e => e.eval == evaluation);
-        if (m)
-            result = m.nag;
-        return result;
-    }
-
-    exportPGN(noComments = false, useNAG = false): string[] {
-        let gamePGN: string[] = [];
+    static generate(game: ChessGame, options?: { noComments?: boolean, useNAG?: boolean }): string[] {
+        let gamePGN: string[] = []
+        let _options = options || { noComments: false, useNAG: false }
+        let noComments = _options.noComments || false
+        let useNAG = _options.useNAG || false
 
         // STR - Seven Tag Roster
-        let str = this._game.pgnSTR;
-        gamePGN.push(`[Event "${str.event}"]`);
-        gamePGN.push(`[Site "${str.site}"]`);
-        gamePGN.push(`[Date "${str.date}"]`);
-        gamePGN.push(`[Round "${str.round}"]`);
-        gamePGN.push(`[White "${str.white}"]`);
-        gamePGN.push(`[Black "${str.black}"]`);
-        gamePGN.push(`[Result "${str.result}"]`);
+        gamePGN.push(`[Event "${this.prepareHeaderString(game.gameHeaderData.event)}"]`)
+        gamePGN.push(`[Site "${this.prepareHeaderString(game.gameHeaderData.site)}"]`)
+        gamePGN.push(`[Date "${this.prepareHeaderDate(game.gameHeaderData.date)}"]`)
+        gamePGN.push(`[Round "${this.prepareHeaderString(game.gameHeaderData.round)}"]`)
+        gamePGN.push(`[White "${this.prepareHeaderString(game.gameHeaderData.whitePlayer)}"]`)
+        gamePGN.push(`[Black "${this.prepareHeaderString(game.gameHeaderData.blackPlayer)}"]`)
+        gamePGN.push(`[Result "${this.mapGameResult(game.gameHeaderData.result)}"]`)
         gamePGN.push("");
 
         // move section
-        let isFirstMoveOrAfterComment = true;
-        let lineStr = "";
-        for (let move of this._game.moves) {
-            let moveToken = "";
-            if (move.color == ChessMoveColor.white)
-                moveToken += move.moveNumber + ". ";
-            else if (isFirstMoveOrAfterComment && move.color == ChessMoveColor.black)
-                moveToken += move.moveNumber + "... ";
-            isFirstMoveOrAfterComment = false;
-
-            if (move.castleShort)
-                moveToken += CASTLE_SHORT;
-            else if (move.castleLong)
-                moveToken += CASTLE_LONG;
-            else {
-                if (move.piece != ChessBoardPiece.Pawn)
-                    moveToken += move.piece;
-                if (move.sourceField?.file)
-                    moveToken += move.sourceField.file;
-                if (move.sourceField?.rank)
-                    moveToken += move.sourceField.rank;
-                if (move.isCapture)
-                    moveToken += 'x';
-                if (move.targetField) {
-                    moveToken += ((move.targetField.file || '') + (move.targetField.rank || ''));
-                }
-                if (move.isCheck)
-                    moveToken += '+';
-                else if (move.isMate)
-                    moveToken += '#';
+        let isFirstMoveOrAfterComment = true
+        let lineStr = ''
+        let moveNumber = game.chessBoard.gameStatus.firstMoveNumber
+        for (let move of game.chessBoard.moves) {
+            let moveToken = ''
+            if (move.color == color.white) {
+                moveToken += moveNumber + '. '
+                moveNumber++
             }
+            else if (isFirstMoveOrAfterComment && move.color == color.black)
+                moveToken += moveNumber + '... '
+            isFirstMoveOrAfterComment = false
+
+            if (move.isCastle) {
+                switch (move.castleType) {
+                    case castleType.short:
+                        moveToken += 'O-O'
+                        break
+                    case castleType.long:
+                        moveToken += 'O-O-O'
+                }
+            }
+            else {
+                moveToken += move.notation
+            }
+            if (move.isMate)
+                moveToken += '#'
+            else if (move.isCheck)
+                moveToken += '+'
 
             // evaluations (optional NAG format)
             if (move.moveEvaluation)
-                moveToken += useNAG ? ' ' + this.moveEvalNAG(move.moveEvaluation) : move.moveEvaluation;
+                moveToken += useNAG ? ' ' + this.moveEvalNAG(move.moveEvaluation) : move.moveEvaluation
             if (move.positionalEvaluation)
                 moveToken += ' ' + (useNAG ? ' ' + this.positionalEvalNAG(move.positionalEvaluation) : move.positionalEvaluation);
             if (move.isNovelty)
-                moveToken += ' N';
+                moveToken += ' N'
 
             // handle comments
             if (!noComments && move.comment) {
                 moveToken += ' { ' + move.comment + ' }';
-                isFirstMoveOrAfterComment = true;
+                isFirstMoveOrAfterComment = true
             }
 
-            if (lineStr.length + moveToken.length <= pgn.PGN_MAX_LINELEN) {
-                lineStr += ((lineStr.length > 0) ? ' ' : '') + moveToken;
+            if (lineStr.length + moveToken.length <= this.PGN_MAX_LINELEN) {
+                lineStr += ((lineStr.length > 0) ? ' ' : '') + moveToken
             }
             else {
                 // comments can be very long, split them to lines of maxlength at the last space char
@@ -119,44 +83,79 @@ export class pgn {
                 // but I'm relativly new to TS&JS so I'm using a stright forward one.
                 // Looking for simplification later.
                 gamePGN.push(lineStr);
-                while (moveToken.length > pgn.PGN_MAX_LINELEN) {
-                    for (var i = pgn.PGN_MAX_LINELEN; i >= 0; i--) {
+                while (moveToken.length > this.PGN_MAX_LINELEN) {
+                    for (var i = this.PGN_MAX_LINELEN; i >= 0; i--) {
                         if (moveToken[i] == ' ') {
                             break;
                         }
                     }
                     if (i == 0) {
-                        lineStr = moveToken.substring(0, pgn.PGN_MAX_LINELEN); // no spaces found, cut hard
+                        lineStr = moveToken.substring(0, this.PGN_MAX_LINELEN); // no spaces found, cut hard
                         gamePGN.push(lineStr);
-                        moveToken = moveToken.substring(pgn.PGN_MAX_LINELEN);
+                        moveToken = moveToken.substring(this.PGN_MAX_LINELEN);
                     }
                     else {
-                        lineStr = moveToken.substring(0, i);
-                        gamePGN.push(lineStr);
-                        moveToken = moveToken.substring(i + 1);
+                        lineStr = moveToken.substring(0, i)
+                        gamePGN.push(lineStr)
+                        moveToken = moveToken.substring(i + 1)
                     }
                 }
-                lineStr = moveToken;
+                lineStr = moveToken
             }
         }
         // add result token at the end
-        let resultStr = str.result;
-        if (lineStr.length + resultStr.length <= pgn.PGN_MAX_LINELEN) {
-            lineStr += ' ' + resultStr;
+        let resultStr = this.mapGameResult(game.gameHeaderData.result)
+        if (lineStr.length + resultStr.length <= this.PGN_MAX_LINELEN) {
+            lineStr += ' ' + resultStr
+            lineStr = lineStr.trimStart()
         }
         else {
-            gamePGN.push(lineStr);
-            lineStr = resultStr;
+            gamePGN.push(lineStr)
+            lineStr = resultStr
         }
 
         if (lineStr.length > 0) {
-            gamePGN.push(lineStr);
+            gamePGN.push(lineStr)
         }
-        return gamePGN;
+
+        return gamePGN
+    }
+    private static prepareHeaderString(str: string) {
+        // TODO remove special char ], tab, etc, trunc length?
+        return str == '' ? '?' : str
+    }
+    private static prepareHeaderDate(date: gameHeaderDateType) {
+        let year = ((date.year <= 0 || date.year > 9999) ? '????' : '' + date.year)
+        let month = ((date.month < 1 || date.month > 32) ? '??' : '' + date.month)
+        let day = ((date.day < 1 || date.day > 32) ? '??' : '' + date.day)
+        return year + '.' + month + '.' + day
+    }
+    private static mapGameResult(res: GameResult): string {
+        switch (res) {
+            case GameResult.black_wins: return PgnResult.BlackWins
+            case GameResult.white_wins: return PgnResult.WhiteWins
+            case GameResult.draw: return PgnResult.Draw
+            case GameResult.none: return PgnResult.Unknown
+        }
+    }
+
+    private static moveEvalNAG(evaluation: string): string {
+        let result = ''
+        let m = mapMoveEvaluation2NAG.find(e => e.eval == evaluation)
+        if (m)
+            result = m.nag
+        return result
+    }
+    private static positionalEvalNAG(evaluation: string): string {
+        let result = ''
+        let m = mapPositionalEvaluation2NAG.find(e => e.eval == evaluation)
+        if (m)
+            result = m.nag
+        return result
     }
 
 }
-export const enum PgnResult {
+enum PgnResult {
     WhiteWins = "1-0",
     BlackWins = "0-1",
     Draw = "1/2-1/2",
@@ -303,7 +302,7 @@ export const enum PgnNAG { // $0, $16,..
     Black_has_moderate_time_control_pressure = "$137",
     White_has_severe_time_control_pressure = "$138",
     Black_has_severe_time_control_pressure = "$139",
-};
+}
 
 export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[] = [
     { eval: ChessMoveEvaluation.blunder, nag: PgnNAG.very_poor_move },
@@ -312,7 +311,7 @@ export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[]
     { eval: ChessMoveEvaluation.interesting, nag: PgnNAG.speculative_move },
     { eval: ChessMoveEvaluation.good, nag: PgnNAG.good_move },
     { eval: ChessMoveEvaluation.brilliant, nag: PgnNAG.very_good_move },
-];
+]
 
 export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag: PgnNAG }[] = [
     { eval: ChessPositionalEvaluation.equal, nag: PgnNAG.drawish_position },
@@ -323,60 +322,4 @@ export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag
     { eval: ChessPositionalEvaluation.decisiveAdvantageWhite, nag: PgnNAG.White_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.decisiveAdvantageBlack, nag: PgnNAG.Black_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.unclear, nag: PgnNAG.unclear_position },
-];
-
-
-export class pgnSTR {
-    static readonly UNKNOWN = '?';
-    static readonly DATE_UNKNOWN = "????.??.??";
-
-    private _event !: string;
-    private _site !: string;
-    private _date !: string;
-    private _round !: string;
-    private _white !: string;
-    private _black !: string;
-    private _result !: PgnResult;
-
-    constructor() {
-        this.init();
-    }
-
-    init() {
-        this._event = pgnSTR.UNKNOWN;
-        this._site = pgnSTR.UNKNOWN;
-        this._date = pgnSTR.DATE_UNKNOWN;
-        this._round = pgnSTR.UNKNOWN;
-        this._white = pgnSTR.UNKNOWN;
-        this._black = pgnSTR.UNKNOWN;
-        this._result = PgnResult.Unknown;
-    }
-
-    private validated(s: string): string {
-        let result = pgnSTR.UNKNOWN;
-        //ToDo remove special chars "] newline tab etc, cut to acceptable line length
-        return s == '' ? result : s;
-    }
-    private validatedDate(s: string): string {
-        let result = pgnSTR.DATE_UNKNOWN;
-        //ToDo remove special chars "] newline tab etc, cut to acceptable line length
-        return s == '' ? result : s;
-    }
-    set event(e: string) { this._event = this.validated(e); }
-    set site(e: string) { this._site = this.validated(e); }
-    set date(e: string) { this._date = this.validatedDate(e); }
-    set round(e: string) { this._round = this.validated(e); }
-    set white(e: string) { this._white = this.validated(e); }
-    set black(e: string) { this._black = this.validated(e); }
-    set result(e: PgnResult) { this._result = e; }
-
-    get event() { return this._event; }
-    get site() { return this._site; }
-    get date() { return this._date; }
-    get round() { return this._round; }
-    get white() { return this._white; }
-    get black() { return this._black; }
-    get result() { return this._result; }
-
-}
-
+]

@@ -1,4 +1,4 @@
-import { MoveOnBoard } from "../common/moveOnBoard"
+import { MoveOnBoard } from "../common/MoveOnBoard"
 import { pieceOnBoard } from "../common/pieceOnBoard"
 
 export class LegalMovesCache {

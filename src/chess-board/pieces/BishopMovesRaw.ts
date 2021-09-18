@@ -27,7 +27,7 @@ export class BishopMovesRaw {
         let moves: IField[] = []
         for (let i = 1; i < 8; i++) {
             let newField = startField.shift(offset, i)
-            if (newField.isOnBoard()) {
+            if (newField.isOnBoard) {
                 moves.push(newField)
             }
             else break

@@ -1,6 +1,6 @@
 import { Piece, pieceKeyType, pieceKind } from '../../common/Piece';
 import { color } from '../../common/chess-color';
-import { MoveOnBoard } from "../../common/moveOnBoard";
+import { MoveOnBoard } from "../../common/MoveOnBoard";
 import { fileIdxType, rankIdxType, IField } from '../../common/IField';
 import { pieceOnBoard } from '../../common/pieceOnBoard';
 import { ValidatedMove } from './ValidatedMove';

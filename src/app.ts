@@ -9,13 +9,16 @@ import * as chessBoard from "./chess-board/ChessBoard"
 //import { Piece, pieceKind } from './chess-board-pieces'
 
 import * as repl from "repl"
-import { CommonField } from "./common/chess-field"
+import { ChessGame } from "./ChessGame"
+import { parseChessable } from "./fromText/chessable"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let f = CommonField.fromField063Idx(-1)
-console.log('onBoard:', f.isOnBoard)
+let game = new ChessGame()
+game.chessBoard.loadFEN("1r3rk1/p1qb1ppp/3b1n2/3p4/2nN4/1PN1P3/P3BPPP/R1BQ1RK1 b - - 0 15")
+console.log(game.chessBoard.toASCII())
+console.log(game.chessBoard.move('Bh2+'))
 process.exit()
 
 

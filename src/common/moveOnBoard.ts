@@ -2,6 +2,45 @@ import { pieceKind } from './Piece';
 import { pieceOnBoard } from "./pieceOnBoard";
 import { IField } from "./IField";
 import { ChessGameStatusData } from "./ChessGameStatusData";
+import { castleType } from './CastleFlags';
+
+
+export class MoveOnBoard {
+    // represents a move on the board
+    pieceOB: pieceOnBoard
+    target: IField
+    // pawn promotion
+    promotionPiece?: pieceKind
+    // castle
+    castleType?: castleType
+    pieceRook?: pieceOnBoard
+    targetRook?: IField
+    // captured/replaced Piece
+    pieceCaptured?: pieceOnBoard
+
+    // position key to check for move repetition
+    boardKey?: BigInt;
+
+    isCheck?: boolean
+    isMate?: boolean
+    notationLong?: string
+    notation?: string // SAN
+    previousStatus?: ChessGameStatusData;
+
+    isNovelty?: boolean
+    moveEvaluation?: ChessMoveEvaluation
+    positionalEvaluation?: ChessPositionalEvaluation
+    comment?: string
+
+    constructor(pieceOB: pieceOnBoard, target: IField) {
+        this.pieceOB = pieceOB
+        this.target = target
+    }
+    get isCapture() { return typeof this.pieceCaptured !== 'undefined' }
+    get color() { return this.pieceOB.piece.color }
+    get piece() { return this.pieceOB.piece }
+    get isCastle() { return typeof this.castleType != 'undefined' }
+}
 
 export const enum ChessMoveEvaluation {
     // move evaluation
@@ -13,7 +52,6 @@ export const enum ChessMoveEvaluation {
     brilliant = '!!',       // $3
 }
 
-
 export const enum ChessPositionalEvaluation {
     // positional
     equal = '=',                    // $10
@@ -24,41 +62,5 @@ export const enum ChessPositionalEvaluation {
     decisiveAdvantageWhite = '+-',  // $18 +-
     decisiveAdvantageBlack = '-+',  // $19 -+
     unclear = '∞',                  // $13 ∞
-    // ToDo: add further evaluations
+    // TODO: add further evaluations
 }
-
-
-export class MoveOnBoard {
-    // represents a move on the board
-    pieceOB: pieceOnBoard;
-    target: IField;
-    // pawn promotion
-    promotionPiece?: pieceKind;
-    // castle
-    pieceRook?: pieceOnBoard;
-    targetRook?: IField;
-    // captured/replaced Piece
-    pieceCaptured?: pieceOnBoard;
-
-    // position key to check for move repetition
-    boardKey?: BigInt;
-
-    isCheck?: boolean;
-    isMate?: boolean;
-    notationLong?: string;
-    notation?: string; // SAN
-    previousStatus?: ChessGameStatusData;
-
-    isNovelty?: boolean;
-    moveEvaluation?: ChessMoveEvaluation;
-    positionalEvaluation?: ChessPositionalEvaluation;
-    comment?: string;
-
-    constructor(pieceOB: pieceOnBoard, target: IField) {
-        this.pieceOB = pieceOB
-        this.target = target
-    }
-    get isCapture() { return typeof this.pieceCaptured !== 'undefined' }
-    get color() { return this.pieceOB.piece.color }
-    get piece() { return this.pieceOB.piece }
-};

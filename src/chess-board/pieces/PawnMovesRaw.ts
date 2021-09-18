@@ -53,15 +53,15 @@ export class PawnMovesRaw {
             this.bigMove = target
         }
         target = startField.shift(cfg.direction)
-        if (target.isOnBoard())
+        if (target.isOnBoard)
             this.moves.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
         target = startField.shift(cfg.capture_left)
-        if (target.isOnBoard())
+        if (target.isOnBoard)
             this.attacks.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
         target = startField.shift(cfg.capture_right)
-        if (target.isOnBoard())
+        if (target.isOnBoard)
             this.attacks.push({ target: target, isPromotion: target.rankIdx == cfg.promotionRow })
 
     }

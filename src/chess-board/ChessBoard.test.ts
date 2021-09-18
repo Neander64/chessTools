@@ -1,8 +1,284 @@
 import * as chessBoard from './ChessBoard'
 import * as GameResult from "../common/GameResult";
+import { color } from '../common/chess-color';
+import { castleType } from '../common/CastleFlags';
 
 
 describe('Testing chess-board', () => {
+
+  test('testing game status (Kasparov Game)', () => {
+    let cb = new chessBoard.ChessBoard()
+    expect(cb.gameStatus.moveNumber).toBe(1)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.firstMoveNumber).toBe(1)
+    expect(cb.gameStatus.firstHalfMoves50).toBe(0)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(true)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"`)
+    expect(cb.move('e4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(1)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.gameStatus.enPassantField?.notation).toBe('e3')
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"`)
+    expect(cb.move('c6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(2)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"`)
+    expect(cb.move('d4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(2)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.gameStatus.enPassantField?.notation).toBe('d3')
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp1ppppp/2p5/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq d3 0 2"`)
+    expect(cb.move('d5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(3)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp2pppp/2p5/3p4/3PP3/8/PPP2PPP/RNBQKBNR w KQkq d6 0 3"`)
+    expect(cb.move('Nc3')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(3)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp2pppp/2p5/3p4/3PP3/2N5/PPP2PPP/R1BQKBNR b KQkq - 1 3"`)
+    expect(cb.move('dxe4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(4)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp2pppp/2p5/8/3Pp3/2N5/PPP2PPP/R1BQKBNR w KQkq - 0 4"`)
+    expect(cb.move('Nxe4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(4)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"rnbqkbnr/pp2pppp/2p5/8/3PN3/8/PPP2PPP/R1BQKBNR b KQkq - 0 4"`)
+    expect(cb.move('Nd7')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(5)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkbnr/pp1npppp/2p5/8/3PN3/8/PPP2PPP/R1BQKBNR w KQkq - 1 5"`)
+    expect(cb.move('Ng5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(5)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(2)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkbnr/pp1npppp/2p5/6N1/3P4/8/PPP2PPP/R1BQKBNR b KQkq - 2 5"`)
+    expect(cb.move('Ngf6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(6)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(3)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1npppp/2p2n2/6N1/3P4/8/PPP2PPP/R1BQKBNR w KQkq - 3 6"`)
+    expect(cb.move('Bd3')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(6)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(4)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1npppp/2p2n2/6N1/3P4/3B4/PPP2PPP/R1BQK1NR b KQkq - 4 6"`)
+    expect(cb.move('e6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(7)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1n1ppp/2p1pn2/6N1/3P4/3B4/PPP2PPP/R1BQK1NR w KQkq - 0 7"`)
+    expect(cb.move('N1f3')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(7)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1n1ppp/2p1pn2/6N1/3P4/3B1N2/PPP2PPP/R1BQK2R b KQkq - 1 7"`)
+    expect(cb.move('h6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(8)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1n1pp1/2p1pn1p/6N1/3P4/3B1N2/PPP2PPP/R1BQK2R w KQkq - 0 8"`)
+    expect(cb.move('Nxe6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(8)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bqkb1r/pp1n1pp1/2p1Nn1p/8/3P4/3B1N2/PPP2PPP/R1BQK2R b KQkq - 0 8"`)
+    expect(cb.move('Qe7')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(9)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(true)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1b1kb1r/pp1nqpp1/2p1Nn1p/8/3P4/3B1N2/PPP2PPP/R1BQK2R w KQkq - 1 9"`)
+    expect(cb.move('O-O')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(9)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(2)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1b1kb1r/pp1nqpp1/2p1Nn1p/8/3P4/3B1N2/PPP2PPP/R1BQ1RK1 b kq - 2 9"`)
+    expect(cb.move('fxe6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(10)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1b1kb1r/pp1nq1p1/2p1pn1p/8/3P4/3B1N2/PPP2PPP/R1BQ1RK1 w kq - 0 10"`)
+    expect(cb.move('Bg6+')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(10)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(true)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.gameStatus.isCheck).toBe(true)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1b1kb1r/pp1nq1p1/2p1pnBp/8/3P4/5N2/PPP2PPP/R1BQ1RK1 b kq - 1 10"`)
+    expect(cb.move('Kd8')).toBe(true)
+    // comment 'Kasparov shakes his head'
+    expect(cb.gameStatus.moveNumber).toBe(11)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(2)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bk1b1r/pp1nq1p1/2p1pnBp/8/3P4/5N2/PPP2PPP/R1BQ1RK1 w - - 2 11"`)
+    expect(cb.move('Bf4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(11)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(3)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bk1b1r/pp1nq1p1/2p1pnBp/8/3P1B2/5N2/PPP2PPP/R2Q1RK1 b - - 3 11"`)
+    expect(cb.move('b5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(12)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bk1b1r/p2nq1p1/2p1pnBp/1p6/3P1B2/5N2/PPP2PPP/R2Q1RK1 w - b6 0 12"`)
+    expect(cb.move('a4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(12)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.gameStatus.enPassantField?.notation).toBe('a3')
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1bk1b1r/p2nq1p1/2p1pnBp/1p6/P2P1B2/5N2/1PP2PPP/R2Q1RK1 b - a3 0 12"`)
+    expect(cb.move('Bb7')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(13)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r2k1b1r/pb1nq1p1/2p1pnBp/1p6/P2P1B2/5N2/1PP2PPP/R2Q1RK1 w - - 1 13"`)
+    expect(cb.move('Re1')).toBe(true)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.gameStatus.moveNumber).toBe(13)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(2)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r2k1b1r/pb1nq1p1/2p1pnBp/1p6/P2P1B2/5N2/1PP2PPP/R2QR1K1 b - - 2 13"`)
+    expect(cb.move('Nd5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(14)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(3)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r2k1b1r/pb1nq1p1/2p1p1Bp/1p1n4/P2P1B2/5N2/1PP2PPP/R2QR1K1 w - - 3 14"`)
+    expect(cb.move('Bg3')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(14)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(4)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r2k1b1r/pb1nq1p1/2p1p1Bp/1p1n4/P2P4/5NB1/1PP2PPP/R2QR1K1 b - - 4 14"`)
+    expect(cb.move('Kc8')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(15)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(5)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/pb1nq1p1/2p1p1Bp/1p1n4/P2P4/5NB1/1PP2PPP/R2QR1K1 w - - 5 15"`)
+    expect(cb.move('axb5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(15)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/pb1nq1p1/2p1p1Bp/1P1n4/3P4/5NB1/1PP2PPP/R2QR1K1 b - - 0 15"`)
+    expect(cb.move('cxb5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(16)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/pb1nq1p1/4p1Bp/1p1n4/3P4/5NB1/1PP2PPP/R2QR1K1 w - - 0 16"`)
+    expect(cb.move('Qd3')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(16)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(1)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/pb1nq1p1/4p1Bp/1p1n4/3P4/3Q1NB1/1PP2PPP/R3R1K1 b - - 1 16"`)
+    expect(cb.move('Bc6')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(17)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(2)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/p2nq1p1/2b1p1Bp/1p1n4/3P4/3Q1NB1/1PP2PPP/R3R1K1 w - - 2 17"`)
+    expect(cb.move('Bf5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(17)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(3)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/p2nq1p1/2b1p2p/1p1n1B2/3P4/3Q1NB1/1PP2PPP/R3R1K1 b - - 3 17"`)
+    expect(cb.move('exf5')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(18)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/p2nq1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R3R1K1 w - - 0 18"`)
+    expect(cb.move('Rxe7')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(18)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.black, castleType.long)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.short)).toBe(false)
+    expect(cb.gameStatus.canCastle(color.white, castleType.long)).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k2b1r/p2nR1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 b - - 0 18"`)
+    expect(cb.move('Bxe7')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(19)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.white)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(false)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w - - 0 19"`)
+    expect(cb.move('c4')).toBe(true)
+    expect(cb.gameStatus.moveNumber).toBe(19)
+    expect(cb.gameStatus.nextMoveBy).toBe(color.black)
+    expect(cb.gameStatus.halfMoves50).toBe(0)
+    expect(cb.gameStatus.enPassantPossible).toBe(true)
+    expect(cb.gameStatus.enPassantField?.notation).toBe('c3')
+
+    expect(cb.gameStatus.firstMoveNumber).toBe(1)
+    expect(cb.gameStatus.firstHalfMoves50).toBe(0)
+    expect(cb.getFEN()).toMatchInlineSnapshot(`"r1k4r/p2nb1p1/2b4p/1p1n1p2/2PP4/3Q1NB1/1P3PPP/R5K1 b - c3 0 19"`)
+  })
 
   test('testing FEN creation', () => {
     var cb = new chessBoard.ChessBoard()
@@ -17,7 +293,7 @@ describe('Testing chess-board', () => {
     cb.loadFEN(t2)
     expect(cb.getFEN()).toBe(t2)
 
-  });
+  })
 
   test('testing 3 & 5 Repetition Rule', () => {
     var cb = new chessBoard.ChessBoard()
@@ -32,9 +308,9 @@ describe('Testing chess-board', () => {
     expect(cb.move('Ng1')).toBe(true)
     expect(cb.move('Ng8')).toBe(true)
 
-    expect(cb.data.drawPossibleThreefoldRepetion).toBe(false)
+    expect(cb.gameStatus.drawPossibleThreefoldRepetion).toBe(false)
     expect(cb.move('Nf3')).toBe(true) // #3 Rep
-    expect(cb.data.drawPossibleThreefoldRepetion).toBe(true)
+    expect(cb.gameStatus.drawPossibleThreefoldRepetion).toBe(true)
     expect(cb.move('Nf6')).toBe(true)
     expect(cb.move('Ng1')).toBe(true)
     expect(cb.move('Ng8')).toBe(true)
@@ -47,9 +323,9 @@ describe('Testing chess-board', () => {
     expect(cb.isGameOver()).toBe(false)
     expect(cb.move('Nf3')).toBe(true) // #5 Rep -- automatic draw
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.data.gameResult).toBe(GameResult.GameResult.draw)
+    expect(cb.gameStatus.gameResult).toBe(GameResult.GameResult.draw)
     expect(cb.move('Nf6')).toBe(false)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "Nf3",
   "Nf6",
@@ -163,7 +439,7 @@ Array [
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "Rxg7+",
   "Kh8",
@@ -217,7 +493,7 @@ Array [
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "Nd7+",
   "Ka8",
@@ -236,7 +512,7 @@ Array [
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "Qh6+",
   "Kg3",
@@ -353,7 +629,7 @@ Array [
     expect(cb.isCheck()).toBe(true)
     expect(cb.isMate()).toBe(true)
     expect(cb.isGameOver()).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "Rg1+",
   "Kh8",
@@ -480,9 +756,9 @@ Object {
     expect(cb.move('e5')).toBe(true)
     expect(cb.move('Nf3')).toBe(true)
     expect(cb.move('Nc6')).toBe(true)
-    let moves1 = cb.moves()
+    let moves1 = cb.movesToStrings()
     expect(cb.move('Bb5')).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "e4",
   "e5",
@@ -564,7 +840,7 @@ Array [
 ]
 `)
     expect(cb.move('Bb5')).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "e4",
   "e5",
@@ -655,7 +931,7 @@ Array [
     expect(cb.move('d5!?')).toBe(true)
     expect(cb.move('c5')).toBe(true)
     expect(cb.move('Nd2!')).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "d4",
   "d6",
@@ -687,7 +963,7 @@ Array [
     expect(cb.move('exf4')).toBe(true)
     cb.loadFEN(p)
     expect(cb.move('e5f4')).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "exf4",
 ]
@@ -762,7 +1038,7 @@ Array [
     expect(cb.move('e1')).toBe(false)
     expect(cb.move('a7')).toBe(false)
     expect(cb.move('e3')).toBe(true)
-    expect(cb.moves()).toMatchInlineSnapshot(`
+    expect(cb.movesToStrings()).toMatchInlineSnapshot(`
 Array [
   "e3",
 ]
@@ -1252,20 +1528,20 @@ Array [
   /*
   test('testing AttackedFields', () => {
     let cb = new chessBoard.ChessBoard();
-
+  
     cb.loadFEN("7k/8/8/2pb4/8/8/8/7K b - - 4 50");
     expect(cb.isCheck(chessBoard.color.white)).toBe(true);
     expect(cb.isCheck(chessBoard.color.black)).toBe(false);
     let a1 = cb.getAttackedFields(chessBoard.color.black);
     a1.clear();
     expect(a1).toMatchInlineSnapshot(`
-AttackedFields {
+  AttackedFields {
   "_fields": Array [],
-}
-`);
+  }
+  `);
     let a2 = cb.getAttackedFields(chessBoard.color.black).attackedFields();
     expect(a2).toMatchInlineSnapshot(`
-Array [
+  Array [
   Object {
     "colIdx": 6,
     "rowIdx": 0,
@@ -1334,13 +1610,13 @@ Array [
     "colIdx": 0,
     "rowIdx": 6,
   },
-]
-`);
-
+  ]
+  `);
+  
     cb.loadFEN(cb.initialBoardFEN);
     let a = cb.getAttackedFields(chessBoard.color.black);
     expect(a).toMatchInlineSnapshot(`
-AttackedFields {
+  AttackedFields {
   "_fields": Array [
     Object {
       "attackingPieces": Array [
@@ -1899,10 +2175,10 @@ AttackedFields {
       },
     },
   ],
-}
-`);
+  }
+  `);
   });
-*/
+  */
   test('testing FEN', () => {
     let cb = new chessBoard.ChessBoard();
     cb.loadFEN(cb.initialBoardFEN);
@@ -2073,5 +2349,5 @@ Array [
 ]
 `);
   })
-
 })
+

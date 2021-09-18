@@ -8,7 +8,7 @@ import { castleType } from "../../common/CastleFlags"
 import { KnightMovesRaw } from '../pieces/KnightMovesRaw'
 import { PawnMovesRaw } from '../pieces/PawnMovesRaw'
 import { ChessGameStatusData } from "../../common/ChessGameStatusData"
-import { MoveOnBoard } from "../../common/moveOnBoard"
+import { MoveOnBoard } from "../../common/MoveOnBoard"
 import { LegalMovesCache } from '../LegalMovesCache'
 import { fileIdxType, rankIdxType, IField } from '../../common/IField'
 import { pieceOnBoard, createPieceOB } from '../../common/pieceOnBoard'
@@ -46,7 +46,7 @@ export class ChessBoardRepresentation implements IChessBoardRepresentation {
     // Interface implementation
     isPieceI(file: fileIdxType, rank: rankIdxType) { return this._board[file][rank].isPiece }
     pieceKeyI(file: fileIdxType, rank: rankIdxType) { return this._board[file][rank].key }
-    isFieldOnBoard(field: Field) { return (field.fileIdx >= 0 && field.fileIdx < 8 && field.rankIdx >= 0 && field.rankIdx < 8) }
+    isFieldOnBoard(field: Field) { return field.isOnBoard }
     setPiece(piece_: Piece, field: Field) { this._board[field.fileIdx][field.rankIdx] = piece_ }
     setPieceI(piece_: Piece, file: fileIdxType, rank: rankIdxType) { this._board[file][rank] = piece_ }
     removePiece(field: Field) { this._board[field.fileIdx][field.rankIdx] = Piece.none() }

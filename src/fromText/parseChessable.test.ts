@@ -1,5 +1,5 @@
-import { ChessGame } from "../ChessGame"
-import { parseChessable } from "./chessable"
+import { ChessGame } from "../chess-game/ChessGame"
+import { parseChessable } from "./parseChessable"
 
 describe('Testing parseChessable', () => {
 

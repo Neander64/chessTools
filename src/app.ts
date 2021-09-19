@@ -1,32 +1,125 @@
 //import * as yargs from 'yargs'
-import * as fsp from "fs/promises"
-import * as fs from "fs"
-import * as os from "os"
-import * as path from "path"
+//import * as fsp from "fs/promises"
+import { writeFile } from "fs"
+//import * as os from "os"
+//import * as path from "path"
 //import * as chessGame from "./chess-game"
 //import { parseChessable as Parser } from "./parseChessable"
-import * as chessBoard from "./chess-board/ChessBoard"
+//import * as chessBoard from "./chess-game/chess-board/ChessBoard"
 //import { Piece, pieceKind } from './chess-board-pieces'
 
-import * as repl from "repl"
-import { ChessGame } from "./ChessGame"
-import { parseChessable } from "./fromText/chessable"
+//import * as repl from "repl"
+//import { ChessGame } from "./chess-game/ChessGame"
+//import { parseChessable } from "./fromText/parseChessable"
+import { chessable } from "./fromText/chessable"
+// import { readdir } from "fs/promises"
+// import { resolve } from "path"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let game = new ChessGame()
-let ps = new parseChessable(game)
-let data =
-    [
-        "comment before",
-        "1.d 4+=N Nf6",
-        "2.c4e63.Nf3d5",
+//chessable.generateEmptyTextFiles(chessable.DATA_PATH + '/Sam I 1.d4 Sidelines/06 Modern Defense/orig', 'Modern Defense', 21, 42)
+chessable.convertTxt2PGNRecursive(chessable.DATA_PATH + '/Sam I 1.d4 Sidelines/06 Modern Defense/')
 
-    ]
-ps.scanGameText(data)
-//console.log(game.chessBoard.toASCII())
-console.log(game.PGN)
+//const newFile = './data/test.txt';
+// let f = fs.createWriteStream(newFile, { flags: 'a' })
+// f.write('Hallo')
+// f.end()
+// fs.writeFileSync(newFile, 'Hallo') // << works 
+// writeFile(newFile, 'Hallo', (err) => {
+//     if (err) console.log(err)
+//     console.log('write')
+
+// })
+
+// (async () => {
+//     try {
+//         const prom = fsp.writeFile(newFile, 'ABDC')
+//         await prom
+//     }
+//     catch (err) {
+//         console.log(err)
+//     }
+// })();
+
+// (async () => {
+//     try {
+//         await fsp.writeFile(newFile, 'ABDC')
+//     }
+//     catch (err) {
+//         console.log(err)
+//     }
+// })();
+
+//chessable.convertTxt2PGNRecursive(chessable.DATA_PATH)
+
+// function getAllFiles(dir: string): string[] {
+//     let result: string[] = []
+//     const dirEntries = fs.readdirSync(dir)
+//     for (const f of dirEntries) {
+//         const name = path.join(dir, f)
+//         const isDirectory = fs.statSync(name).isDirectory()
+//         if (isDirectory) result = result.concat(getAllFiles(name))
+//         else result.push(f)
+//     }
+//     return result
+// }
+// const dirPath = path.join(process.cwd(), 'data')
+// console.log(getAllFiles(dirPath))
+
+// const getAllFiles = dir =>
+//     fs.readdirSync(dir).reduce((files, file) => {
+//         const name = path.join(dir, file);
+//         const isDirectory = fs.statSync(name).isDirectory();
+//         return isDirectory ? [...files, ...getAllFiles(name)] : [...files, name];
+//     }, []);
+/*
+const dirPath = path.join(process.cwd(), 'data/Sam I 1.d4 Sidelines');
+async function readdirRecursive(dir: string): Promise<string[]> {
+    var result: string[] = [];
+    try {
+        console.log('dir:', dir)
+        const files = await fsp.readdir(dir);
+        for await (const file of files) {
+            console.log(file)
+            const f = path.join(dir, file);
+            const stat = await fsp.stat(f);
+            if (stat.isDirectory()) {
+                let subFiles = await readdirRecursive(f);
+                result = result.concat(subFiles);
+            }
+            else {
+                result.push(f);
+            }
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    return result;
+}
+let result = readdirRecursive(dirPath);
+result.then(data => {
+    for (const f of data) {
+        //convertTxt2Pgn(f);
+        console.log(f)
+    }
+});
+*/
+
+// let game = new ChessGame()
+// let ps = new parseChessable(game)
+// let data =
+//     [
+//         "comment before",
+//         "1.d 4+=N Nf6",
+//         "2.c4e63.Nf3d5",
+
+//     ]
+// ps.scanGameText(data)
+// //console.log(game.chessBoard.toASCII())
+// console.log(game.PGN)
+
+/*
 process.exit()
 
 
@@ -80,7 +173,7 @@ replServer.defineCommand('test', function getFEN() {
 replServer.on('exit', () => {
     process.exit()
 })
-
+*/
 
 /*
 var cb = new chessBoard.ChessBoard("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1 b kq e3 4 8");

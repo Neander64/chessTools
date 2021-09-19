@@ -16,9 +16,17 @@ import { parseChessable } from "./fromText/chessable"
 //console.log(JSON.stringify(args));
 
 let game = new ChessGame()
-game.chessBoard.loadFEN("1r3rk1/p1qb1ppp/3b1n2/3p4/2nN4/1PN1P3/P3BPPP/R1BQ1RK1 b - - 0 15")
-console.log(game.chessBoard.toASCII())
-console.log(game.chessBoard.move('Bh2+'))
+let ps = new parseChessable(game)
+let data =
+    [
+        "comment before",
+        "1.d 4+=N Nf6",
+        "2.c4e63.Nf3d5",
+
+    ]
+ps.scanGameText(data)
+//console.log(game.chessBoard.toASCII())
+console.log(game.PGN)
 process.exit()
 
 

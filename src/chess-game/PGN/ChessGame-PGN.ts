@@ -8,12 +8,314 @@ import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOn
 //TODO use FEN as start position
 //TODO allow to parse PGN,
 
+// Implementaton based on http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
+
+type PgnTimeControlPeriod = {
+    Unknown?: boolean //= "?",
+    none?: boolean //= "-",
+    //Formated: 40/9000 : 40 Moves in 2 1/5 hours
+    numberOfMovesInPeriod?: number // '/'
+    durationOfPeriod?: number // in seconds
+    //Formated: 300 : sudden death (always the final Period tag)
+    suddenDeath?: number // in seconds
+    //Formated: 4500+60 : incremental (always the last tag)
+    //durationOfPeriod
+    incrementPerMove?: number // in seconds
+    //Formated: *180 :Sandclock (always the last tag)
+    sandclockPeriod?: number // in seconds
+}
+type PgnTimeControl = {
+    periods: PgnTimeControlPeriod[] // ':' separted in tag
+}
+class PgnDate {
+    year?: number
+    month?: number
+    day?: number
+    set(value: string) {
+        let values = value.split('.')
+        if (values.length != 3) throw new PgnError('invalid Date')
+        if (values[0] != '????') {
+            let year = +values[0]
+            if (year == NaN || year < 1500) throw new PgnError('invalid Date-Year')
+            this.year = year
+        }
+        if (values[1] != '??') {
+            let month = +value[1]
+            if (month == NaN || month < 1 || month > 12) throw new PgnError('invalid Date-Month')
+            this.month = month
+        }
+        if (values[2] != '??') {
+            let day = +values[2]
+            if (day == NaN || day < 1 || day > 31) throw new PgnError('invalid Date-Day')
+            this.day = day
+        }
+    }
+    get(): string {
+        return (this.year ? this.year : '????') + '.' + (this.month ? this.month : '??') + '.' + (this.day ? this.day : '??')
+    }
+}
+class PgnResult {
+    static readonly WhiteWins = "1-0"
+    static readonly BlackWins = "0-1"
+    static readonly Draw = "1/2-1/2"
+    static readonly Unknown = "*"
+    private _result: string
+    constructor() {
+        this._result = PgnResult.Unknown
+    }
+    set result(value: string) {
+        let r = PgnResult.checkResult(value)
+        if (!r) throw new PgnError('invalid result value:' + value)
+        this._result = r
+    }
+    get result() {
+        return this._result
+    }
+    static checkResult(value: string): string | undefined {
+        switch (value) {
+            case PgnResult.WhiteWins:
+            case PgnResult.BlackWins:
+            case PgnResult.Draw:
+            case PgnResult.Unknown:
+                return value
+            default:
+                return undefined
+        }
+    }
+}
+class PgnMoveElement {
+    moveNumber?: number
+    move: string
+    annotation?: string[]
+    comment?: string[]
+    variation?: PgnMoveElement[]
+    constructor(move: string) {
+        this.move = move
+    }
+}
+class PgnTags {
+    Event: string
+    Site: string
+    Date: PgnDate
+    Round: string
+    White: string
+    Black: string
+    Result: PgnResult
+
+    WhiteTitle?: string
+    BlackTitle?: string
+    WhiteElo?: string
+    BlackElo?: string
+    WhiteUSCF?: string
+    BlackUSCF?: string
+    WhiteNA?: string
+    BlackNA?: string
+    WhiteType?: string
+    BlackType?: string
+
+    EventData?: string
+    EventSponsor?: string
+    Section?: string
+    Stage?: string
+    Board?: string
+
+    Opening?: string
+    Variation?: string
+    SubVariation?: string
+    ECO?: string
+    NIC?: string
+
+    Time?: string
+    UTCTime?: string
+    UTCDate?: string
+
+    TimeControl?: PgnTimeControl
+    SetUp?: number
+    FEN?: string
+    Termination?: string
+
+    Annotator?: string
+    Mode?: string
+    PlyCount?: string
+
+    constructor() {
+        this.Event = '?'
+        this.Site = '?'
+        this.Date = new PgnDate()
+        this.Round = '?'
+        this.White = '?'
+        this.Black = '?'
+        this.Result = new PgnResult()
+    }
+    addTag(name: string, value: string) {
+        switch (name) {
+            case 'Event': this.Event = value
+                break
+            case 'Site': this.Site = value
+                break
+            case 'Date': this.Date.set(value)
+                break
+            case 'Round': this.Round = value
+                break
+            case 'White': this.White = value
+                break
+            case 'Black': this.Black = value
+                break
+            case 'Result': this.Result.result = value
+                break
+            case 'WhiteTitle': this.WhiteTitle = value
+                break
+            case 'BlackTitle': this.BlackTitle = value
+                break
+            case 'WhiteElo': this.WhiteElo = value
+                break
+            case 'BlackElo': this.BlackElo = value
+                break
+            case 'WhiteUSCF': this.WhiteUSCF = value
+                break
+            case 'BlackUSCF': this.BlackUSCF = value
+                break
+            case 'WhiteType': this.WhiteType = value
+                break
+            case 'BlackType': this.BlackType = value
+                break
+
+            case 'EventData': this.EventData = value
+                break
+            case 'EventSponsor': this.EventSponsor = value
+                break
+            case 'Section': this.Section = value
+                break
+            case 'Stage': this.Stage = value
+                break
+            case 'Board': this.Board = value
+                break
+
+            case 'Opening': this.Opening = value
+                break
+            case 'Variation': this.Variation = value
+                break
+            case 'SubVariation': this.SubVariation = value
+                break
+            case 'ECO': this.ECO = value
+                break
+            case 'NIC': this.NIC = value
+                break
+
+            case 'TimeControl': //TODO this.TimeControl = value
+                break
+            case 'SetUp':
+                if (+value == NaN) throw new PgnError('Tag SetUP invalid value')
+                this.SetUp = +value
+                break
+            case 'FEN': this.FEN = value
+                break
+            case 'Termination': this.Termination = value
+                break
+
+            case 'Annotator': this.Annotator = value
+                break
+            case 'Mode': this.Mode = value
+                break
+            case 'PlyCount': this.PlyCount = value
+                break
+        }
+    }
+}
+class PgnGame {
+    header: PgnTags
+    moves: PgnMoveElement[]
+    constructor() {
+        this.header = new PgnTags()
+        this.moves = []
+    }
+}
+class PgnDatabase {
+    game: PgnGame[]
+    constructor() {
+        this.game = []
+    }
+}
+class PgnError extends Error {
+    constructor(message: any) {
+        super(message)
+        this.name = "PgnError"
+    }
+}
+
+type pgnParseData = {
+    db: PgnDatabase
+    game?: PgnGame
+    isParsingTags: boolean
+    currentMove?: PgnMoveElement
+}
+
 export class Pgn {
     static readonly ESCAPE = '%'
     static readonly UNKNOWN = '?'
     static readonly PGN_MAX_LINELEN = 79
 
+    static load(pgnData: string[]): PgnDatabase {
+        // convert a given array of pgnData (like from a file) to a representation of pgn
+        // TODO this could be turned into a version to handle data from a stream
+        let parseData: pgnParseData = {
+            db: new PgnDatabase(),
+            game: undefined,
+            isParsingTags: true,
+            currentMove: undefined,
+        }
+        for (const line of pgnData) {
+            //console.log(line)
+            if (line.length == 0) continue
+            if (line[0] == this.ESCAPE) continue
+            if (parseData.isParsingTags) {
+                // importing PGN is a bit relaxed, allowing whitespaces and multiple tags in a line
+                // but I didn't implement allowing to spread a tag over multiple lines
+                if (!parseData.game) parseData.game = new PgnGame()
+                const headerMatches = Array.from(line.matchAll(/\[\s*(\w*)\s*\"(.*?)\"\s*\]/g))
+                for (const m of headerMatches) {
+                    parseData.game.header.addTag(m[1], m[2])
+                }
+                if (headerMatches.length == 0) {
+                    parseData.isParsingTags = false
+                }
+            }
+            if (!parseData.isParsingTags) { // parsing moves
+                // comments \{(.*?)\} multiline comments?
+                this.parseMoveSequence(line, parseData)
+            }
+        }
+        // TODO validate 
+        return parseData.db
+    }
+    static parseMoveSequence(lineSegment: string, parseData: pgnParseData) {
+        const moveTokens = lineSegment.split(/\s/)
+        for (const token of moveTokens) {
+            //PgnMoveElement
+            let gameResult = PgnResult.checkResult(token)
+            if (gameResult) {
+                parseData.game!.header.Result.result = gameResult
+                parseData.db.game.push(parseData.game!)
+                parseData.game = undefined
+                parseData.isParsingTags = true
+            }
+            else {
+                if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
+                let numSplit = token.split(/\./)
+                if (numSplit.length == 2) {
+                    parseData.currentMove = new PgnMoveElement(numSplit[1])
+                    parseData.currentMove.moveNumber = +numSplit[0]
+                    if (parseData.currentMove.moveNumber == NaN) throw new PgnError('invalid number')
+                }
+                else if (numSplit.length == 1) {
+                    parseData.currentMove = new PgnMoveElement(numSplit[0])
+                }
+            }
+        }
+    }
+
     static generate(game: ChessGame, options?: { noComments?: boolean, useNAG?: boolean }): string[] {
+        // generate a PGN string array from given ChessGame (which contains just on line of moves)
         let gamePGN: string[] = []
         let _options = options || { noComments: false, useNAG: false }
         let noComments = _options.noComments || false
@@ -155,12 +457,7 @@ export class Pgn {
     }
 
 }
-enum PgnResult {
-    WhiteWins = "1-0",
-    BlackWins = "0-1",
-    Draw = "1/2-1/2",
-    Unknown = "*",
-}
+
 export const enum PgnNAG { // $0, $16,..
     null_annotation = "$0",
     good_move = "$1",           // (traditional "!")

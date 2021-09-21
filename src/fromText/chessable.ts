@@ -13,6 +13,7 @@ export class chessable {
         const dirPath = path.join(process.cwd(), path_)
         let fileList = this.readFilesRecursive(dirPath)
         for (const f of fileList) {
+            console.log('converting:', f)
             this.convertTxt2PGN(f)
         }
     }
@@ -52,6 +53,10 @@ export class chessable {
         return false
     }
 
+    static generateEmptyTextFiles2(book: string, chapter: number, chapterName: string, startIdx: number, endIdx: number) {
+        let path_ = this.DATA_PATH + '/' + book + '/' + chapter.toString().padStart(2, '0') + ' ' + chapterName + '/orig'
+        this.generateEmptyTextFiles(path_, chapterName, startIdx, endIdx)
+    }
     static generateEmptyTextFiles(path_: string, fileName: string, startIdx: number, endIdx: number) {
         // create empty Textfile per chapter for the variants
         // <path_>/00i <fileName> #i

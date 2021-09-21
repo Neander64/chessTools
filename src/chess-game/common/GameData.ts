@@ -6,6 +6,7 @@ export type gameHeaderDateType = {
     day: number
 }
 export class GameHeaderData {
+    // PGN STR
     event!: string
     site!: string
     date!: gameHeaderDateType
@@ -13,6 +14,45 @@ export class GameHeaderData {
     blackPlayer!: string
     whitePlayer!: string
     result!: GameResult
+    // PGN addional tags (not used, yet)
+    // -- Player related informaition
+    //WhiteTitle
+    //BlackTitle
+    //WhiteElo
+    //BlackElo
+    //WhiteUSCF
+    //BlackUSCF
+    //WhiteNA
+    //BlackNA
+    //WhiteType
+    //BlackType
+    // -- Event related information
+    //EventDate
+    //EventSponsor
+    //Section
+    //Stage
+    //Board
+    // -- Opening information
+    //Opening
+    //Variation
+    //SubVariation
+    //ECO
+    //NIC
+    // -- Time and date related
+    //Time
+    //UTCTime
+    // -- Time control
+    //TimeControl
+    // -- alternative starting position
+    //SetUP {0,1}
+    //FEN
+    // -- Game conslusion
+    //Termination {"abondoned","adjudication","death","emergency","normal","rules infraction","time forfeit","unterminated",...}
+    // -- Miscellaneous
+    //Annotator
+    //Mode {"OTB","PM", "EM", "ICS", "TC"}
+    //PlyCount (number of half-moves)
+
     constructor() {
         this.clear()
     }

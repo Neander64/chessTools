@@ -86,11 +86,14 @@ class PgnResult {
 class PgnMoveElement {
     moveNumber?: number
     move: string
-    annotation?: string[]
-    comment?: string[]
-    variation?: PgnMoveElement[]
+    annotation: string[]
+    comment: string[]
+    variation: PgnMoveElement[]
     constructor(move: string) {
         this.move = move
+        this.comment = []
+        this.annotation = []
+        this.variation = []
     }
 }
 class PgnTags {
@@ -248,6 +251,9 @@ type pgnParseData = {
     game?: PgnGame
     isParsingTags: boolean
     currentMove?: PgnMoveElement
+    parsingMultiLineComment: boolean
+    variantTargetMoves: PgnMoveElement[]
+    currentVariant?: PgnMoveElement
 }
 
 export class Pgn {
@@ -263,9 +269,11 @@ export class Pgn {
             game: undefined,
             isParsingTags: true,
             currentMove: undefined,
+            parsingMultiLineComment: false,
+            variantTargetMoves: [],
+            currentVariant: undefined
         }
-        for (const line of pgnData) {
-            //console.log(line)
+        for (let line of pgnData) {
             if (line.length == 0) continue
             if (line[0] == this.ESCAPE) continue
             if (parseData.isParsingTags) {
@@ -281,37 +289,132 @@ export class Pgn {
                 }
             }
             if (!parseData.isParsingTags) { // parsing moves
-                // comments \{(.*?)\} multiline comments?
-                this.parseMoveSequence(line, parseData)
+                if (parseData.parsingMultiLineComment) {
+                    const commentFinish = line.match(/(?<commentEnd>^.*?)\}(?<restBlock>.*$)/)
+                    if (commentFinish?.groups) {
+                        if (commentFinish.groups.commentEnd) {
+                            if (commentFinish.groups.commentEnd.includes('{')) {
+                                throw new PgnError('nested comments')
+                            }
+                            console.log('add comment (end)', commentFinish.groups.commentEnd)
+                            parseData.currentMove?.comment.push(commentFinish.groups.commentEnd)
+                            parseData.parsingMultiLineComment = false
+                            line = commentFinish.groups.restBlock // Parse rest of the line
+                        }
+                        else {
+                            console.log('full line comment')
+                        }
+                    }
+                }
+                if (!parseData.parsingMultiLineComment) {
+                    const commentSplit = Array.from(line.matchAll(/(?<seq>.*?)\{(?<comment>.*?)\}|(?<seq2>.*?)\{(?<commentStart>.*$)|(?<rest>.*$)/g))
+                    for (const block of commentSplit) {
+                        if (block.groups) {
+                            if (block.groups.comment) {
+                                if (block.groups.seq) {
+                                    console.log('parse seq:', block.groups.seq)
+                                    this.parseMoveSequence(block.groups.seq, parseData)
+                                }
+                                parseData.currentMove?.comment.push(block.groups.comment)
+                                console.log('add comment', block.groups.comment)
+
+                            }
+                            if (block.groups.commentStart) {
+                                if (block.groups.seq2) {
+                                    console.log('parse seq:', block.groups.seq2)
+                                    this.parseMoveSequence(block.groups.seq2, parseData)
+                                }
+                                parseData.currentMove?.comment.push(block.groups.commentStart)
+                                console.log('add comment(Start)', block.groups.commentStart)
+                                parseData.parsingMultiLineComment = true
+                            }
+                            if (block.groups.rest) {
+                                console.log('parse rest:', block.groups.rest)
+                                this.parseMoveSequence(block.groups.rest, parseData)
+                            }
+                        }
+                    }
+                }
             }
         }
-        // TODO validate 
+        // TODO validate moves on board
         return parseData.db
     }
-    static parseMoveSequence(lineSegment: string, parseData: pgnParseData) {
+    private static parseMoveSequence(lineSegment: string, parseData: pgnParseData) {
         const moveTokens = lineSegment.split(/\s/)
+        console.log('tokens', moveTokens)
         for (const token of moveTokens) {
+            if (token == '') continue
             //PgnMoveElement
-            let gameResult = PgnResult.checkResult(token)
+            let gameResult = PgnResult.checkResult(token) // game terminator 
             if (gameResult) {
+                //if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
+                if (parseData.currentVariant) throw new PgnError('game terminated in variant')
+                this.pushCurrentMove(parseData)
                 parseData.game!.header.Result.result = gameResult
                 parseData.db.game.push(parseData.game!)
                 parseData.game = undefined
                 parseData.isParsingTags = true
+                parseData.currentMove = undefined
+            }
+            else if (this.isAnnotation(token)) {
+                parseData.currentMove!.annotation.push(token)
+            }
+            else if (token == '(') { // variant begins
+                if (!parseData.currentMove) throw new PgnError('variant without move')
+                this.pushCurrentMove(parseData)
+                parseData.variantTargetMoves.push(parseData.currentMove)
+                parseData.currentVariant = parseData.currentMove
+                parseData.currentMove = undefined
+                console.log('start variant')
+            }
+            else if (token == ')') { // variant ends
+                console.log('finish variant')
+                let tmp = parseData.variantTargetMoves.pop()
+                if (!tmp) throw new PgnError('variant closing mismatch')
+                if (parseData.variantTargetMoves.length == 0)
+                    parseData.currentVariant = undefined
+                else {
+                    parseData.currentVariant = parseData.variantTargetMoves[parseData.variantTargetMoves.length - 1]
+                }
             }
             else {
-                if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
-                let numSplit = token.split(/\./)
-                if (numSplit.length == 2) {
-                    parseData.currentMove = new PgnMoveElement(numSplit[1])
-                    parseData.currentMove.moveNumber = +numSplit[0]
-                    if (parseData.currentMove.moveNumber == NaN) throw new PgnError('invalid number')
+                //if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
+                this.pushCurrentMove(parseData)
+                let numSplit = token.match(/^((?<number>\d{1,})\.{1,3})?(?<move>.*)/)
+                if (numSplit?.groups) {
+                    if (numSplit?.groups.move) {
+                        if (!this.checkMove(numSplit.groups.move)) {
+                            throw new PgnError('invalid move:' + numSplit.groups.move)
+                        }
+                        parseData.currentMove = new PgnMoveElement(numSplit.groups.move)
+                    }
+                    if (numSplit?.groups.number) { // <number>.<move>
+                        parseData.currentMove!.moveNumber = +numSplit.groups.number
+                    }
                 }
-                else if (numSplit.length == 1) {
-                    parseData.currentMove = new PgnMoveElement(numSplit[0])
-                }
+                else
+                    throw new PgnError('invalid move token:' + token)
             }
         }
+    }
+    private static pushCurrentMove(parseData: pgnParseData) {
+        if (parseData.currentMove) {
+            if (parseData.currentVariant) {
+                console.log('push to variant', parseData.currentMove)
+                parseData.currentVariant.variation.push(parseData.currentMove)
+            }
+            else {
+                parseData.game!.moves.push(parseData.currentMove)
+            }
+        }
+    }
+    static checkMove(move: string): boolean {
+        // syntactical validation of a move string
+        return move.match(/^(\d{1,}.{1,3})?(O(-O){1,2}|[RNBQK]?[a-h]?[1-8]?[x]?[a-h][1-8](\=[RNBQ])?)[+#]?]?]?[!\?]?[!\?]?$/) != null
+    }
+    static isAnnotation(annotation: string): boolean {
+        return annotation.match(/(\$\d{2})|[=⩲⩱±∓∞]|(\+-)|(-\+)/) != null
     }
 
     static generate(game: ChessGame, options?: { noComments?: boolean, useNAG?: boolean }): string[] {

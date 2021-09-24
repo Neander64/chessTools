@@ -33,6 +33,8 @@ const POSITIONAL_EVALS = [
     //    { str : '=/∞', id : chessGame.ChessPositionalEvaluation.compensation },
     { str: '=', id: ChessPositionalEvaluation.equal },
     { str: '∞', id: ChessPositionalEvaluation.unclear },
+    { str: '⇆', id: ChessPositionalEvaluation.counterPlay },
+
 ]
 
 const enum Token {
@@ -332,9 +334,12 @@ export class parseChessable {
             switch (token.key) {
                 case Token.MoveNumberBlack:
                     if (moveToken != '') {
-                        if (!this._game.chessBoard.move(moveToken)) throw new Error('illegal move (' + (moveNumber - 1) + ':' + moveToken + ')')
+                        if (!this._game.chessBoard.move(moveToken)) {
+                            console.log(this._game.chessBoard.toASCII())
+                            throw new Error('illegal move (' + (moveNumber - 1) + ':' + moveToken + ')')
+                        }
                         move = this._game.chessBoard.currentMove
-                        if (!move) throw new Error('illegal move')
+                        if (!move) throw new Error('illegal move') // this should never happen
                         move.moveEvaluation = moveEvaluation
                         move.positionalEvaluation = positionalEvaluation
                         move.isNovelty = isNovelty
@@ -355,9 +360,12 @@ export class parseChessable {
                     if (move) {
                         if (moveToken) {
                             let r = this._game.chessBoard.move(moveToken)
-                            if (!r) throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+                            if (!r) {
+                                console.log(this._game.chessBoard.toASCII())
+                                throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+                            }
                             move = this._game.chessBoard.currentMove
-                            if (!move) throw new Error('illegal move')
+                            if (!move) throw new Error('illegal move') // this should never happen
                             move.moveEvaluation = moveEvaluation
                             move.positionalEvaluation = positionalEvaluation
                             move.isNovelty = isNovelty
@@ -392,9 +400,12 @@ export class parseChessable {
                 case Token.BlacksMove:
                     if (moveToken != '') {
                         let r = this._game.chessBoard.move(moveToken)
-                        if (!r) throw new Error('illegal move(' + moveNumber + ')')
+                        if (!r) {
+                            console.log(this._game.chessBoard.toASCII())
+                            throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+                        }
                         move = this._game.chessBoard.currentMove
-                        if (!move) throw new Error('illegal move')
+                        if (!move) throw new Error('illegal move') // this should never happen
                         move.moveEvaluation = moveEvaluation
                         move.positionalEvaluation = positionalEvaluation
                         move.isNovelty = isNovelty
@@ -410,9 +421,12 @@ export class parseChessable {
                     break
                 case Token.WhitesMove:
                     if (moveToken != '') {
-                        if (!this._game.chessBoard.move(moveToken)) throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+                        if (!this._game.chessBoard.move(moveToken)) {
+                            console.log(this._game.chessBoard.toASCII())
+                            throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+                        }
                         move = this._game.chessBoard.currentMove
-                        if (!move) throw new Error('illegal move')
+                        if (!move) throw new Error('illegal move') // this should never happen
                         move.moveEvaluation = moveEvaluation
                         move.positionalEvaluation = positionalEvaluation
                         move.isNovelty = isNovelty
@@ -464,9 +478,12 @@ export class parseChessable {
             }
         }
         if (moveToken != '') {
-            if (!this._game.chessBoard.move(moveToken)) throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+            if (!this._game.chessBoard.move(moveToken)) {
+                console.log(this._game.chessBoard.toASCII())
+                throw new Error('illegal move(' + (moveNumber - 1) + ':' + moveToken + ')')
+            }
             move = this._game.chessBoard.currentMove
-            if (!move) throw new Error('illegal move')
+            if (!move) throw new Error('illegal move') // this should never happen
             move.moveEvaluation = moveEvaluation
             move.positionalEvaluation = positionalEvaluation
             move.isNovelty = isNovelty

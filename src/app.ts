@@ -19,7 +19,6 @@ import { chessable } from "./fromText/chessable"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-
 let data = [
     '[Event "FRG-ch International"] [Site "Dortmund"]',
     '%[Site "Dortmund"]',
@@ -58,15 +57,16 @@ let data = [
     '',
 ]
 let pgn = Pgn.load(data)
-console.log(pgn)
-console.log(JSON.stringify(pgn))
+console.log(Pgn.save(pgn))
+//console.log(pgn)
+//console.log(JSON.stringify(pgn))
 
-
-//chessable.generateEmptyTextFiles2("Sam III 1.d4 Main", 12, "Semi-Slav Meran Part 2", 1, 55)
+//chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)
 
 //chessable.convertTxt2PGNRecursive(chessable.DATA_PATH + '/Sam Black Classical Sicilian/')
 //chessable.convertTxt2PGNRecursive(chessable.DATA_PATH + '/Sam Black Semi-Slav/')
+//chessable.convertTxt2PGNRecursive('/data/Sam Black Semi-Slav/19 Botvinnik System (alternative)/orig/')
 
 
 

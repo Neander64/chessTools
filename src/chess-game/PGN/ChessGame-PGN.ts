@@ -1,6 +1,6 @@
 import { ChessGame } from "../ChessGame"
 import { castleType } from "../common/CastleFlags"
-import { color } from "../common/chess-color"
+import { color, otherColor } from "../common/chess-color"
 import { gameHeaderDateType } from "../common/GameData"
 import { GameResult } from "../common/GameResult"
 import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOnBoard"
@@ -9,6 +9,7 @@ import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOn
 //TODO allow to parse PGN,
 
 // Implementaton based on http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
+//  http://www.enpassant.dk/chess/palview/manual/pgn.htm
 
 type PgnTimeControlPeriod = {
     Unknown?: boolean //= "?",
@@ -222,7 +223,52 @@ class PgnTags {
                 break
             case 'PlyCount': this.PlyCount = value
                 break
+            default:
+                throw new PgnError('Invalid Tag name')
         }
+    }
+    toStringArray(): string[] {
+        let result: string[] = []
+
+        result.push(`[Event "${this.Event}"]`)
+        result.push(`[Site "${this.Site}"]`)
+        result.push(`[Date "${this.Date.get()}"]`)
+        result.push(`[Round "${this.Round}"]`)
+        result.push(`[White "${this.White}"]`)
+        result.push(`[Black "${this.Black}"]`)
+        result.push(`[Result "${this.Result}"]`)
+
+        if (this.WhiteTitle) result.push(`[WhiteTitle "${this.WhiteTitle}"]`)
+        if (this.BlackTitle) result.push(`[BlackTitle "${this.BlackTitle}"]`)
+        if (this.WhiteElo) result.push(`[WhiteElo "${this.WhiteElo}"]`)
+        if (this.BlackElo) result.push(`[BlackElo "${this.BlackElo}"]`)
+        if (this.WhiteUSCF) result.push(`[WhiteUSCF "${this.WhiteUSCF}"]`)
+        if (this.BlackUSCF) result.push(`[BlackUSCF "${this.BlackUSCF}"]`)
+        if (this.WhiteNA) result.push(`[WhiteNA "${this.WhiteNA}"]`)
+        if (this.BlackNA) result.push(`[BlackNA "${this.BlackNA}"]`)
+        if (this.WhiteType) result.push(`[WhiteType "${this.WhiteType}"]`)
+        if (this.BlackType) result.push(`[BlackType "${this.BlackType}"]`)
+        if (this.EventData) result.push(`[EventData "${this.EventData}"]`)
+        if (this.EventSponsor) result.push(`[EventSponsor "${this.EventSponsor}"]`)
+        if (this.Section) result.push(`[Section "${this.Section}"]`)
+        if (this.Stage) result.push(`[Stage "${this.Stage}"]`)
+        if (this.Board) result.push(`[Board "${this.Board}"]`)
+        if (this.Opening) result.push(`[Opening "${this.Opening}"]`)
+        if (this.Variation) result.push(`[Variation "${this.Variation}"]`)
+        if (this.SubVariation) result.push(`[SubVariation "${this.SubVariation}"]`)
+        if (this.ECO) result.push(`[ECO "${this.ECO}"]`)
+        if (this.NIC) result.push(`[NIC "${this.NIC}"]`)
+        if (this.Time) result.push(`[Time "${this.Time}"]`)
+        if (this.UTCTime) result.push(`[UTCTime "${this.UTCTime}"]`)
+        if (this.UTCDate) result.push(`[UTCDate "${this.UTCDate}"]`)
+        if (this.TimeControl) result.push(`[TimeControl "${this.TimeControl}"]`)
+        if (this.SetUp) result.push(`[SetUp "${this.SetUp}"]`)
+        if (this.FEN) result.push(`[FEN "${this.FEN}"]`)
+        if (this.Termination) result.push(`[Termination "${this.Termination}"]`)
+        if (this.Annotator) result.push(`[Annotator "${this.Annotator}"]`)
+        if (this.Mode) result.push(`[Mode "${this.Mode}"]`)
+        if (this.PlyCount) result.push(`[PlyCount "${this.PlyCount}"]`)
+        return result
     }
 }
 class PgnGame {
@@ -255,11 +301,119 @@ type pgnParseData = {
     variantTargetMoves: PgnMoveElement[]
     currentVariant?: PgnMoveElement
 }
+type pgnGenerateData = {
+    noComments: boolean
+    useNAG: boolean
+    mainLineOnly: boolean
+
+    activeColor: color
+    moveNumber: number
+    isFirstMoveOrAfterComment: boolean
+}
 
 export class Pgn {
     static readonly ESCAPE = '%'
     static readonly UNKNOWN = '?'
     static readonly PGN_MAX_LINELEN = 79
+
+    static save(pgn: PgnDatabase, options?: { noComments?: boolean, useNAG?: boolean, mainLineOnly?: boolean }): string[] {
+        // 
+        let _options = options || { noComments: false, useNAG: false, mainLineOnly: false }
+        let result: string[] = []
+        let firstGame = true
+        let genData: pgnGenerateData = {
+            noComments: _options.noComments || false,
+            useNAG: _options.useNAG || false,
+            mainLineOnly: _options.mainLineOnly || false,
+            activeColor: color.white,
+            moveNumber: 1,
+            isFirstMoveOrAfterComment: false,
+        }
+        for (const game of pgn.game) {
+            if (!firstGame) {
+                result.push('')
+            } else {
+                firstGame = false
+            }
+            result = result.concat(game.header.toStringArray())
+            result.push('')
+
+            let lineStr = ''
+            //TODO use FEN to identify activeColor and first move number
+            genData.moveNumber = 1
+            genData.activeColor = color.white
+            genData.isFirstMoveOrAfterComment = true
+            lineStr = this.addMoveSeq(game.moves, genData).trim()
+            result = result.concat(this.chopString(lineStr, this.PGN_MAX_LINELEN))
+        }
+        return result
+    }
+    static addMoveSeq(seq: PgnMoveElement[], genData: pgnGenerateData): string {
+        let result: string = ''
+        let genDataSeq: pgnGenerateData = {
+            noComments: genData.noComments,
+            useNAG: genData.useNAG,
+            mainLineOnly: genData.mainLineOnly,
+            activeColor: genData.activeColor,
+            moveNumber: genData.moveNumber,
+            isFirstMoveOrAfterComment: genData.isFirstMoveOrAfterComment,
+        }
+        for (const move of seq) {
+            genDataSeq.activeColor = genData.activeColor
+            genDataSeq.moveNumber = genData.moveNumber
+
+            let moveToken = ''
+            if (genData.activeColor == color.white) {
+                moveToken += genData.moveNumber + '. ' // re-numbering, ignoring, what we have in our structure
+                genData.moveNumber++
+            }
+            else if (genData.isFirstMoveOrAfterComment && genData.activeColor == color.black) {
+                moveToken += genData.moveNumber + '... '
+            }
+            genData.activeColor = otherColor(genData.activeColor)
+            genData.isFirstMoveOrAfterComment = false
+
+            moveToken += move.move + ' '
+
+            if (move.annotation) {
+                for (const ann of move.annotation)
+                    moveToken += ann + ' '
+            }
+            if (!genData.noComments && move.comment.length > 0) {
+                moveToken += '{ '
+                for (const comment of move.comment)
+                    moveToken += comment.trim() + ' '
+                moveToken = moveToken.trimEnd()
+                moveToken += ' } '
+                genData.isFirstMoveOrAfterComment = true
+            }
+            result += moveToken
+
+            if (!genData.mainLineOnly && move.variation.length > 0) {
+                genDataSeq.isFirstMoveOrAfterComment = genData.isFirstMoveOrAfterComment
+                result += '( '
+                result += this.addMoveSeq(move.variation, genDataSeq).trim()
+                result += ' ) '
+            }
+        }
+        return result
+    }
+
+    static chopString(str: string, maxLen: number, cutChar: string = ' '): string[] {
+        // TODO move to a string module
+        let result: string[] = []
+        let tmpStr = str
+        while (tmpStr.length > maxLen) {
+            for (var i = maxLen; i >= 0; i--) {
+                if (tmpStr[i] == cutChar) break
+            }
+            if (i == 0) i = maxLen // no cutChar found, cut hard
+            result.push(tmpStr.substring(0, i))
+            tmpStr = tmpStr.substring(i + 1)
+        }
+        if (tmpStr.length > 0) result.push(tmpStr)
+        return result
+    }
 
     static load(pgnData: string[]): PgnDatabase {
         // convert a given array of pgnData (like from a file) to a representation of pgn
@@ -296,40 +450,41 @@ export class Pgn {
                             if (commentFinish.groups.commentEnd.includes('{')) {
                                 throw new PgnError('nested comments')
                             }
-                            console.log('add comment (end)', commentFinish.groups.commentEnd)
+                            //console.log('add comment (end)', commentFinish.groups.commentEnd)
                             parseData.currentMove?.comment.push(commentFinish.groups.commentEnd)
                             parseData.parsingMultiLineComment = false
                             line = commentFinish.groups.restBlock // Parse rest of the line
                         }
                         else {
-                            console.log('full line comment')
+                            //console.log('full line comment')
                         }
                     }
                 }
                 if (!parseData.parsingMultiLineComment) {
+                    // TODO handle Semikolon-Comments
                     const commentSplit = Array.from(line.matchAll(/(?<seq>.*?)\{(?<comment>.*?)\}|(?<seq2>.*?)\{(?<commentStart>.*$)|(?<rest>.*$)/g))
                     for (const block of commentSplit) {
                         if (block.groups) {
                             if (block.groups.comment) {
                                 if (block.groups.seq) {
-                                    console.log('parse seq:', block.groups.seq)
+                                    //console.log('parse seq:', block.groups.seq)
                                     this.parseMoveSequence(block.groups.seq, parseData)
                                 }
                                 parseData.currentMove?.comment.push(block.groups.comment)
-                                console.log('add comment', block.groups.comment)
+                                //console.log('add comment', block.groups.comment)
 
                             }
                             if (block.groups.commentStart) {
                                 if (block.groups.seq2) {
-                                    console.log('parse seq:', block.groups.seq2)
+                                    //console.log('parse seq:', block.groups.seq2)
                                     this.parseMoveSequence(block.groups.seq2, parseData)
                                 }
                                 parseData.currentMove?.comment.push(block.groups.commentStart)
-                                console.log('add comment(Start)', block.groups.commentStart)
+                                //console.log('add comment(Start)', block.groups.commentStart)
                                 parseData.parsingMultiLineComment = true
                             }
                             if (block.groups.rest) {
-                                console.log('parse rest:', block.groups.rest)
+                                //console.log('parse rest:', block.groups.rest)
                                 this.parseMoveSequence(block.groups.rest, parseData)
                             }
                         }
@@ -342,7 +497,7 @@ export class Pgn {
     }
     private static parseMoveSequence(lineSegment: string, parseData: pgnParseData) {
         const moveTokens = lineSegment.split(/\s/)
-        console.log('tokens', moveTokens)
+        //console.log('tokens', moveTokens)
         for (const token of moveTokens) {
             if (token == '') continue
             //PgnMoveElement
@@ -366,10 +521,10 @@ export class Pgn {
                 parseData.variantTargetMoves.push(parseData.currentMove)
                 parseData.currentVariant = parseData.currentMove
                 parseData.currentMove = undefined
-                console.log('start variant')
+                //console.log('start variant')
             }
             else if (token == ')') { // variant ends
-                console.log('finish variant')
+                //console.log('finish variant')
                 let tmp = parseData.variantTargetMoves.pop()
                 if (!tmp) throw new PgnError('variant closing mismatch')
                 if (parseData.variantTargetMoves.length == 0)
@@ -401,7 +556,7 @@ export class Pgn {
     private static pushCurrentMove(parseData: pgnParseData) {
         if (parseData.currentMove) {
             if (parseData.currentVariant) {
-                console.log('push to variant', parseData.currentMove)
+                //console.log('push to variant', parseData.currentMove)
                 parseData.currentVariant.variation.push(parseData.currentMove)
             }
             else {
@@ -419,6 +574,7 @@ export class Pgn {
 
     static generate(game: ChessGame, options?: { noComments?: boolean, useNAG?: boolean }): string[] {
         // generate a PGN string array from given ChessGame (which contains just on line of moves)
+        // TODO seperate from this PGN only class
         let gamePGN: string[] = []
         let _options = options || { noComments: false, useNAG: false }
         let noComments = _options.noComments || false
@@ -475,7 +631,7 @@ export class Pgn {
 
             // handle comments
             if (!noComments && move.comment) {
-                moveToken += ' { ' + move.comment + ' }';
+                moveToken += ' { ' + move.comment + ' }'
                 isFirstMoveOrAfterComment = true
             }
 
@@ -487,17 +643,15 @@ export class Pgn {
                 // there are surely better (more principled) ways to handle this. 
                 // but I'm relativly new to TS&JS so I'm using a stright forward one.
                 // Looking for simplification later.
-                gamePGN.push(lineStr);
+                gamePGN.push(lineStr)
                 while (moveToken.length > this.PGN_MAX_LINELEN) {
                     for (var i = this.PGN_MAX_LINELEN; i >= 0; i--) {
-                        if (moveToken[i] == ' ') {
-                            break;
-                        }
+                        if (moveToken[i] == ' ') break
                     }
                     if (i == 0) {
-                        lineStr = moveToken.substring(0, this.PGN_MAX_LINELEN); // no spaces found, cut hard
-                        gamePGN.push(lineStr);
-                        moveToken = moveToken.substring(this.PGN_MAX_LINELEN);
+                        lineStr = moveToken.substring(0, this.PGN_MAX_LINELEN) // no spaces found, cut hard
+                        gamePGN.push(lineStr)
+                        moveToken = moveToken.substring(this.PGN_MAX_LINELEN)
                     }
                     else {
                         lineStr = moveToken.substring(0, i)
@@ -510,7 +664,7 @@ export class Pgn {
         }
         // add result token at the end
         let resultStr = this.mapGameResult(game.gameHeaderData.result)
-        if (lineStr.length + resultStr.length <= this.PGN_MAX_LINELEN) {
+        if (lineStr.length + resultStr.length + 1 <= this.PGN_MAX_LINELEN) {
             lineStr += ' ' + resultStr
             lineStr = lineStr.trimStart()
         }
@@ -563,52 +717,52 @@ export class Pgn {
 
 export const enum PgnNAG { // $0, $16,..
     null_annotation = "$0",
-    good_move = "$1",           // (traditional "!")
-    poor_move = "$2",           // (traditional "?")
-    very_good_move = "$3",      // (traditional "!!")
-    very_poor_move = "$4",      // (traditional "??")
-    speculative_move = "$5",    // (traditional "!?")
-    questionable_move = "$6",   // (traditional "?!")
-    forced_move = "$7",         // (all others lose quickly)
-    singular_move = "$8",       // (no reasonable alternatives)
-    worst_move = "$9",
-    drawish_position = "$10",
-    equal_chances_quiet_position = "$11",
-    equal_chances_active_position = "$12",
-    unclear_position = "$13",
-    White_has_a_slight_advantage = "$14",
-    Black_has_a_slight_advantage = "$15",
-    White_has_a_moderate_advantage = "$16",
-    Black_has_a_moderate_advantage = "$17",
-    White_has_a_decisive_advantage = "$18",
-    Black_has_a_decisive_advantage = "$19",
-    White_has_a_crushing_advantage = "$20", // (Black should resign)
-    Black_has_a_crushing_advantage = "$", // (White should resign)
-    White_is_in_zugzwang = "$22",
-    Black_is_in_zugzwang = "$23",
+    good_move = "$1",                           // !
+    poor_move = "$2",                           // ?
+    very_good_move = "$3",                      // !!
+    very_poor_move = "$4",                      // ??
+    speculative_move = "$5",                    // !?
+    questionable_move = "$6",                   // ?!
+    forced_move = "$7",                         // □        []
+    singular_move = "$8",                       // 
+    worst_move = "$9",                          //
+    drawish_position = "$10",                   // =
+    equal_chances_quiet_position = "$11",       //
+    equal_chances_active_position = "$12",      //
+    unclear_position = "$13",                   // ∞        ~~
+    White_has_a_slight_advantage = "$14",       // ⩲        +/=
+    Black_has_a_slight_advantage = "$15",       // ⩱        =/+
+    White_has_a_moderate_advantage = "$16",     // ±        +/-
+    Black_has_a_moderate_advantage = "$17",     // ∓        -/+
+    White_has_a_decisive_advantage = "$18",     // +−
+    Black_has_a_decisive_advantage = "$19",     // −+
+    White_has_a_crushing_advantage = "$20",     // (Black should resign)
+    Black_has_a_crushing_advantage = "$",       // (White should resign)
+    White_is_in_zugzwang = "$22",               // ⨀        (.)
+    Black_is_in_zugzwang = "$23",               // ⨀        (.)
     White_has_a_slight_space_advantage = "$24",
     Black_has_a_slight_space_advantage = "$25",
-    White_has_a_moderate_space_advantage = "$26",
-    Black_has_a_moderate_space_advantage = "$27",
+    White_has_a_moderate_space_advantage = "$26",               // ○
+    Black_has_a_moderate_space_advantage = "$27",               // ○
     White_has_a_decisive_space_advantage = "$28",
     Black_has_a_decisive_space_advantage = "$29",
     White_has_a_slight_time_development_advantage = "$30",
     Black_has_a_slight_time_development_advantage = "$31",
-    White_has_a_moderate_time_development_advantage = "$32",
-    Black_has_a_moderate_time_development_advantage = "$33",
+    White_has_a_moderate_time_development_advantage = "$32",    // ⟳            @
+    Black_has_a_moderate_time_development_advantage = "$33",    // ⟳
     White_has_a_decisive_time_development_advantage = "$34",
     Black_has_a_decisive_time_development_advantage = "$35",
-    White_has_the_initiative = "$36",
-    Black_has_the_initiative = "$37",
+    White_has_the_initiative = "$36",                           // ↑            |^
+    Black_has_the_initiative = "$37",                           // ↑
     White_has_a_lasting_initiative = "$38",
     Black_has_a_lasting_initiative = "$39",
-    White_has_the_attack = "$40",
-    Black_has_the_attack = "$41",
+    White_has_the_attack = "$40",                               // →            ->
+    Black_has_the_attack = "$41",                               // →
     White_has_insufficient_compensation_for_material_deficit = "$42",
     Black_has_insufficient_compensation_for_material_deficit = "$43",
-    White_has_sufficient_compensation_for_material_deficit = "$44",
-    Black_has_sufficient_compensation_for_material_deficit = "$45",
-    White_has_more_than_adequate_compensation_for_material_deficit = "$46",
+    White_has_sufficient_compensation_for_material_deficit = "$44",             //              ~/=
+    Black_has_sufficient_compensation_for_material_deficit = "$45",             // =/∞
+    White_has_more_than_adequate_compensation_for_material_deficit = "$46",     // =/∞
     Black_has_more_than_adequate_compensation_for_material_deficit = "$47",
     White_has_a_slight_center_control_advantage = "$48",
     Black_has_a_slight_center_control_advantage = "$49",
@@ -694,14 +848,21 @@ export const enum PgnNAG { // $0, $16,..
     Black_has_played_the_ending_very_well = "$129",
     White_has_slight_counterplay = "$130",
     Black_has_slight_counterplay = "$131",
-    White_has_moderate_counterplay = "$132",
-    Black_has_moderate_counterplay = "$133",
+    White_has_moderate_counterplay = "$132",                        // ⇆        <=>
+    Black_has_moderate_counterplay = "$133",                        // ⇆
     White_has_decisive_counterplay = "$134",
     Black_has_decisive_counterplay = "$135",
     White_has_moderate_time_control_pressure = "$136",
     Black_has_moderate_time_control_pressure = "$137",
-    White_has_severe_time_control_pressure = "$138",
-    Black_has_severe_time_control_pressure = "$139",
+    White_has_severe_time_control_pressure = "$138",                // ⨁        (+)
+    Black_has_severe_time_control_pressure = "$139",                // ⨁
+    // $140     ∆   /\      With the idea...
+    // $141     ∇   \/      Aimed against...
+    // $142     ⌓   >=      Better is...
+    // $143         <=      Worse is...
+    // $144         ==      Equivalent is...
+    // $145         RR      Editorial comment
+    // $146         N       Novelty
 }
 
 export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[] = [
@@ -714,7 +875,7 @@ export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[]
 ]
 
 export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag: PgnNAG }[] = [
-    { eval: ChessPositionalEvaluation.equal, nag: PgnNAG.drawish_position },
+    { eval: ChessPositionalEvaluation.equal, nag: PgnNAG.equal_chances_quiet_position },
     { eval: ChessPositionalEvaluation.slightAdvantageWhite, nag: PgnNAG.White_has_a_slight_advantage },
     { eval: ChessPositionalEvaluation.slightAdvantageBlack, nag: PgnNAG.Black_has_a_slight_advantage },
     { eval: ChessPositionalEvaluation.clearAdvantageWhite, nag: PgnNAG.White_has_a_moderate_advantage },
@@ -722,4 +883,5 @@ export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag
     { eval: ChessPositionalEvaluation.decisiveAdvantageWhite, nag: PgnNAG.White_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.decisiveAdvantageBlack, nag: PgnNAG.Black_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.unclear, nag: PgnNAG.unclear_position },
+    { eval: ChessPositionalEvaluation.counterPlay, nag: PgnNAG.White_has_moderate_counterplay },
 ]

@@ -44,23 +44,27 @@ export class MoveOnBoard {
 
 export const enum ChessMoveEvaluation {
     // move evaluation
-    blunder = '??',         // $4
-    mistake = '?',          // $2
-    dubious = '?!',         // $6
-    interesting = '!?',     // $5
     good = '!',             // $1
+    mistake = '?',          // $2
     brilliant = '!!',       // $3
+    blunder = '??',         // $4
+    interesting = '!?',     // $5
+    dubious = '?!',         // $6
+    onlyMove = '[]',        // $8
+    zugzwang = '(.)',       // $22
 }
 
 export const enum ChessPositionalEvaluation {
     // positional
-    equal = '=',                    // $10
-    slightAdvantageWhite = '⩲',   // $14 ⩲
-    slightAdvantageBlack = '⩱',   // $15 ⩱
-    clearAdvantageWhite = '±',    // $16 ± moderate
-    clearAdvantageBlack = '∓',    // $17 ∓
     decisiveAdvantageWhite = '+-',  // $18 +-
-    decisiveAdvantageBlack = '-+',  // $19 -+
+    clearAdvantageWhite = '±',      // $16 ± moderate
+    slightAdvantageWhite = '⩲',     // $14 ⩲
+    equal = '=',                    // $11
     unclear = '∞',                  // $13 ∞
+    slightAdvantageBlack = '⩱',     // $15 ⩱
+    clearAdvantageBlack = '∓',      // $17 ∓
+    decisiveAdvantageBlack = '-+',  // $19 -+
+
+    counterPlay = '⇆',              // 132
     // TODO: add further evaluations
 }

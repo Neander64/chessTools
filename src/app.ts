@@ -20,6 +20,22 @@ import { chessable } from "./fromText/chessable"
 //console.log(JSON.stringify(args));
 
 let data = [
+    // '[Event "Live Chess"]',
+    // '[Site "Chess.com"]',
+    // '[Date "2017.09.03"]',
+    // '[Round "?"]',
+    // '[White "player1"]',
+    // '[Black "player2"]',
+    // '[Result "1-0"]',
+    // '[WhiteElo "1367"]',
+    // '[BlackElo "1207"]',
+    // '[TimeControl "900+10"]',
+    // '[ECO "B01"]',
+    // '[Termination "player1 won by resignation"]',
+    // '[CurrentPosition "n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - - 0 25"]',
+    // '',
+    '1.e4 d5 {  abc  }  2.exd5  1-0'
+    /*
     '[Event "FRG-ch International"] [Site "Dortmund"]',
     '%[Site "Dortmund"]',
     '[Date "1973.??.??"]',
@@ -31,7 +47,7 @@ let data = [
     '[BlackElo "2535"]',
     '[ECO "E39"]',
     '',
-    '1.d4 Nf6 2.c4 { comment 1 } e6 3.Nc3 Bb4 4.Qc2 c5 5.dxc5 O-O 6.Bf4 Na6 7.a3 Bxc3+ 8.Qxc3 Ne4',
+    '1.d4 Nf6 2.c4 RR { comment 1; } e6 = 3.Nc3 == Bb4 +/= 4.Qc2 =/+ c5 ∓ 5.dxc5 ~~ N O-O <=> 6.Bf4 <= Na6 => 7.a3 Bxc3+ 8.Qxc3 Ne4 ; abc 8.Qxc3 Ne4',
     '9.Qc2 Qa5+ 10.Bd2 Nxd2 11.Qxd2 Qxd2+ 12.Kxd2 Nxc5 13.Rd1 a5 14.Kc2 Rd8 15.b3 d5',
     '16.e3 b6 17.f3 Ba6 18.Nh3 Rac8 19.Kb2 dxc4 20.Bxc4 Bxc4 21.bxc4 Nd3+ 22.Kb3 h6',
     '23.Nf4 Ne5 24.Rxd8+ Rxd8 25.Rc1 g5 26.Nh5 Kh7 27.Nf6+ Kg7 28.Ne4 f5 29.Nc3 Rd3',
@@ -55,11 +71,13 @@ let data = [
     '23.f3 Ng5 24.Rc1 Ne6 25.Nxe6 Qxe6 26.Rc3 g6 27.Rfc1 Bh6 28.Rc8 Re7 29.Rxe8+ Rxe8 { multi line',
     'continued } 30.f4 Rc8 31.Rxc8+ { comment 11 } Qxc8 32.Bc3 ( 32.Bc4 ( 32.Bc1 Kg1 33.Nf3 ) Kg1 33.Ra1 ) Bg7!! = $10 { comment 12 }   1/2-1/2',
     '',
+    */
 ]
 let pgn = Pgn.load(data)
+//console.log(Pgn.load(Pgn.save(pgn)))
 console.log(Pgn.save(pgn))
-//console.log(pgn)
-//console.log(JSON.stringify(pgn))
+let pgn2 = Pgn.load(Pgn.save(pgn))
+console.log(Pgn.save(pgn2))
 
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)

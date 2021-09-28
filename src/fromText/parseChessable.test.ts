@@ -85,7 +85,7 @@ Array [
   "[Black \\"?\\"]",
   "[Result \\"*\\"]",
   "",
-  "1. d4 $3 d5 $4 2. c4 $2 c6 N 3. Nc3  $10 N Nf6  $14 4. e3  $15 Bf5  $16 5. cxd5",
+  "1. d4 $3 d5 $4 2. c4 $2 c6 N 3. Nc3  $11 N Nf6  $14 4. e3  $15 Bf5  $16 5. cxd5",
   "cxd5 6. Qb3  $17 Nc6 $1 7. Qxb7 Bd7 8. Qb3  $18 Rb8 9. Qd1  $19 e5 $1 10. dxe5",
   "Nxe5 11. Be2 Bd6 12. Nf3 O-O 13. O-O Qc7 $6 14. Nd4 $1 Nc4 15. b3 $1 Bxh2+",
   "16. Kh1  $13 *",

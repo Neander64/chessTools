@@ -5,10 +5,11 @@ import { gameHeaderDateType } from "../common/GameData"
 import { GameResult } from "../common/GameResult"
 import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOnBoard"
 
-//TODO use FEN as start position
-//TODO allow to parse PGN,
+// TODO use FEN as start position
+// TODO instead of throwing exceptions allow to use a log-file
 
-// Implementaton based on http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
+// Implementaton based on 
+//  http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
 //  http://www.enpassant.dk/chess/palview/manual/pgn.htm
 
 type PgnTimeControlPeriod = {
@@ -25,8 +26,78 @@ type PgnTimeControlPeriod = {
     //Formated: *180 :Sandclock (always the last tag)
     sandclockPeriod?: number // in seconds
 }
-type PgnTimeControl = {
-    periods: PgnTimeControlPeriod[] // ':' separted in tag
+class PgnTimeControl {
+    private static readonly TC_SPLIT = ':'
+    private static readonly TC_UNKNOWN = '?'
+    private static readonly TC_NONE = '-'
+    private static readonly TC_MOVES_IN_PERIOD = '/'
+    private static readonly TC_INCREMENT = '+'
+    private static readonly TC_SANDCLOCK = '*'
+    _periods: PgnTimeControlPeriod[] // ':' separted in tag
+    constructor() {
+        this._periods = []
+    }
+    set(value: string) {
+        let tokens = value.split(PgnTimeControl.TC_SPLIT)
+        for (const t of tokens) {
+            let period: PgnTimeControlPeriod = {}
+            if (t == PgnTimeControl.TC_UNKNOWN) {
+                period.Unknown = true
+                this._periods.push(period)
+            }
+            else if (t == PgnTimeControl.TC_NONE) {
+                period.none = true
+                this._periods.push(period)
+            }
+            else if (t.indexOf(PgnTimeControl.TC_MOVES_IN_PERIOD) >= 0) { // number of moves in period
+                let s = t.split(/\//)
+                if (s.length != 2) throw new PgnError('unexpected Timecontrol token: "' + t + '" (moves in Period)')
+                period.numberOfMovesInPeriod = +s[0]
+                period.durationOfPeriod = +s[1]
+                if (period.numberOfMovesInPeriod == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" numberOfMoves is NaN')
+                if (period.durationOfPeriod == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" durationOfPeriod is NaN')
+                this._periods.push(period)
+            }
+            else if (t.indexOf(PgnTimeControl.TC_INCREMENT) >= 0) { // period with increment
+                let s = t.split(/\+/)
+                if (s.length != 2) throw new PgnError('unexpected Timecontrol token: "' + t + '" (increment)')
+                period.durationOfPeriod = +s[0]
+                period.incrementPerMove = +s[1]
+                if (period.durationOfPeriod == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" durationOfPeriod is NaN')
+                if (period.incrementPerMove == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" incrementPerMove is NaN')
+                this._periods.push(period)
+            }
+            else if (t.length > 0 && t[0] == PgnTimeControl.TC_SANDCLOCK) { // SandClock
+                period.sandclockPeriod = +t.substring(1)
+                if (period.sandclockPeriod == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" sandclockPeriod is NaN')
+                this._periods.push(period)
+            }
+            else { // SuddenDeath
+                period.suddenDeath = +t
+                if (period.suddenDeath == NaN) throw new PgnError('unexpected Timecontrol token: "' + t + '" suddenDeath is NaN')
+                this._periods.push(period)
+            }
+        }
+    }
+    get(): string | undefined {
+        let result: string = ''
+        for (const t of this._periods) {
+            if (t.Unknown)
+                result += (result == '' ? '' : ':') + PgnTimeControl.TC_UNKNOWN
+            else if (t.none)
+                result += (result == '' ? '' : ':') + PgnTimeControl.TC_NONE
+            else if (t.numberOfMovesInPeriod)
+                result += (result == '' ? '' : ':') + t.numberOfMovesInPeriod + PgnTimeControl.TC_MOVES_IN_PERIOD + t.durationOfPeriod
+            else if (t.incrementPerMove)
+                result += (result == '' ? '' : ':') + t.durationOfPeriod + PgnTimeControl.TC_INCREMENT + t.incrementPerMove
+            else if (t.sandclockPeriod)
+                result += (result == '' ? '' : ':') + PgnTimeControl.TC_SANDCLOCK + t.sandclockPeriod
+            else if (t.suddenDeath)
+                result += (result == '' ? '' : ':') + t.suddenDeath
+        }
+        return (result == '') ? undefined : result
+
+    }
 }
 class PgnDate {
     year?: number
@@ -41,7 +112,7 @@ class PgnDate {
             this.year = year
         }
         if (values[1] != '??') {
-            let month = +value[1]
+            let month = +values[1]
             if (month == NaN || month < 1 || month > 12) throw new PgnError('invalid Date-Month')
             this.month = month
         }
@@ -52,7 +123,7 @@ class PgnDate {
         }
     }
     get(): string {
-        return (this.year ? this.year : '????') + '.' + (this.month ? this.month : '??') + '.' + (this.day ? this.day : '??')
+        return (this.year ? ('' + this.year).padStart(4, '0') : '????') + '.' + (this.month ? ('' + this.month).padStart(2, '0') : '??') + '.' + (this.day ? ('' + this.day).padStart(2, '0') : '??')
     }
 }
 class PgnResult {
@@ -96,6 +167,10 @@ class PgnMoveElement {
         this.annotation = []
         this.variation = []
     }
+}
+type pgnTagType = {
+    name: string
+    value: string
 }
 class PgnTags {
     Event: string
@@ -142,6 +217,8 @@ class PgnTags {
     Mode?: string
     PlyCount?: string
 
+    otherTags: pgnTagType[]
+
     constructor() {
         this.Event = '?'
         this.Site = '?'
@@ -150,6 +227,7 @@ class PgnTags {
         this.White = '?'
         this.Black = '?'
         this.Result = new PgnResult()
+        this.otherTags = []
     }
     addTag(name: string, value: string) {
         switch (name) {
@@ -206,7 +284,9 @@ class PgnTags {
             case 'NIC': this.NIC = value
                 break
 
-            case 'TimeControl': //TODO this.TimeControl = value
+            case 'TimeControl':
+                this.TimeControl = new PgnTimeControl()
+                this.TimeControl.set(value)
                 break
             case 'SetUp':
                 if (+value == NaN) throw new PgnError('Tag SetUP invalid value')
@@ -224,7 +304,8 @@ class PgnTags {
             case 'PlyCount': this.PlyCount = value
                 break
             default:
-                throw new PgnError('Invalid Tag name')
+                this.otherTags.push({ name: name, value: value })
+            //throw new PgnError('Invalid Tag name')
         }
     }
     toStringArray(): string[] {
@@ -236,7 +317,7 @@ class PgnTags {
         result.push(`[Round "${this.Round}"]`)
         result.push(`[White "${this.White}"]`)
         result.push(`[Black "${this.Black}"]`)
-        result.push(`[Result "${this.Result}"]`)
+        result.push(`[Result "${this.Result.result}"]`)
 
         if (this.WhiteTitle) result.push(`[WhiteTitle "${this.WhiteTitle}"]`)
         if (this.BlackTitle) result.push(`[BlackTitle "${this.BlackTitle}"]`)
@@ -261,13 +342,16 @@ class PgnTags {
         if (this.Time) result.push(`[Time "${this.Time}"]`)
         if (this.UTCTime) result.push(`[UTCTime "${this.UTCTime}"]`)
         if (this.UTCDate) result.push(`[UTCDate "${this.UTCDate}"]`)
-        if (this.TimeControl) result.push(`[TimeControl "${this.TimeControl}"]`)
+        if (this.TimeControl) result.push(`[TimeControl "${this.TimeControl.get()}"]`)
         if (this.SetUp) result.push(`[SetUp "${this.SetUp}"]`)
         if (this.FEN) result.push(`[FEN "${this.FEN}"]`)
         if (this.Termination) result.push(`[Termination "${this.Termination}"]`)
         if (this.Annotator) result.push(`[Annotator "${this.Annotator}"]`)
         if (this.Mode) result.push(`[Mode "${this.Mode}"]`)
         if (this.PlyCount) result.push(`[PlyCount "${this.PlyCount}"]`)
+        for (let other of this.otherTags) {
+            result.push(`[${other.name} "${other.value}"]`)
+        }
         return result
     }
 }
@@ -308,11 +392,12 @@ type pgnGenerateData = {
 
     activeColor: color
     moveNumber: number
-    isFirstMoveOrAfterComment: boolean
+    isFirstMoveAfterSomething: boolean
 }
 
 export class Pgn {
     static readonly ESCAPE = '%'
+    static readonly SEMICOLON_COMMENT_CHAR = ';'
     static readonly UNKNOWN = '?'
     static readonly PGN_MAX_LINELEN = 79
 
@@ -327,7 +412,7 @@ export class Pgn {
             mainLineOnly: _options.mainLineOnly || false,
             activeColor: color.white,
             moveNumber: 1,
-            isFirstMoveOrAfterComment: false,
+            isFirstMoveAfterSomething: false,
         }
         for (const game of pgn.game) {
             if (!firstGame) {
@@ -342,13 +427,13 @@ export class Pgn {
             //TODO use FEN to identify activeColor and first move number
             genData.moveNumber = 1
             genData.activeColor = color.white
-            genData.isFirstMoveOrAfterComment = true
-            lineStr = this.addMoveSeq(game.moves, genData).trim()
+            genData.isFirstMoveAfterSomething = true
+            lineStr = this.addMoveSeq(game.moves, genData).trim() + ' ' + game.header.Result.result
             result = result.concat(this.chopString(lineStr, this.PGN_MAX_LINELEN))
         }
         return result
     }
-    static addMoveSeq(seq: PgnMoveElement[], genData: pgnGenerateData): string {
+    private static addMoveSeq(seq: PgnMoveElement[], genData: pgnGenerateData): string {
         let result: string = ''
         let genDataSeq: pgnGenerateData = {
             noComments: genData.noComments,
@@ -356,28 +441,27 @@ export class Pgn {
             mainLineOnly: genData.mainLineOnly,
             activeColor: genData.activeColor,
             moveNumber: genData.moveNumber,
-            isFirstMoveOrAfterComment: genData.isFirstMoveOrAfterComment,
+            isFirstMoveAfterSomething: genData.isFirstMoveAfterSomething,
         }
         for (const move of seq) {
             genDataSeq.activeColor = genData.activeColor
-            genDataSeq.moveNumber = genData.moveNumber
-
+            genDataSeq.moveNumber = genData.moveNumber //this.previousMoveNumber(genData.moveNumber, genData.activeColor)
             let moveToken = ''
             if (genData.activeColor == color.white) {
                 moveToken += genData.moveNumber + '. ' // re-numbering, ignoring, what we have in our structure
-                genData.moveNumber++
             }
-            else if (genData.isFirstMoveOrAfterComment && genData.activeColor == color.black) {
+            else if (genData.isFirstMoveAfterSomething && genData.activeColor == color.black) {
                 moveToken += genData.moveNumber + '... '
             }
+            genData.moveNumber = this.nextMoveNumber(genData.moveNumber, genData.activeColor)
             genData.activeColor = otherColor(genData.activeColor)
-            genData.isFirstMoveOrAfterComment = false
+            genData.isFirstMoveAfterSomething = false
 
             moveToken += move.move + ' '
 
             if (move.annotation) {
-                for (const ann of move.annotation)
-                    moveToken += ann + ' '
+                for (const annotation of move.annotation)
+                    moveToken += (genData.useNAG ? this.annotationToNAG(annotation, genDataSeq.activeColor) : annotation) + ' '
             }
             if (!genData.noComments && move.comment.length > 0) {
                 moveToken += '{ '
@@ -385,19 +469,32 @@ export class Pgn {
                     moveToken += comment.trim() + ' '
                 moveToken = moveToken.trimEnd()
                 moveToken += ' } '
-                genData.isFirstMoveOrAfterComment = true
+                genData.isFirstMoveAfterSomething = true
             }
             result += moveToken
 
             if (!genData.mainLineOnly && move.variation.length > 0) {
-                genDataSeq.isFirstMoveOrAfterComment = genData.isFirstMoveOrAfterComment
+                genDataSeq.isFirstMoveAfterSomething = true
                 result += '( '
                 result += this.addMoveSeq(move.variation, genDataSeq).trim()
                 result += ' ) '
+                genData.isFirstMoveAfterSomething = true
             }
         }
         return result
     }
+    private static nextMoveNumber(currentMoveNumber: number, activeColor: color): number {
+        if (activeColor == color.white)
+            return currentMoveNumber
+        else
+            return currentMoveNumber + 1
+    }
+    // private static previousMoveNumber(currentMoveNumber: number, activeColor: color): number {
+    //     if (activeColor == color.white)
+    //         return currentMoveNumber - 1
+    //     else
+    //         return currentMoveNumber
+    // }
 
     static chopString(str: string, maxLen: number, cutChar: string = ' '): string[] {
         // TODO move to a string module
@@ -413,6 +510,13 @@ export class Pgn {
         }
         if (tmpStr.length > 0) result.push(tmpStr)
         return result
+    }
+    static annotationToNAG(annotation: string, activeColor: color): string {
+        if (!annotation.match(/^(\d{2,3})$/)) { // not a NAG already
+            let m = mapAnnotationToNAG.find(e => e.annotation == annotation && (!e.activeColor || e.activeColor == activeColor))
+            if (m) return m.nag
+        }
+        return annotation
     }
 
     static load(pgnData: string[]): PgnDatabase {
@@ -450,102 +554,149 @@ export class Pgn {
                             if (commentFinish.groups.commentEnd.includes('{')) {
                                 throw new PgnError('nested comments')
                             }
-                            //console.log('add comment (end)', commentFinish.groups.commentEnd)
                             parseData.currentMove?.comment.push(commentFinish.groups.commentEnd)
                             parseData.parsingMultiLineComment = false
                             line = commentFinish.groups.restBlock // Parse rest of the line
                         }
-                        else {
-                            //console.log('full line comment')
-                        }
                     }
                 }
                 if (!parseData.parsingMultiLineComment) {
-                    // TODO handle Semikolon-Comments
+                    let SemikolonComment = this.cutOffSemikolonComment(line)
+                    if (SemikolonComment.comment) {
+                        line = SemikolonComment.line
+                    }
                     const commentSplit = Array.from(line.matchAll(/(?<seq>.*?)\{(?<comment>.*?)\}|(?<seq2>.*?)\{(?<commentStart>.*$)|(?<rest>.*$)/g))
                     for (const block of commentSplit) {
                         if (block.groups) {
                             if (block.groups.comment) {
                                 if (block.groups.seq) {
-                                    //console.log('parse seq:', block.groups.seq)
                                     this.parseMoveSequence(block.groups.seq, parseData)
                                 }
                                 parseData.currentMove?.comment.push(block.groups.comment)
-                                //console.log('add comment', block.groups.comment)
-
                             }
                             if (block.groups.commentStart) {
                                 if (block.groups.seq2) {
-                                    //console.log('parse seq:', block.groups.seq2)
                                     this.parseMoveSequence(block.groups.seq2, parseData)
                                 }
                                 parseData.currentMove?.comment.push(block.groups.commentStart)
-                                //console.log('add comment(Start)', block.groups.commentStart)
                                 parseData.parsingMultiLineComment = true
                             }
                             if (block.groups.rest) {
-                                //console.log('parse rest:', block.groups.rest)
                                 this.parseMoveSequence(block.groups.rest, parseData)
                             }
                         }
                     }
+                    if (SemikolonComment.comment) {
+                        parseData.currentMove?.comment.push(SemikolonComment.comment)
+                    }
                 }
             }
         }
-        // TODO validate moves on board
+        // TODO validate moves on board (optional)
         return parseData.db
+    }
+    private static cutOffSemikolonComment(line: string): { line: string, comment?: string } {
+        let resultLine = line
+        let resultComment = undefined
+
+        let numberOfOpeningBraces = 0
+        let numberOfClosingBraces = 0
+        for (let i = 0; i < line.length; i++) {
+            if (line[i] == '{') {
+                numberOfOpeningBraces++
+            }
+            else if (line[i] == '}') {
+                numberOfClosingBraces++
+            }
+            else if (line[i] == this.SEMICOLON_COMMENT_CHAR) {
+                if (numberOfOpeningBraces == numberOfClosingBraces) {
+                    resultLine = line.substring(0, i - 1)
+                    resultComment = line.substring(i + 1)
+                    break
+                }
+            }
+        }
+        return { line: resultLine, comment: resultComment }
     }
     private static parseMoveSequence(lineSegment: string, parseData: pgnParseData) {
         const moveTokens = lineSegment.split(/\s/)
+        let moveNumber: number | undefined = undefined
+        let closingVariantWithMove = false
         //console.log('tokens', moveTokens)
-        for (const token of moveTokens) {
+        for (let token of moveTokens) {
             if (token == '') continue
-            //PgnMoveElement
-            let gameResult = PgnResult.checkResult(token) // game terminator 
-            if (gameResult) {
+            let gameResult = PgnResult.checkResult(token)
+            if (gameResult) {// is game terminator 
                 //if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
                 if (parseData.currentVariant) throw new PgnError('game terminated in variant')
                 this.pushCurrentMove(parseData)
-                parseData.game!.header.Result.result = gameResult
+                if (parseData.game!.header.Result) parseData.game!.header.Result.result = gameResult // allow to read games without header
+                if (parseData.game!.header.Result.result != gameResult) throw new PgnError('result after game differs from header (game:' + gameResult + ', header:' + parseData.game!.header.Result.result + ')')
+                //parseData.game!.header.Result.result = gameResult
                 parseData.db.game.push(parseData.game!)
                 parseData.game = undefined
                 parseData.isParsingTags = true
                 parseData.currentMove = undefined
+                token = ''
             }
             else if (this.isAnnotation(token)) {
                 parseData.currentMove!.annotation.push(token)
+                token = ''
             }
-            else if (token == '(') { // variant begins
+            else if (token[0] == '(') { // variant begins (allowing token to be part of the move)
                 if (!parseData.currentMove) throw new PgnError('variant without move')
                 this.pushCurrentMove(parseData)
                 parseData.variantTargetMoves.push(parseData.currentMove)
                 parseData.currentVariant = parseData.currentMove
                 parseData.currentMove = undefined
-                //console.log('start variant')
+                token = token.substring(1)
             }
-            else if (token == ')') { // variant ends
-                //console.log('finish variant')
+            else if (token == ')') { // variant ends 
+                if (parseData.currentMove) {
+                    this.pushCurrentMove(parseData)
+                }
                 let tmp = parseData.variantTargetMoves.pop()
                 if (!tmp) throw new PgnError('variant closing mismatch')
-                if (parseData.variantTargetMoves.length == 0)
-                    parseData.currentVariant = undefined
-                else {
-                    parseData.currentVariant = parseData.variantTargetMoves[parseData.variantTargetMoves.length - 1]
-                }
+                this.popCurrentVariant(parseData)
+                token = ''
+                parseData.currentMove = undefined
             }
-            else {
-                //if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
+            else if (token[token.length - 1] == ')') { // variant ends (allowing token to be part of the move)
+                token = token.substring(0, token.length - 1)
+                closingVariantWithMove = true
+            }
+            else if (token.match(/^(\d{1,3})\.{1,3}$/)) { // Number as seperate token
+                moveNumber = +token // store for the next move to be created
+                token = ''
+            }
+
+            if (token.length > 0 && token != '') {
                 this.pushCurrentMove(parseData)
-                let numSplit = token.match(/^((?<number>\d{1,})\.{1,3})?(?<move>.*)/)
+                let numSplit = token.match(/^((?<number>\d{1,})\.{1,3})?(?<move>.*)/) // allow move number to be part of the move
                 if (numSplit?.groups) {
                     if (numSplit?.groups.move) {
-                        if (!this.checkMove(numSplit.groups.move)) {
+                        if (!this.validateMoveSyntax(numSplit.groups.move)) {
                             throw new PgnError('invalid move:' + numSplit.groups.move)
                         }
                         parseData.currentMove = new PgnMoveElement(numSplit.groups.move)
                     }
-                    if (numSplit?.groups.number) { // <number>.<move>
+                    if (moveNumber) { // got a value from seperate number token
+                        parseData.currentMove!.moveNumber = moveNumber
+                        if (numSplit?.groups.move && numSplit?.groups.number) { // double number specification? (allow if not in strict mode)
+                            throw new PgnError('doubled move numbers:' + numSplit.groups.move + ' and from token ' + moveNumber)
+                        }
+                        moveNumber = undefined
+                    }
+                    else if (numSplit?.groups.move && numSplit?.groups.number) { // <number>.<move>
                         parseData.currentMove!.moveNumber = +numSplit.groups.number
+                    }
+                    if (closingVariantWithMove) {
+                        this.pushCurrentMove(parseData)
+                        let tmp = parseData.variantTargetMoves.pop()
+                        if (!tmp) throw new PgnError('variant closing mismatch')
+                        this.popCurrentVariant(parseData)
+                        parseData.currentMove = undefined
+                        closingVariantWithMove = false
                     }
                 }
                 else
@@ -556,7 +707,6 @@ export class Pgn {
     private static pushCurrentMove(parseData: pgnParseData) {
         if (parseData.currentMove) {
             if (parseData.currentVariant) {
-                //console.log('push to variant', parseData.currentMove)
                 parseData.currentVariant.variation.push(parseData.currentMove)
             }
             else {
@@ -564,12 +714,20 @@ export class Pgn {
             }
         }
     }
-    static checkMove(move: string): boolean {
+    private static popCurrentVariant(parseData: pgnParseData) {
+        if (parseData.variantTargetMoves.length == 0)
+            parseData.currentVariant = undefined
+        else {
+            parseData.currentVariant = parseData.variantTargetMoves[parseData.variantTargetMoves.length - 1]
+        }
+    }
+    static validateMoveSyntax(move: string): boolean {
         // syntactical validation of a move string
         return move.match(/^(\d{1,}.{1,3})?(O(-O){1,2}|[RNBQK]?[a-h]?[1-8]?[x]?[a-h][1-8](\=[RNBQ])?)[+#]?]?]?[!\?]?[!\?]?$/) != null
     }
     static isAnnotation(annotation: string): boolean {
-        return annotation.match(/(\$\d{2})|[=⩲⩱±∓∞]|(\+-)|(-\+)/) != null
+        // identify any possible annotation value
+        return annotation.match(/^(\$\d{2,3})|(==)|(\+\/=)|(=\/\+)|(=\/∞)|(<=>)|(~\/=)|(>=)|(<=)|[=⩲⩱±∓∞⨁⇆∆∇⌓→↑⟳@⨀○□]|(\+\/-)|(-\/\+)|(\+-)|(-\+)|(~~)|(\[\])|(\(\.\))|(\|\^)|(\->)|(\(\+\))|(\/\\)|(\\\/)|(RR)|(N)$/) != null
     }
 
     static generate(game: ChessGame, options?: { noComments?: boolean, useNAG?: boolean }): string[] {
@@ -588,7 +746,7 @@ export class Pgn {
         gamePGN.push(`[White "${this.prepareHeaderString(game.gameHeaderData.whitePlayer)}"]`)
         gamePGN.push(`[Black "${this.prepareHeaderString(game.gameHeaderData.blackPlayer)}"]`)
         gamePGN.push(`[Result "${this.mapGameResult(game.gameHeaderData.result)}"]`)
-        gamePGN.push("");
+        gamePGN.push('');
 
         // move section
         let isFirstMoveOrAfterComment = true
@@ -625,7 +783,7 @@ export class Pgn {
             if (move.moveEvaluation)
                 moveToken += useNAG ? ' ' + this.moveEvalNAG(move.moveEvaluation) : move.moveEvaluation
             if (move.positionalEvaluation)
-                moveToken += ' ' + (useNAG ? ' ' + this.positionalEvalNAG(move.positionalEvaluation) : move.positionalEvaluation);
+                moveToken += ' ' + (useNAG ? ' ' + this.positionalEvalNAG(move.positionalEvaluation, move.color) : move.positionalEvaluation);
             if (move.isNovelty)
                 moveToken += ' N'
 
@@ -705,9 +863,9 @@ export class Pgn {
             result = m.nag
         return result
     }
-    private static positionalEvalNAG(evaluation: string): string {
+    private static positionalEvalNAG(evaluation: string, activeColor: color): string {
         let result = ''
-        let m = mapPositionalEvaluation2NAG.find(e => e.eval == evaluation)
+        let m = mapPositionalEvaluation2NAG.find(e => e.eval == evaluation && (!e.activeColor || e.activeColor == activeColor))
         if (m)
             result = m.nag
         return result
@@ -715,7 +873,7 @@ export class Pgn {
 
 }
 
-export const enum PgnNAG { // $0, $16,..
+export const enum PgnNAG {
     null_annotation = "$0",
     good_move = "$1",                           // !
     poor_move = "$2",                           // ?
@@ -760,10 +918,10 @@ export const enum PgnNAG { // $0, $16,..
     Black_has_the_attack = "$41",                               // →
     White_has_insufficient_compensation_for_material_deficit = "$42",
     Black_has_insufficient_compensation_for_material_deficit = "$43",
-    White_has_sufficient_compensation_for_material_deficit = "$44",             //              ~/=
-    Black_has_sufficient_compensation_for_material_deficit = "$45",             // =/∞
+    White_has_sufficient_compensation_for_material_deficit = "$44",             // ~/=
+    Black_has_sufficient_compensation_for_material_deficit = "$45",             // 
     White_has_more_than_adequate_compensation_for_material_deficit = "$46",     // =/∞
-    Black_has_more_than_adequate_compensation_for_material_deficit = "$47",
+    Black_has_more_than_adequate_compensation_for_material_deficit = "$47",     //
     White_has_a_slight_center_control_advantage = "$48",
     Black_has_a_slight_center_control_advantage = "$49",
     White_has_a_moderate_center_control_advantage = "$50",
@@ -856,15 +1014,78 @@ export const enum PgnNAG { // $0, $16,..
     Black_has_moderate_time_control_pressure = "$137",
     White_has_severe_time_control_pressure = "$138",                // ⨁        (+)
     Black_has_severe_time_control_pressure = "$139",                // ⨁
-    // $140     ∆   /\      With the idea...
-    // $141     ∇   \/      Aimed against...
-    // $142     ⌓   >=      Better is...
-    // $143         <=      Worse is...
-    // $144         ==      Equivalent is...
-    // $145         RR      Editorial comment
-    // $146         N       Novelty
+    With_the_idea = "$140", //     ∆   /\      With the idea...
+    Aimed_against = "$141", //     ∇   \/      Aimed against...
+    Better_is = "$142", //     ⌓   >=      Better is...
+    Worse_is = "$143", //        <=      Worse is...
+    Equivalent_is = "$144", //         ==      Equivalent is...
+    Editorial_comment = "$145", //         RR      Editorial comment
+    Novelty = "$146", //         N       Novelty
 }
 
+export const mapAnnotationToNAG: { annotation: string, activeColor?: color, nag: PgnNAG }[] = [
+    { annotation: '□', nag: PgnNAG.forced_move },
+    { annotation: '[]', nag: PgnNAG.forced_move },
+    { annotation: '∞', nag: PgnNAG.unclear_position },
+    { annotation: '~~', nag: PgnNAG.equal_chances_quiet_position },
+    { annotation: '⩲', nag: PgnNAG.White_has_a_slight_advantage },
+    { annotation: '+/=', nag: PgnNAG.White_has_a_slight_advantage },
+    { annotation: '⩱', nag: PgnNAG.Black_has_a_slight_advantage },
+    { annotation: '=/+', nag: PgnNAG.Black_has_a_slight_advantage },
+    { annotation: '±', nag: PgnNAG.White_has_a_moderate_advantage },
+    { annotation: '+/-', nag: PgnNAG.White_has_a_moderate_advantage },
+    { annotation: '∓', nag: PgnNAG.Black_has_a_moderate_advantage },
+    { annotation: '-/+', nag: PgnNAG.Black_has_a_moderate_advantage },
+    { annotation: '+-', nag: PgnNAG.White_has_a_decisive_advantage },
+    { annotation: '-+', nag: PgnNAG.Black_has_a_decisive_advantage },
+
+    // use activeColor 
+    { annotation: '⨀', activeColor: color.white, nag: PgnNAG.White_is_in_zugzwang },
+    { annotation: '(.)', activeColor: color.white, nag: PgnNAG.White_is_in_zugzwang },
+    { annotation: '⨀', activeColor: color.black, nag: PgnNAG.Black_is_in_zugzwang },
+    { annotation: '(.)', activeColor: color.black, nag: PgnNAG.Black_is_in_zugzwang },
+    { annotation: '○', activeColor: color.white, nag: PgnNAG.White_has_a_moderate_space_advantage },
+    { annotation: '○', activeColor: color.black, nag: PgnNAG.Black_has_a_moderate_space_advantage },
+    { annotation: '⟳', activeColor: color.white, nag: PgnNAG.White_has_a_moderate_time_development_advantage },
+    { annotation: '@', activeColor: color.white, nag: PgnNAG.White_has_a_moderate_time_development_advantage },
+    { annotation: '⟳', activeColor: color.black, nag: PgnNAG.Black_has_a_moderate_time_development_advantage },
+    { annotation: '@', activeColor: color.black, nag: PgnNAG.Black_has_a_moderate_time_development_advantage },
+    { annotation: '↑', activeColor: color.white, nag: PgnNAG.White_has_the_initiative },
+    { annotation: '|^', activeColor: color.white, nag: PgnNAG.White_has_the_initiative },
+    { annotation: '↑', activeColor: color.black, nag: PgnNAG.Black_has_the_initiative },
+    { annotation: '|^', activeColor: color.black, nag: PgnNAG.Black_has_the_initiative },
+    { annotation: '→', activeColor: color.white, nag: PgnNAG.White_has_the_attack },
+    { annotation: '->', activeColor: color.white, nag: PgnNAG.White_has_the_attack },
+    { annotation: '→', activeColor: color.black, nag: PgnNAG.Black_has_the_attack },
+    { annotation: '->', activeColor: color.black, nag: PgnNAG.Black_has_the_attack },
+    { annotation: '~/=', activeColor: color.white, nag: PgnNAG.White_has_sufficient_compensation_for_material_deficit },
+    { annotation: '~/=', activeColor: color.black, nag: PgnNAG.Black_has_sufficient_compensation_for_material_deficit },
+    { annotation: '=/∞', activeColor: color.white, nag: PgnNAG.White_has_more_than_adequate_compensation_for_material_deficit },
+    { annotation: '=/∞', activeColor: color.black, nag: PgnNAG.Black_has_more_than_adequate_compensation_for_material_deficit },
+    { annotation: '⇆', activeColor: color.white, nag: PgnNAG.White_has_moderate_counterplay },
+    { annotation: '<=>', activeColor: color.white, nag: PgnNAG.White_has_moderate_counterplay },
+    { annotation: '⇆', activeColor: color.black, nag: PgnNAG.Black_has_moderate_counterplay },
+    { annotation: '<=>', activeColor: color.black, nag: PgnNAG.Black_has_moderate_counterplay },
+    { annotation: '⨁', activeColor: color.white, nag: PgnNAG.White_has_severe_time_control_pressure },
+    { annotation: '(+)', activeColor: color.white, nag: PgnNAG.White_has_severe_time_control_pressure },
+    { annotation: '⨁', activeColor: color.black, nag: PgnNAG.Black_has_severe_time_control_pressure },
+    { annotation: '(+)', activeColor: color.black, nag: PgnNAG.Black_has_severe_time_control_pressure },
+    // special annotations by some PGN Software (none standard)
+    { annotation: '∆', nag: PgnNAG.With_the_idea },
+    { annotation: '/\\', nag: PgnNAG.With_the_idea },
+    { annotation: '∇', nag: PgnNAG.Aimed_against },
+    { annotation: '\\/', nag: PgnNAG.Aimed_against },
+    { annotation: '⌓', nag: PgnNAG.Better_is },
+    { annotation: '>=', nag: PgnNAG.Better_is },
+    { annotation: '<=', nag: PgnNAG.Worse_is },
+    { annotation: '==', nag: PgnNAG.Equivalent_is },
+    { annotation: 'RR', nag: PgnNAG.Editorial_comment },
+    { annotation: 'N', nag: PgnNAG.Novelty },
+
+]
+
+
+// Evaluations that are part of the move token
 export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[] = [
     { eval: ChessMoveEvaluation.blunder, nag: PgnNAG.very_poor_move },
     { eval: ChessMoveEvaluation.mistake, nag: PgnNAG.poor_move },
@@ -874,7 +1095,8 @@ export const mapMoveEvaluation2NAG: { eval: ChessMoveEvaluation, nag: PgnNAG }[]
     { eval: ChessMoveEvaluation.brilliant, nag: PgnNAG.very_good_move },
 ]
 
-export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag: PgnNAG }[] = [
+// Evaluations that are seperated from move token
+export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, activeColor?: color, nag: PgnNAG }[] = [
     { eval: ChessPositionalEvaluation.equal, nag: PgnNAG.equal_chances_quiet_position },
     { eval: ChessPositionalEvaluation.slightAdvantageWhite, nag: PgnNAG.White_has_a_slight_advantage },
     { eval: ChessPositionalEvaluation.slightAdvantageBlack, nag: PgnNAG.Black_has_a_slight_advantage },
@@ -883,5 +1105,7 @@ export const mapPositionalEvaluation2NAG: { eval: ChessPositionalEvaluation, nag
     { eval: ChessPositionalEvaluation.decisiveAdvantageWhite, nag: PgnNAG.White_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.decisiveAdvantageBlack, nag: PgnNAG.Black_has_a_decisive_advantage },
     { eval: ChessPositionalEvaluation.unclear, nag: PgnNAG.unclear_position },
-    { eval: ChessPositionalEvaluation.counterPlay, nag: PgnNAG.White_has_moderate_counterplay },
+    // use activeColor 
+    { eval: ChessPositionalEvaluation.counterPlay, activeColor: color.white, nag: PgnNAG.White_has_moderate_counterplay },
+    { eval: ChessPositionalEvaluation.counterPlay, activeColor: color.black, nag: PgnNAG.Black_has_moderate_counterplay },
 ]

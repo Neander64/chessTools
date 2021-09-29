@@ -34,6 +34,16 @@ export interface IField {
     isHorizontalVertical(target: IField): offsetsEnum | undefined
 }
 
+// TODO complete list of validation for each type
+//export function validateFileType
+export function validateFieldNotation(field: fieldNotationType): boolean {
+    if (field.length != 2) return false
+    if ('abcdefgh'.indexOf(field[0]) == -1) return false
+    if ('12345678'.indexOf(field[1]) == -1) return false
+    return true
+}
+
+
 /*
 export interface IField {
     fromFieldIdx(file_: fileIdxType, rank_: rankIdxType): IField

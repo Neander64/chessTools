@@ -1,6 +1,7 @@
 //import * as yargs from 'yargs'
 //import * as fsp from "fs/promises"
 import { writeFile } from "fs"
+import { Fen, FenBoard } from "./chess-game/FEN/Fen"
 import { Pgn } from "./chess-game/PGN/ChessGame-PGN"
 //import * as os from "os"
 //import * as path from "path"
@@ -19,66 +20,9 @@ import { chessable } from "./fromText/chessable"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let data = [
-    // '[Event "Live Chess"]',
-    // '[Site "Chess.com"]',
-    // '[Date "2017.09.03"]',
-    // '[Round "?"]',
-    // '[White "player1"]',
-    // '[Black "player2"]',
-    // '[Result "1-0"]',
-    // '[WhiteElo "1367"]',
-    // '[BlackElo "1207"]',
-    // '[TimeControl "900+10"]',
-    // '[ECO "B01"]',
-    // '[Termination "player1 won by resignation"]',
-    // '[CurrentPosition "n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - - 0 25"]',
-    // '',
-    '1.e4 d5 {  abc  }  2.exd5  1-0'
-    /*
-    '[Event "FRG-ch International"] [Site "Dortmund"]',
-    '%[Site "Dortmund"]',
-    '[Date "1973.??.??"]',
-    '[Round "1"]',
-    '[White "Gerusel, Mathias"]',
-    '[Black "Andersson, Ulf"]',
-    '[Result "0-1"]',
-    '[WhiteElo "2415"]',
-    '[BlackElo "2535"]',
-    '[ECO "E39"]',
-    '',
-    '1.d4 Nf6 2.c4 RR { comment 1; } e6 = 3.Nc3 == Bb4 +/= 4.Qc2 =/+ c5 ∓ 5.dxc5 ~~ N O-O <=> 6.Bf4 <= Na6 => 7.a3 Bxc3+ 8.Qxc3 Ne4 ; abc 8.Qxc3 Ne4',
-    '9.Qc2 Qa5+ 10.Bd2 Nxd2 11.Qxd2 Qxd2+ 12.Kxd2 Nxc5 13.Rd1 a5 14.Kc2 Rd8 15.b3 d5',
-    '16.e3 b6 17.f3 Ba6 18.Nh3 Rac8 19.Kb2 dxc4 20.Bxc4 Bxc4 21.bxc4 Nd3+ 22.Kb3 h6',
-    '23.Nf4 Ne5 24.Rxd8+ Rxd8 25.Rc1 g5 26.Nh5 Kh7 27.Nf6+ Kg7 28.Ne4 f5 29.Nc3 Rd3',
-    '30.Rd1 a4+ 31.Kb4 Nc6+ 32.Kb5 Rxc3 33.Kxc6 Rxc4+ 34.Kxb6 Rc3 35.Ra1 Rxe3',
-    '36.Ra2 Re5 37.Rc2 Kf6 38.Rb2 h5 39.h3 h4 40.Rd2 Re3 41.Ra2 e5 42.Kb5 e4 43.Kxa4  0-1',
-    '',
-    '[Event "FRG-ch International"]',
-    '[Site "Dortmund"]',
-    '[Date "1973.??.??"]',
-    '[Round "1"]',
-    '[White "Marovic, Drazen"]',
-    '[Black "Keres, Paul"]',
-    '[Result "1/2-1/2"]',
-    '[WhiteElo "2465"]',
-    '[BlackElo "2600"]',
-    '[ECO "D34"]',
-    '',
-    '1.Nf3 d5 2.c4 e6 3.d4 c5 4.cxd5 exd5 5.Nc3 Nc6 6.g3 Nf6 7.Bg2 Be7 8.O-O O-O',
-    '9.dxc5 Bxc5 10.Na4 Be7 11.Be3 Re8 12.Rc1 Bg4 13.h3 Bf5 14.Nd4 Nxd4 15.Bxd4 Be4',
-    '16.Nc3 Bxg2 17.Kxg2 Ne4 18.e3 Bf8 19.Qd3 a6 20.Rcd1 Qd6 21.Ne2 Rad8 22.Nf4 Rd7',
-    '23.f3 Ng5 24.Rc1 Ne6 25.Nxe6 Qxe6 26.Rc3 g6 27.Rfc1 Bh6 28.Rc8 Re7 29.Rxe8+ Rxe8 { multi line',
-    'continued } 30.f4 Rc8 31.Rxc8+ { comment 11 } Qxc8 32.Bc3 ( 32.Bc4 ( 32.Bc1 Kg1 33.Nf3 ) Kg1 33.Ra1 ) Bg7!! = $10 { comment 12 }   1/2-1/2',
-    '',
-    */
-]
-let pgn = Pgn.load(data)
-//console.log(Pgn.load(Pgn.save(pgn)))
-console.log(Pgn.save(pgn))
-let pgn2 = Pgn.load(Pgn.save(pgn))
-console.log(Pgn.save(pgn2))
-
+let fen = new Fen()
+fen.load('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R2BQ3RK1 b - a3 1 25')
+console.log(fen.isEnPassantPossible())
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)
 

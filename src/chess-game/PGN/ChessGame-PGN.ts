@@ -4,9 +4,10 @@ import { color, otherColor } from "../common/chess-color"
 import { gameHeaderDateType } from "../common/GameData"
 import { GameResult } from "../common/GameResult"
 import { ChessMoveEvaluation, ChessPositionalEvaluation } from "../common/MoveOnBoard"
+import { Fen } from "../FEN/Fen"
 
 // TODO use FEN as start position
-// TODO instead of throwing exceptions allow to use a log-file
+// TODO instead of throwing exceptions allow to use a log-file (maybe?)
 
 // Implementaton based on 
 //  http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
@@ -211,6 +212,7 @@ class PgnTags {
     TimeControl?: PgnTimeControl
     SetUp?: number
     FEN?: string
+    fen?: Fen
     Termination?: string
 
     Annotator?: string
@@ -292,7 +294,9 @@ class PgnTags {
                 if (+value == NaN) throw new PgnError('Tag SetUP invalid value')
                 this.SetUp = +value
                 break
-            case 'FEN': this.FEN = value
+            case 'FEN':
+                this.FEN = value
+                this.fen = new Fen(this.FEN)
                 break
             case 'Termination': this.Termination = value
                 break
@@ -303,6 +307,7 @@ class PgnTags {
                 break
             case 'PlyCount': this.PlyCount = value
                 break
+
             default:
                 this.otherTags.push({ name: name, value: value })
             //throw new PgnError('Invalid Tag name')
@@ -423,12 +428,16 @@ export class Pgn {
             result = result.concat(game.header.toStringArray())
             result.push('')
 
-            let lineStr = ''
-            //TODO use FEN to identify activeColor and first move number
-            genData.moveNumber = 1
-            genData.activeColor = color.white
+            if (game.header.FEN) {
+                genData.activeColor = game.header.fen?.activeColor!
+                genData.moveNumber = game.header.fen?.moveNumber!
+            }
+            else {
+                genData.moveNumber = 1
+                genData.activeColor = color.white
+            }
             genData.isFirstMoveAfterSomething = true
-            lineStr = this.addMoveSeq(game.moves, genData).trim() + ' ' + game.header.Result.result
+            let lineStr = this.addMoveSeq(game.moves, genData).trim() + ' ' + game.header.Result.result
             result = result.concat(this.chopString(lineStr, this.PGN_MAX_LINELEN))
         }
         return result

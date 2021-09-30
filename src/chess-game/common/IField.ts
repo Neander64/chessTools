@@ -3,7 +3,9 @@ import { offsetsEnum } from './offsetsEnum';
 
 
 export type fileType = string // a..h
+export const fileTypeDomain = 'abcdefgh'
 export type rankType = number // 1..8
+export const rankTypeDomain = '12345678'
 export type fieldNType = { file: fileType, rank: rankType }
 export type fileIdxType = number // 0:a..7:h 
 export type rankIdxType = number // 0:8..7:1
@@ -38,8 +40,8 @@ export interface IField {
 //export function validateFileType
 export function validateFieldNotation(field: fieldNotationType): boolean {
     if (field.length != 2) return false
-    if ('abcdefgh'.indexOf(field[0]) == -1) return false
-    if ('12345678'.indexOf(field[1]) == -1) return false
+    if (fileTypeDomain.indexOf(field[0]) == -1) return false
+    if (rankTypeDomain.indexOf(field[1]) == -1) return false
     return true
 }
 

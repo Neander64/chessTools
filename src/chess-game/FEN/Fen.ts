@@ -113,8 +113,9 @@ export class Fen {
 
     // TODO allow call-back function
 
-    constructor() {
+    constructor(fen?: string) {
         this.clear()
+        if (fen) this.load(fen)
     }
     isEnPassantPossible(): boolean {
         return typeof this.enPassantField !== 'undefined'
@@ -146,11 +147,11 @@ export class Fen {
 
         //3. castle options
         if (fenTokens[2].length < 1 || fenTokens[2].length > 4) throw new FenError('fen.load(): castle option invalid. length:' + fenTokens[2].length)
-        this.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
-        this.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
-        this.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
-        this.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
-        let hasCastleOption = (this.canCastleShortWhite && this.canCastleLongWhite && this.canCastleShortBlack && this.canCastleLongBlack)
+        this.canCastleShortWhite = (fenTokens[2].indexOf('K') != -1)
+        this.canCastleLongWhite = (fenTokens[2].indexOf('Q') != -1)
+        this.canCastleShortBlack = (fenTokens[2].indexOf('k') != -1)
+        this.canCastleLongBlack = (fenTokens[2].indexOf('q') != -1)
+        let hasCastleOption = (this.canCastleShortWhite || this.canCastleLongWhite || this.canCastleShortBlack || this.canCastleLongBlack)
         if (!hasCastleOption && fenTokens[2] != '-') throw new FenError('fen.load(): no castle option. Expected "-", got:' + fenTokens[2])
 
         //4. en passant

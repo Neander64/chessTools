@@ -8,12 +8,13 @@ import { PawnMovesRaw } from './pieces/PawnMovesRaw'
 import { ChessBoardRepresentation } from './representation/ChessBoardRepresentation'
 import { Field } from "../common/Field"
 import { pieceOnBoard } from "../common/pieceOnBoard"
-import { IField } from "../common/IField"
+import { fileTypeDomain, IField, rankTypeDomain } from "../common/IField"
 import { offsetsEnum } from '../common/offsetsEnum'
 import { AttackedFields } from './AttackedFields'
 import { MoveOnBoard } from '../common/MoveOnBoard'
 import { GameResult, gameResult } from '../common/GameResult'
 import { ChessGameStatusData } from '../common/ChessGameStatusData'
+import { Fen } from '../FEN/Fen'
 
 // TODO remove, it's superfluid now
 function getColIdx(str: string, idx: number = 0): number {
@@ -72,33 +73,14 @@ export class ChessBoard {
     loadFEN(fen: string) {
         try {
             this.clearBoard()
-            let fenTokens = fen.split(/\s+/)
-            if (fenTokens.length !== 6) throw new Error('loadFEN(): unexpected number of FEN-token')
-            //1. piece positions
-            let boardRows = fenTokens[0].split('/')
-            if (boardRows.length !== 8) throw new Error('loadFEN(): unexpected number of rows in position')
-            for (let rank = 0; rank < 8; rank++) {
-                const fenRow = boardRows[rank]
-                if (fenRow.length > 8 || fenRow.length === 0) throw new Error('loadFEN(): unexpected number of columns in position')
-                let file = 0
-                for (let p = 0; p < fenRow.length; p++) {
-                    let digit = parseInt(fenRow[p], 10)
-                    if (isNaN(digit)) { // it's a piece
-                        let piece = charFENToPiece(fenRow[p])
-                        if (typeof piece == 'undefined') throw new Error('loadFEN(): unexpected piece')
-                        if (file >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
-                        this.board.setPieceI(piece, file++, rank)
-                    }
-                    else {
-                        if (digit <= 0 || digit > 8 - file) throw new Error('loadFEN(): unexpected digit in position')
-                        while (digit > 0 && file < 8) {
-                            this.board.setPieceI(Piece.none(), file++, rank)
-                            digit--
-                        }
-                    }
+            let fen_ = new Fen(fen)
+            for (let rank of rankTypeDomain) {
+                for (let file of fileTypeDomain) {
+                    let fen_piece = fen_.fenBoard.getPiece(file + rank) || ''
+                    let piece = charFENToPiece(fen_piece)
+                    this.board.setPiece(piece, Field.fromNotation(file + rank))
                 }
             }
-            // board validation
             let blackPieces = this.board.currentPiecesOnBoard(color.black)
             let blackKings = blackPieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.black))
             if (blackKings.length != 1) throw new Error('loadFEN(): unexpected number of black kings')
@@ -113,39 +95,97 @@ export class ChessBoard {
             let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white))
             if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns')
 
-            //2. player to move next
-            switch (fenTokens[1]) {
-                case 'w': this._gameStatus.nextMoveBy = color.white; break
-                case 'b': this._gameStatus.nextMoveBy = color.black; break
-                default: throw new Error('loadFEN(): illegal player to move')
-            }
+            this._gameStatus.nextMoveBy = fen_.activeColor
             this._gameStatus.firstMoveBy = this._gameStatus.nextMoveBy
 
-            //3. castle options
-            this._gameStatus.castleFlags.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
-            this._gameStatus.castleFlags.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
-            this._gameStatus.castleFlags.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
-            this._gameStatus.castleFlags.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
-            // TODO check if none specified must be '-' (strict mode)
+            this._gameStatus.castleFlags.canCastleShortWhite = fen_.canCastleShortWhite
+            this._gameStatus.castleFlags.canCastleLongWhite = fen_.canCastleLongWhite
+            this._gameStatus.castleFlags.canCastleShortBlack = fen_.canCastleShortBlack
+            this._gameStatus.castleFlags.canCastleLongBlack = fen_.canCastleLongBlack
 
-            //4. en passant
-            //this._data.enPassantPossible = (fenTokens[3] !== '-')
-            if (fenTokens[3] !== '-') {
-                if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
-                this._gameStatus.enPassantField = this.board.fieldFromNotation(fenTokens[3])
-            }
-            else this._gameStatus.enPassantField = undefined
+            if (fen_.isEnPassantPossible())
+                this._gameStatus.enPassantField = this.board.fieldFromNotation(fen_.enPassantField!)
 
-            //5. number of half-moves since last capture or pawn move
-            this._gameStatus.halfMoves50 = parseInt(fenTokens[4], 10)
-            this._gameStatus.firstHalfMoves50 = this._gameStatus.halfMoves50
-            if (isNaN(this._gameStatus.halfMoves50)) throw new Error('loadFEN(): number of half-moves NAN')
+            this._gameStatus.halfMoves50 = fen_.plyCount
+            this._gameStatus.firstHalfMoves50 = fen_.plyCount
 
-            //6. next move number
-            this._gameStatus.moveNumber = parseInt(fenTokens[5], 10)
-            this._gameStatus.firstMoveNumber = this._gameStatus.moveNumber
-            if (isNaN(this._gameStatus.moveNumber)) throw new Error('loadFEN(): moveNumber NAN')
-            if (this._gameStatus.moveNumber <= 0) throw new Error('loadFEN(): moveNumber negative/zero')
+            this._gameStatus.moveNumber = fen_.moveNumber
+            this._gameStatus.firstMoveNumber = fen_.moveNumber
+
+            // let fenTokens = fen.split(/\s+/)
+            // if (fenTokens.length !== 6) throw new Error('loadFEN(): unexpected number of FEN-token')
+            // //1. piece positions
+            // let boardRows = fenTokens[0].split('/')
+            // if (boardRows.length !== 8) throw new Error('loadFEN(): unexpected number of rows in position')
+            // for (let rank = 0; rank < 8; rank++) {
+            //     const fenRow = boardRows[rank]
+            //     if (fenRow.length > 8 || fenRow.length === 0) throw new Error('loadFEN(): unexpected number of columns in position')
+            //     let file = 0
+            //     for (let p = 0; p < fenRow.length; p++) {
+            //         let digit = parseInt(fenRow[p], 10)
+            //         if (isNaN(digit)) { // it's a piece
+            //             let piece = charFENToPiece(fenRow[p])
+            //             if (typeof piece == 'undefined') throw new Error('loadFEN(): unexpected piece')
+            //             if (file >= 8) throw new Error('loadFEN(): too many pieces/columns in row')
+            //             this.board.setPieceI(piece, file++, rank)
+            //         }
+            //         else {
+            //             if (digit <= 0 || digit > 8 - file) throw new Error('loadFEN(): unexpected digit in position')
+            //             while (digit > 0 && file < 8) {
+            //                 this.board.setPieceI(Piece.none(), file++, rank)
+            //                 digit--
+            //             }
+            //         }
+            //     }
+            // }
+            // // board validation
+            // let blackPieces = this.board.currentPiecesOnBoard(color.black)
+            // let blackKings = blackPieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.black))
+            // if (blackKings.length != 1) throw new Error('loadFEN(): unexpected number of black kings')
+            // //this._blackKing = blackKings[0]
+            // let blackPawns = blackPieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.black))
+            // if (blackPawns.length > 8) throw new Error('loadFEN(): too many black pawns')
+
+            // let whitePieces = this.board.currentPiecesOnBoard(color.white)
+            // let whiteKings = whitePieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.white))
+            // if (whiteKings.length != 1) throw new Error('loadFEN(): unexpected number of white kings')
+            // //this._whiteKing = whiteKings[0]
+            // let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white))
+            // if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns')
+
+            // //2. player to move next
+            // switch (fenTokens[1]) {
+            //     case 'w': this._gameStatus.nextMoveBy = color.white; break
+            //     case 'b': this._gameStatus.nextMoveBy = color.black; break
+            //     default: throw new Error('loadFEN(): illegal player to move')
+            // }
+            // this._gameStatus.firstMoveBy = this._gameStatus.nextMoveBy
+
+            // //3. castle options
+            // this._gameStatus.castleFlags.canCastleShortWhite = (fenTokens[2].indexOf('K') > -1)
+            // this._gameStatus.castleFlags.canCastleLongWhite = (fenTokens[2].indexOf('Q') > -1)
+            // this._gameStatus.castleFlags.canCastleShortBlack = (fenTokens[2].indexOf('k') > -1)
+            // this._gameStatus.castleFlags.canCastleLongBlack = (fenTokens[2].indexOf('q') > -1)
+            // // TODO check if none specified must be '-' (strict mode)
+
+            // //4. en passant
+            // //this._data.enPassantPossible = (fenTokens[3] !== '-')
+            // if (fenTokens[3] !== '-') {
+            //     if (fenTokens[3].length != 2) throw new Error('loadFEN(): en passant unexpected format')
+            //     this._gameStatus.enPassantField = this.board.fieldFromNotation(fenTokens[3])
+            // }
+            // else this._gameStatus.enPassantField = undefined
+
+            // //5. number of half-moves since last capture or pawn move
+            // this._gameStatus.halfMoves50 = parseInt(fenTokens[4], 10)
+            // this._gameStatus.firstHalfMoves50 = this._gameStatus.halfMoves50
+            // if (isNaN(this._gameStatus.halfMoves50)) throw new Error('loadFEN(): number of half-moves NAN')
+
+            // //6. next move number
+            // this._gameStatus.moveNumber = parseInt(fenTokens[5], 10)
+            // this._gameStatus.firstMoveNumber = this._gameStatus.moveNumber
+            // if (isNaN(this._gameStatus.moveNumber)) throw new Error('loadFEN(): moveNumber NAN')
+            // if (this._gameStatus.moveNumber <= 0) throw new Error('loadFEN(): moveNumber negative/zero')
 
             this._gameStatus.gameOver = this.isGameOver()
         }

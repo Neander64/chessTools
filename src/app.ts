@@ -21,8 +21,8 @@ import { chessable } from "./fromText/chessable"
 //console.log(JSON.stringify(args));
 
 let fen = new Fen()
-fen.load('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R2BQ3RK1 b - a3 1 25')
-console.log(fen.isEnPassantPossible())
+fen.load('4k3/8/8/8/8/8/8/4K2R b - b3 4 50')
+console.log(fen.canCastleShortWhite)
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)
 

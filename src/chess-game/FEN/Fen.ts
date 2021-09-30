@@ -13,30 +13,38 @@ export class FenBoard {
     }
     setBoard(fenBoard: string) {
         let boardRows = fenBoard.split('/')
-        if (boardRows.length !== 8) throw new FenError('FenBoard.setByFEN(): unexpected number of rows in position. Expected 8, got:' + boardRows.length)
+        if (boardRows.length !== 8) throw new FenError('unexpected number of rows in position. Expected 8, got:' + boardRows.length)
         //this._boardRows = boardRows
 
+        let kingCountBlack = 0
+        let kingCountWhite = 0
         for (let rankIdx = 0; rankIdx < 8; rankIdx++) {
             const fenRow = boardRows[rankIdx]
-            if (fenRow.length > 8 || fenRow.length === 0) throw new FenError('loadFEN(): unexpected number of columns in position, got:' + fenRow.length)
+            if (fenRow.length > 8 || fenRow.length === 0) throw new FenError('unexpected number of columns in position, got:' + fenRow.length + ', row' + fenRow)
             let fileIdx = 0
             for (let p = 0; p < fenRow.length; p++) {
-                let digit = parseInt(fenRow[p], 10)
+                let digit = +fenRow[p]
+                if (fileIdx >= 8) throw new FenError('too many pieces/columns in row:' + fenRow)
                 if (isNaN(digit)) { // it's a piece
-                    if (!this.validatePiece(fenRow[p])) throw new FenError('loadFEN(): invalid piece, got:' + fenRow[p])
-                    if (fileIdx >= 8) throw new FenError('loadFEN(): too many pieces/columns in row')
+                    if (!this.validatePiece(fenRow[p])) throw new FenError('invalid piece, got:' + fenRow[p])
+                    if (fenRow[p] == 'k') kingCountBlack++
+                    if (fenRow[p] == 'K') kingCountWhite++
                     this._board[rankIdx][fileIdx++] = fenRow[p]
                 }
                 else { // number of empty fields
-                    if (digit <= 0 || digit > 8 - fileIdx) throw new FenError('loadFEN(): unexpected digit in position, got:' + digit)
+                    if (digit <= 0 || digit > 8 - fileIdx) throw new FenError('unexpected digit in position, got:' + digit)
                     while (digit > 0 && fileIdx < 8) {
                         this._board[rankIdx][fileIdx++] = FenBoard.EMPTY_FIELD
                         digit--
                     }
                 }
             }
+            if (fileIdx < 8) throw new FenError('not enough pieces/columns in elements :' + fileIdx + ', row:' + fenRow)
         }
-        // TODO validate number of kings and pawns
+        // validate number of kings (could do futher checks, but I don't want to actually prevent artificial positions, like with 9 pawns, 10 Queens etc.)
+        if (kingCountBlack != 1) throw new FenError('unexpected number of black kings, got:' + kingCountBlack)
+        if (kingCountWhite != 1) throw new FenError('nexpected number of white kings, got:' + kingCountWhite)
+
     }
     getBoard(): string {
         let fen = ''
@@ -133,7 +141,7 @@ export class Fen {
     }
     load(fen: string): void {
         let fenTokens = fen.split(/\s+/)
-        if (fenTokens.length !== 6) throw new FenError('fen.load(): unexpected number of FEN-token. Expected 6, got:' + fenTokens.length)
+        if (fenTokens.length !== 6) throw new FenError('unexpected number of FEN-token. Expected 6, got:' + fenTokens.length)
 
         //1. piece positions
         this.fenBoard.setBoard(fenTokens[0])
@@ -142,32 +150,32 @@ export class Fen {
         switch (fenTokens[1]) {
             case 'w': this.activeColor = color.white; break
             case 'b': this.activeColor = color.black; break
-            default: throw new FenError('fen.load(): illegal player to move. should be "w" or "b", got:' + fenTokens[1])
+            default: throw new FenError('illegal player to move. should be "w" or "b", got:' + fenTokens[1])
         }
 
         //3. castle options
-        if (fenTokens[2].length < 1 || fenTokens[2].length > 4) throw new FenError('fen.load(): castle option invalid. length:' + fenTokens[2].length)
+        if (fenTokens[2].length < 1 || fenTokens[2].length > 4) throw new FenError('castle option invalid. length:' + fenTokens[2].length)
         this.canCastleShortWhite = (fenTokens[2].indexOf('K') != -1)
         this.canCastleLongWhite = (fenTokens[2].indexOf('Q') != -1)
         this.canCastleShortBlack = (fenTokens[2].indexOf('k') != -1)
         this.canCastleLongBlack = (fenTokens[2].indexOf('q') != -1)
         let hasCastleOption = (this.canCastleShortWhite || this.canCastleLongWhite || this.canCastleShortBlack || this.canCastleLongBlack)
-        if (!hasCastleOption && fenTokens[2] != '-') throw new FenError('fen.load(): no castle option. Expected "-", got:' + fenTokens[2])
+        if (!hasCastleOption && fenTokens[2] != '-') throw new FenError('no castle option. Expected "-", got:' + fenTokens[2])
 
         //4. en passant
         if (fenTokens[3] !== '-') {
-            if (!Fen.validateEnpassantField(fenTokens[3], this.activeColor)) throw new FenError('loadFEN(): en passant unexpected format. got:' + fenTokens[3])
+            if (!Fen.validateEnpassantField(fenTokens[3], this.activeColor)) throw new FenError('en passant unexpected format. got:' + fenTokens[3])
             this.enPassantField = fenTokens[3]
         }
         else this.enPassantField = undefined
 
         //5. number of half-moves since last capture or pawn move
         this.plyCount = +fenTokens[4]
-        if (isNaN(this.plyCount) || this.plyCount < 0) throw new FenError('loadFEN(): number of half-moves NAN, got:' + fenTokens[4])
+        if (isNaN(this.plyCount) || this.plyCount < 0) throw new FenError('number of half-moves NAN, got:' + fenTokens[4])
 
         //6. next move number
         this.moveNumber = +fenTokens[5]
-        if (isNaN(this.moveNumber) || this.moveNumber <= 0) throw new FenError('loadFEN(): moveNumber invalid, got:' + fenTokens[5])
+        if (isNaN(this.moveNumber) || this.moveNumber <= 0) throw new FenError('moveNumber invalid, got:' + fenTokens[5])
     }
 
     private static validateEnpassantField(field: string, activeColor: color): boolean {

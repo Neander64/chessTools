@@ -81,19 +81,19 @@ export class ChessBoard {
                     this.board.setPiece(piece, Field.fromNotation(file + rank))
                 }
             }
-            let blackPieces = this.board.currentPiecesOnBoard(color.black)
-            let blackKings = blackPieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.black))
-            if (blackKings.length != 1) throw new Error('loadFEN(): unexpected number of black kings')
-            //this._blackKing = blackKings[0]
-            let blackPawns = blackPieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.black))
-            if (blackPawns.length > 8) throw new Error('loadFEN(): too many black pawns')
+            // let blackPieces = this.board.currentPiecesOnBoard(color.black)
+            // let blackKings = blackPieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.black))
+            // if (blackKings.length != 1) throw new Error('loadFEN(): unexpected number of black kings')
+            // //this._blackKing = blackKings[0]
+            // let blackPawns = blackPieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.black))
+            // if (blackPawns.length > 8) throw new Error('loadFEN(): too many black pawns')
 
-            let whitePieces = this.board.currentPiecesOnBoard(color.white)
-            let whiteKings = whitePieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.white))
-            if (whiteKings.length != 1) throw new Error('loadFEN(): unexpected number of white kings')
-            //this._whiteKing = whiteKings[0]
-            let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white))
-            if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns')
+            // let whitePieces = this.board.currentPiecesOnBoard(color.white)
+            // let whiteKings = whitePieces.filter(val => (val.piece.kind == pieceKind.King && val.piece.color == color.white))
+            // if (whiteKings.length != 1) throw new Error('loadFEN(): unexpected number of white kings')
+            // //this._whiteKing = whiteKings[0]
+            // let whitePawns = whitePieces.filter(val => (val.piece.kind == pieceKind.Pawn && val.piece.color == color.white))
+            // if (whitePawns.length > 8) throw new Error('loadFEN(): too many white pawns')
 
             this._gameStatus.nextMoveBy = fen_.activeColor
             this._gameStatus.firstMoveBy = this._gameStatus.nextMoveBy
@@ -196,6 +196,7 @@ export class ChessBoard {
     }
 
     getFEN(): string {
+        // TODO use FEN class
         let fen = ""
 
         //1. piece positions

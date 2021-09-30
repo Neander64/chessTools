@@ -2,7 +2,10 @@
 //import * as fsp from "fs/promises"
 import { writeFile } from "fs"
 import { Fen, FenBoard } from "./chess-game/FEN/Fen"
-import { Pgn } from "./chess-game/PGN/ChessGame-PGN"
+import { ChessGamePgn } from "./chess-game/PGN/ChessGame-PGN"
+import { PgnDatabase } from "./chess-game/PGN/PgnDatabase"
+import { PgnDate } from "./chess-game/PGN/PgnDate"
+import { PgnTimeControl } from "./chess-game/PGN/PgnTimeControl"
 //import * as os from "os"
 //import * as path from "path"
 //import * as chessGame from "./chess-game"
@@ -20,9 +23,9 @@ import { chessable } from "./fromText/chessable"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let fen = new Fen()
-fen.load('4k3/8/8/8/8/8/8/4K2R b - b3 4 50')
-console.log(fen.canCastleShortWhite)
+let pgnDate = new PgnTimeControl()
+pgnDate.set('400:-')
+console.log(pgnDate.get())
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)
 

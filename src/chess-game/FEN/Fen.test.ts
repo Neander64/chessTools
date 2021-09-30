@@ -32,13 +32,16 @@ describe('Testing class Fen & FenBoard', () => {
         expect(fb.getPiece('h9')).toBe(undefined)
 
 
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1/abc')).toThrowErrorMatchingInlineSnapshot(`"FenBoard.setByFEN(): unexpected number of rows in position. Expected 8, got:9"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1')).toThrowErrorMatchingInlineSnapshot(`"FenBoard.setByFEN(): unexpected number of rows in position. Expected 8, got:7"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1RRRRR')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected number of columns in position, got:13"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BD1RK1')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): invalid piece, got:D"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ2RK1')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected digit in position, got:1"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/9/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected digit in position, got:9"`)
-        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R2BQ3RK1')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): too many pieces/columns in row"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1/abc')).toThrowErrorMatchingInlineSnapshot(`"unexpected number of rows in position. Expected 8, got:9"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1')).toThrowErrorMatchingInlineSnapshot(`"unexpected number of rows in position. Expected 8, got:7"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1RRRRR')).toThrowErrorMatchingInlineSnapshot(`"unexpected number of columns in position, got:13, rowR1BQ1RK1RRRRR"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R2BQ1')).toThrowErrorMatchingInlineSnapshot(`"not enough pieces/columns in elements :6, row:R2BQ1"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BD1RK1')).toThrowErrorMatchingInlineSnapshot(`"invalid piece, got:D"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R1BQ2RK1')).toThrowErrorMatchingInlineSnapshot(`"too many pieces/columns in row:R1BQ2RK1"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/9/Pp1PP3/3B1N2/1PPN1PP1/R1BQ1RK1')).toThrowErrorMatchingInlineSnapshot(`"unexpected digit in position, got:9"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PP1/R2BQ3RK1')).toThrowErrorMatchingInlineSnapshot(`"too many pieces/columns in row:R2BQ3RK1"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPK1PPP/R1BQ1RK1')).toThrowErrorMatchingInlineSnapshot(`"nexpected number of white kings, got:2"`)
+        expect(() => fb.setBoard('rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1k2/1PPN1PPP/R1BQ1RK1')).toThrowErrorMatchingInlineSnapshot(`"unexpected number of black kings, got:2"`)
     })
 
     test('testing Fen', () => {
@@ -88,14 +91,14 @@ describe('Testing class Fen & FenBoard', () => {
         expect(fen.isEnPassantPossible()).toBe(true)
         expect(fen.enPassantField).toBe('a6')
 
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 g - a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"fen.load(): illegal player to move. should be \\"w\\" or \\"b\\", got:g"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1 25 abc')).toThrowErrorMatchingInlineSnapshot(`"fen.load(): unexpected number of FEN-token. Expected 6, got:7"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b qkKQq a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"fen.load(): castle option invalid. length:5"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b a a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"fen.load(): no castle option. Expected \\"-\\", got:a"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a9 1 25')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): en passant unexpected format. got:a9"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a4 1 25')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): en passant unexpected format. got:a4"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1 2x5')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): moveNumber invalid, got:2x5"`)
-        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1d 25')).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): number of half-moves NAN, got:1d"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 g - a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"illegal player to move. should be \\"w\\" or \\"b\\", got:g"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1 25 abc')).toThrowErrorMatchingInlineSnapshot(`"unexpected number of FEN-token. Expected 6, got:7"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b qkKQq a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"castle option invalid. length:5"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b a a3 1 25')).toThrowErrorMatchingInlineSnapshot(`"no castle option. Expected \\"-\\", got:a"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a9 1 25')).toThrowErrorMatchingInlineSnapshot(`"en passant unexpected format. got:a9"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a4 1 25')).toThrowErrorMatchingInlineSnapshot(`"en passant unexpected format. got:a4"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1 2x5')).toThrowErrorMatchingInlineSnapshot(`"moveNumber invalid, got:2x5"`)
+        expect(() => fen.load('n4rk1/4p1b1/4p1pp/1b2N3/3P4/1BQ1B1N1/5PPP/6K1 b - a3 1d 25')).toThrowErrorMatchingInlineSnapshot(`"number of half-moves NAN, got:1d"`)
 
 
     })

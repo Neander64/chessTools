@@ -1655,17 +1655,17 @@ Array [
 
   test('testing illegal FEN', () => {
     let cb = new chessBoard.ChessBoard()
-    expect(() => cb.loadFEN("")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected number of black kings"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bpp/bppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"FenBoard.setByFEN(): unexpected number of rows in position. Expected 8, got:9"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bpppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected number of columns in position, got:9"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/9/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected digit in position, got:9"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/0/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected digit in position, got:0"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 g kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"fen.load(): illegal player to move. should be \\"w\\" or \\"b\\", got:g"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq ee5 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): en passant unexpected format. got:ee5"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPK1PPP/R1BQ1RK1 b kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected number of white kings"`)
-    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1k2/1PPN1PPP/R1BQ1RK1 b kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): unexpected number of black kings"`)
-    expect(() => cb.loadFEN("rnbqkbnp/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): too many black pawns"`)
-    expect(() => cb.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RPBQKBNR w KQkq - 0 1")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): too many white pawns"`)
+    expect(() => cb.loadFEN("")).toThrowErrorMatchingInlineSnapshot(`"getKingField(): unexpected number of kings (0)"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bpp/bppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"unexpected number of rows in position. Expected 8, got:9"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bpppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"unexpected number of columns in position, got:9, row1bpppbppp"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/9/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"unexpected digit in position, got:9"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/0/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"unexpected digit in position, got:0"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 g kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"illegal player to move. should be \\"w\\" or \\"b\\", got:g"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPN1PPP/R1BQ1RK1 w kq ee5 4 8")).toThrowErrorMatchingInlineSnapshot(`"en passant unexpected format. got:ee5"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1N2/1PPK1PPP/R1BQ1RK1 b kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"nexpected number of white kings, got:2"`)
+    expect(() => cb.loadFEN("rn1qk2r/1bppbppp/p3pn2/8/Pp1PP3/3B1k2/1PPN1PPP/R1BQ1RK1 b kq - 4 8")).toThrowErrorMatchingInlineSnapshot(`"unexpected number of black kings, got:2"`)
+    //expect(() => cb.loadFEN("rnbqkbnp/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): too many black pawns"`)
+    //expect(() => cb.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RPBQKBNR w KQkq - 0 1")).toThrowErrorMatchingInlineSnapshot(`"loadFEN(): too many white pawns"`)
 
     // empty board after error
     expect(cb.toASCII()).toMatchInlineSnapshot(`

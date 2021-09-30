@@ -1,6 +1,6 @@
-import { ChessBoard } from './chess-board/ChessBoard';
-import { GameHeaderData } from './common/GameData';
-import { Pgn } from './PGN/ChessGame-PGN';
+import { ChessBoard } from './chess-board/ChessBoard'
+import { GameHeaderData } from './common/GameData'
+import { ChessGamePgn } from './PGN/ChessGame-PGN'
 
 export class ChessGame {
     gameHeaderData: GameHeaderData
@@ -18,6 +18,6 @@ export class ChessGame {
     }
 
     get PGN(): string[] {
-        return Pgn.generate(this, this.optionsPGN)
+        return ChessGamePgn.generate(this, this.optionsPGN)
     }
 }

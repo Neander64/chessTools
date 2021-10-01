@@ -1,7 +1,8 @@
 //import * as yargs from 'yargs'
 //import * as fsp from "fs/promises"
 import { writeFile } from "fs"
-import { Fen, FenBoard } from "./chess-game/FEN/Fen"
+import { Fen } from "./chess-game/FEN/Fen"
+import { FenBoard } from "./chess-game/FEN/FenBoard"
 import { ChessGamePgn } from "./chess-game/PGN/ChessGame-PGN"
 import { PgnDatabase } from "./chess-game/PGN/PgnDatabase"
 import { PgnDate } from "./chess-game/PGN/PgnDate"

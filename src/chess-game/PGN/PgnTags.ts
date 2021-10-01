@@ -83,6 +83,7 @@ export class PgnTags {
                 break
             case 'Result': this.Result.result = value
                 break
+
             case 'WhiteTitle': this.WhiteTitle = value
                 break
             case 'BlackTitle': this.BlackTitle = value
@@ -94,6 +95,10 @@ export class PgnTags {
             case 'WhiteUSCF': this.WhiteUSCF = value
                 break
             case 'BlackUSCF': this.BlackUSCF = value
+                break
+            case 'WhiteNA': this.WhiteNA = value
+                break
+            case 'BlackNA': this.BlackNA = value
                 break
             case 'WhiteType': this.WhiteType = value
                 break
@@ -122,12 +127,19 @@ export class PgnTags {
             case 'NIC': this.NIC = value
                 break
 
+            case 'Time': this.Time = value
+                break
+            case 'UTCTime': this.UTCTime = value
+                break
+            case 'UTCDate': this.UTCDate = value
+                break
+
             case 'TimeControl':
                 this.TimeControl = new PgnTimeControl()
                 this.TimeControl.set(value)
                 break
             case 'SetUp':
-                if (+value == NaN)
+                if (isNaN(+value))
                     throw new PgnError('Tag SetUP invalid value')
                 this.SetUp = +value
                 break

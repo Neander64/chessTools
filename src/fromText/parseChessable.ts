@@ -1,6 +1,6 @@
 import { ChessGame } from "../chess-game/ChessGame"
 import { ChessMoveEvaluation, ChessPositionalEvaluation, MoveOnBoard } from "../chess-game/common/MoveOnBoard"
-import { lineParser, parseResult } from "../parser/lineParser"
+import { lineParser, parseResult } from "../util/parser/lineParser"
 
 // a parsing module to scan texts that i have on chessable.
 // seems like it could be used to read other text files as well
@@ -153,7 +153,7 @@ export class parseChessable {
                     throw new ScanValidationError('Syntax Error in line')
                 }
             }
-            while (!parser.endOfString);
+            while (!parser.endOfString)
             this._scanData.currentMoveNumber = this._scanData.whiteNext ? moveNum : moveNum - 1
         } catch (e) {
             if (e instanceof ScanValidationError) {
@@ -162,7 +162,7 @@ export class parseChessable {
                 // restore color to move
                 this._scanData.whiteNext = oldWhiteNextValue
             }
-            else throw e; // was not me
+            else throw e // was not me
         }
         // append new line tokens
         this._scanData.tokens = this._scanData.tokens.concat(lineTokens)
@@ -172,7 +172,7 @@ export class parseChessable {
         let lineTokens: tokenType[] = []
         if (this._scanData.whiteNext) {
             lineTokens.push({ key: Token.WhitesMove, value: '' })
-            lineTokens = lineTokens.concat(this.scanHalfMove(tokenParser));
+            lineTokens = lineTokens.concat(this.scanHalfMove(tokenParser))
             this._scanData.whiteNext = false
         }
         if (!tokenParser.endOfString) {
@@ -189,7 +189,7 @@ export class parseChessable {
     private scanHalfMove(tokenParser: lineParser): tokenType[] {
         // O-O|O-O-O|[<piece>][<col>|<row>][x]<col><row>[+|#][<move_eval>][<pos_eval>][N]
         //                         src          target
-        let lineTokens: tokenType[] = [];
+        let lineTokens: tokenType[] = []
         let r = tokenParser.parsingString(parseChessable.CASTLE_LONG)
         if (r.found) {
             lineTokens.push({ key: Token.CastleLong, value: '' })
@@ -200,7 +200,7 @@ export class parseChessable {
                 lineTokens.push({ key: Token.CastleShort, value: '' })
             }
             else {
-                let isPawn = true;
+                let isPawn = true
                 r = tokenParser.parsingCharSet(parseChessable.PIECE)
                 if (r.found) {
                     lineTokens.push({ key: Token.Piece, value: r.token || '' })
@@ -248,14 +248,14 @@ export class parseChessable {
             }
         }
         // '+' or '+-' ?
-        r = tokenParser.parsingString('+-', false);
+        r = tokenParser.parsingString('+-', false)
         if (!r.found) {
-            r = tokenParser.parsingChar(parseChessable.CHECK);
+            r = tokenParser.parsingChar(parseChessable.CHECK)
             if (r.found) {
                 lineTokens.push({ key: Token.Check, value: r.token || '' })
             }
             else {
-                r = tokenParser.parsingChar(parseChessable.MATE);
+                r = tokenParser.parsingChar(parseChessable.MATE)
                 if (r.found) {
                     lineTokens.push({ key: Token.Mate, value: r.token || '' })
                 }
@@ -281,14 +281,14 @@ export class parseChessable {
         }
 
         // handle Novelty (it's a bit tricky, since not unique)
-        r = tokenParser.parsingChar(parseChessable.NOVELTY, false); // peek, no shift
+        r = tokenParser.parsingChar(parseChessable.NOVELTY, false) // peek, no shift
         if (r.found) { // well, could be a novelty if the rest of the line is syntactical okay
-            let oldWhiteNextValue = this._scanData.whiteNext; // damn, 'global' value..
+            let oldWhiteNextValue = this._scanData.whiteNext // damn, 'global' value..
             try {
                 let restParser = new lineParser(tokenParser.restOfLine(false, r.parsePos))
                 if (restParser.endOfString) {
                     // Empty after N, this is a Novelty indicator
-                    r = tokenParser.parsingChar(parseChessable.NOVELTY);// consume char
+                    r = tokenParser.parsingChar(parseChessable.NOVELTY)// consume char
                     lineTokens.push({ key: Token.Novelty, value: '' })
                 }
                 else {
@@ -396,7 +396,7 @@ export class parseChessable {
                     }
                     break
                 case Token.MoveBlock: // ignore
-                    break;
+                    break
                 case Token.BlacksMove:
                     if (moveToken != '') {
                         let r = this._game.chessBoard.move(moveToken)
@@ -439,42 +439,42 @@ export class parseChessable {
                         positionalEvaluation = undefined
                         isNovelty = undefined
                     }
-                    break;
+                    break
                 case Token.CastleLong:
                     moveToken = 'O-O-O'
-                    break;
+                    break
                 case Token.CastleShort:
                     moveToken = 'O-O'
-                    break;
+                    break
                 case Token.Piece:
                     moveToken = token.value
-                    break;
+                    break
                 case Token.Source:
                     moveToken += token.value.trim()
-                    break;
+                    break
                 case Token.Target:
                     moveToken += token.value
-                    break;
+                    break
                 case Token.Captures: // ignore, Board keeps track of it
-                    break;
+                    break
                 case Token.Promotes:
                     moveToken += ('=' + token.value)
-                    break;
+                    break
                 case Token.Check:
                     moveToken += '+'
-                    break;
+                    break
                 case Token.Mate:
                     moveToken += '#'
-                    break;
+                    break
                 case Token.MoveEval:
                     moveEvaluation = MOVE_EVALS.find(x => x.str == token.value)?.id
-                    break;
+                    break
                 case Token.PositionalEval:
                     positionalEvaluation = POSITIONAL_EVALS.find(x => x.str == token.value)?.id
-                    break;
+                    break
                 case Token.Novelty:
                     isNovelty = true
-                    break;
+                    break
             }
         }
         if (moveToken != '') {

@@ -2,8 +2,8 @@ import { PgnGame } from "./PgnGame"
 
 
 export class PgnDatabase {
-    game: PgnGame[]
+    games: PgnGame[]
     constructor() {
-        this.game = []
+        this.games = []
     }
 }

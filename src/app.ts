@@ -4,6 +4,7 @@ import { writeFile } from "fs"
 import { Fen } from "./chess-game/FEN/Fen"
 import { FenBoard } from "./chess-game/FEN/FenBoard"
 import { ChessGamePgn } from "./chess-game/PGN/ChessGame-PGN"
+import { Pgn } from "./chess-game/PGN/Pgn"
 import { PgnDatabase } from "./chess-game/PGN/PgnDatabase"
 import { PgnDate } from "./chess-game/PGN/PgnDate"
 import { PgnTimeControl } from "./chess-game/PGN/PgnTimeControl"
@@ -18,15 +19,17 @@ import { PgnTimeControl } from "./chess-game/PGN/PgnTimeControl"
 //import { ChessGame } from "./chess-game/ChessGame"
 //import { parseChessable } from "./fromText/parseChessable"
 import { chessable } from "./fromText/chessable"
+import { StringUtil } from "./util/string/string"
 // import { readdir } from "fs/promises"
 // import { resolve } from "path"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let pgnDate = new PgnTimeControl()
-pgnDate.set('400:-')
-console.log(pgnDate.get())
+let s = StringUtil.chopString('123456789 aaaaa aaa', 5)
+console.log(s)
+
+
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)
 //chessable.generateEmptyTextFiles(chessable.DATA_PATH + "/Sam I 1.d4 Sidelines/22 Englund Gambit/orig", "Englund Gambit", 1, 23)
 

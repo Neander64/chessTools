@@ -164,6 +164,36 @@ Array [
     let pgn2 = Pgn.load(Pgn.save(pgn)) // should generate (almost) the same data structure
     expect(Pgn.save(pgn2)).toMatchObject(Pgn.save(pgn)) // should generate identical PGN
 
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"] [Result "0-1"]',
+      '1.e4 e5 2. Nf3',
+    ]
+    pgn = Pgn.load(data)
+    expect(Pgn.save(pgn)).toMatchInlineSnapshot(`
+Array [
+  "[Event \\"?\\"]",
+  "[Site \\"?\\"]",
+  "[Date \\"????.??.??\\"]",
+  "[Round \\"?\\"]",
+  "[White \\"?\\"]",
+  "[Black \\"?\\"]",
+  "[Result \\"*\\"]",
+  "",
+  "1. e4 e5 { comment } 2. Nf3 *",
+  "",
+  "[Event \\"FRG-ch International\\"]",
+  "[Site \\"Dortmund\\"]",
+  "[Date \\"????.??.??\\"]",
+  "[Round \\"?\\"]",
+  "[White \\"?\\"]",
+  "[Black \\"?\\"]",
+  "[Result \\"0-1\\"]",
+  "",
+  "1. e4 e5 0-1",
+]
+`)
+
   })
 
   test('PGN testing variants', () => {
@@ -496,6 +526,26 @@ Array [
     expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"invalid move:exxd5"`)
 
     data = [
+      '( 1.d4 ) 1.e4 d5 *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"variant without move"`)
+
+    data = [
+      '1.e4 d5 ( 1.exd5  *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"game terminated in variant"`)
+
+    data = [
+      '1.e4 d5  1...exd5 ) *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"variant closing mismatch"`)
+
+    data = [
+      '1.e4 d5 2.exd5) *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"variant closing mismatch"`)
+
+    data = [
       '1. 1.e4 *',
     ]
     expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"doubled move numbers:e4 and from token 1"`)
@@ -504,7 +554,60 @@ Array [
       '1.e4 e5 { comment } } 2. Nf3  *',
     ]
     expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"invalid move:}"`)
+    data = [
+      '1.e4 e5 { comment  2. Nf3  ',
+      ' comment 2 { } 2. Nf3  *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"nested comments"`)
+    data = [
+      '1.e4 e5 { comment } 2. Nf3  { open comment  ',
+      ' comment 2  2. Nf3  *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"Game Terminator missing"`)
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 (2. Nc3 { open comment  )',
+      ' comment 2  2. Nf3  *',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"Game Terminator missing"`)
+
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 ',
+      '[Event "FRG-ch International"] [Site "Dortmund"]',
+      '*'
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"invalid move:[Event"`)
+
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"]',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"Game Terminator missing"`)
+
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"] [Result "0-1"]',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"Game without moves"`)
+
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"] [Result "0-1"]',
+      '1.e4 e5 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"]',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"result after game differs from header (game:*, header:0-1)"`)
+
+    data = [
+      '1.e4 e5 { comment } 2. Nf3 *',
+      '[Event "FRG-ch International"] [Site "Dortmund"] ',
+      '1.e4 e5 2. Nf3 ',
+      '[Event "FRG-ch International"] [Site "Dortmund"] [Result "0-1"]',
+      '1.e4 e5 ',
+    ]
+    expect(() => Pgn.load(data)).toThrowErrorMatchingInlineSnapshot(`"invalid move:[Event"`)
+
   })
+
 
   test('PGN testing NAG', () => {
     let data = [

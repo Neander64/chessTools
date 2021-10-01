@@ -1,3 +1,4 @@
+import { StringUtil } from "../../util/string/string"
 import { color, otherColor } from "../common/chess-color"
 import { PgnDatabase } from "./PgnDatabase"
 import { PgnError } from "./PgnError"
@@ -5,25 +6,6 @@ import { PgnGame } from "./PgnGame"
 import { PgnMoveElement } from "./PgnMoveElement"
 import { mapAnnotationToNAG } from "./PgnNAG"
 import { PgnResult } from "./PgnResult"
-
-type pgnParseData = {
-    db: PgnDatabase
-    game?: PgnGame
-    isParsingTags: boolean
-    currentMove?: PgnMoveElement
-    parsingMultiLineComment: boolean
-    variantTargetMoves: PgnMoveElement[]
-    currentVariant?: PgnMoveElement
-}
-type pgnGenerateData = {
-    noComments: boolean
-    useNAG: boolean
-    mainLineOnly: boolean
-
-    activeColor: color
-    moveNumber: number
-    isFirstMoveAfterSomething: boolean
-}
 
 export class Pgn {
     static readonly ESCAPE = '%'
@@ -44,7 +26,7 @@ export class Pgn {
             moveNumber: 1,
             isFirstMoveAfterSomething: false,
         }
-        for (const game of pgn.game) {
+        for (const game of pgn.games) {
             if (!firstGame) {
                 result.push('')
             } else {
@@ -63,7 +45,7 @@ export class Pgn {
             }
             genData.isFirstMoveAfterSomething = true
             let lineStr = this.addMoveSeq(game.moves, genData).trim() + ' ' + game.header.Result.result
-            result = result.concat(this.chopString(lineStr, this.PGN_MAX_LINELEN))
+            result = result.concat(StringUtil.chopString(lineStr, this.PGN_MAX_LINELEN))
         }
         return result
     }
@@ -130,21 +112,6 @@ export class Pgn {
     //         return currentMoveNumber
     // }
 
-    static chopString(str: string, maxLen: number, cutChar: string = ' '): string[] {
-        // TODO move to a string module
-        let result: string[] = []
-        let tmpStr = str
-        while (tmpStr.length > maxLen) {
-            for (var i = maxLen; i >= 0; i--) {
-                if (tmpStr[i] == cutChar) break
-            }
-            if (i == 0) i = maxLen // no cutChar found, cut hard
-            result.push(tmpStr.substring(0, i))
-            tmpStr = tmpStr.substring(i + 1)
-        }
-        if (tmpStr.length > 0) result.push(tmpStr)
-        return result
-    }
     static annotationToNAG(annotation: string, activeColor: color): string {
         if (!annotation.match(/^(\d{2,3})$/)) { // not a NAG already
             let m = mapAnnotationToNAG.find(e => e.annotation == annotation && (!e.activeColor || e.activeColor == activeColor))
@@ -163,7 +130,8 @@ export class Pgn {
             currentMove: undefined,
             parsingMultiLineComment: false,
             variantTargetMoves: [],
-            currentVariant: undefined
+            currentVariant: undefined,
+            gameTerminated: true,
         }
         for (let line of pgnData) {
             if (line.length == 0) continue
@@ -171,10 +139,15 @@ export class Pgn {
             if (parseData.isParsingTags) {
                 // importing PGN is a bit relaxed, allowing whitespaces and multiple tags in a line
                 // but I didn't implement allowing to spread a tag over multiple lines
-                if (!parseData.game) parseData.game = new PgnGame()
+                if (!parseData.game) { // first Header Token
+                    //if (!parseData.gameTerminated) throw new PgnError('Game Terminator missing')
+                    parseData.gameTerminated = false
+                    parseData.game = new PgnGame()
+                }
                 const headerMatches = Array.from(line.matchAll(/\[\s*(\w*)\s*\"(.*?)\"\s*\]/g))
                 for (const m of headerMatches) {
                     parseData.game.header.addTag(m[1], m[2])
+                    if (m[1] == 'Result') parseData.gameTerminated = true
                 }
                 if (headerMatches.length == 0) {
                     parseData.isParsingTags = false
@@ -226,6 +199,15 @@ export class Pgn {
                 }
             }
         }
+        if (parseData.game) {
+            if (!parseData.gameTerminated) {
+                throw new PgnError('Game Terminator missing')
+            }
+            else if (parseData.game.moves.length == 0) {
+                throw new PgnError('Game without moves')
+            }
+            else parseData.db.games.push(parseData.game!)
+        }
         // TODO validate moves on board (optional)
         return parseData.db
     }
@@ -264,14 +246,15 @@ export class Pgn {
                 //if (parseData.currentMove) parseData.game!.moves.push(parseData.currentMove)
                 if (parseData.currentVariant) throw new PgnError('game terminated in variant')
                 this.pushCurrentMove(parseData)
-                if (parseData.game!.header.Result) parseData.game!.header.Result.result = gameResult // allow to read games without header
-                if (parseData.game!.header.Result.result != gameResult) throw new PgnError('result after game differs from header (game:' + gameResult + ', header:' + parseData.game!.header.Result.result + ')')
-                //parseData.game!.header.Result.result = gameResult
-                parseData.db.game.push(parseData.game!)
+                if (parseData.game!.header.Result.result != PgnResult.Unknown && parseData.game!.header.Result.result != gameResult) throw new PgnError('result after game differs from header (game:' + gameResult + ', header:' + parseData.game!.header.Result.result + ')')
+                //if (parseData.game!.header.Result) parseData.game!.header.Result.result = gameResult // allow to read games without header
+                parseData.game!.header.Result.result = gameResult
+                parseData.db.games.push(parseData.game!)
                 parseData.game = undefined
                 parseData.isParsingTags = true
                 parseData.currentMove = undefined
                 token = ''
+                parseData.gameTerminated = true
             }
             else if (this.isAnnotation(token)) {
                 parseData.currentMove!.annotation.push(token)
@@ -307,7 +290,8 @@ export class Pgn {
             if (token.length > 0 && token != '') {
                 this.pushCurrentMove(parseData)
                 let numSplit = token.match(/^((?<number>\d{1,})\.{1,3})?(?<move>.*)/) // allow move number to be part of the move
-                if (numSplit?.groups) {
+                //if (!numSplit) throw new PgnError('invalid move token:' + token) // never
+                if (numSplit?.groups) { // always true
                     if (numSplit?.groups.move) {
                         if (!this.validateMoveSyntax(numSplit.groups.move)) {
                             throw new PgnError('invalid move:' + numSplit.groups.move)
@@ -333,8 +317,6 @@ export class Pgn {
                         closingVariantWithMove = false
                     }
                 }
-                else
-                    throw new PgnError('invalid move token:' + token)
             }
         }
     }
@@ -365,6 +347,27 @@ export class Pgn {
     }
 
 }
+
+type pgnParseData = {
+    db: PgnDatabase
+    game?: PgnGame
+    isParsingTags: boolean
+    currentMove?: PgnMoveElement
+    parsingMultiLineComment: boolean
+    variantTargetMoves: PgnMoveElement[]
+    currentVariant?: PgnMoveElement
+    gameTerminated: boolean
+}
+type pgnGenerateData = {
+    noComments: boolean
+    useNAG: boolean
+    mainLineOnly: boolean
+
+    activeColor: color
+    moveNumber: number
+    isFirstMoveAfterSomething: boolean
+}
+
 
 /* // alternative piece codings
 // TODO allow to determine language

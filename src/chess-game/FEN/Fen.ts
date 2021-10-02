@@ -1,6 +1,8 @@
+import { CastleFlags } from "../common/CastleFlags"
 import { color } from "../common/chess-color"
-import { validateFieldNotation } from "../common/IField"
-import { FenBoard, FenError } from "./FenBoard"
+import { fieldNotationType, validateFieldNotation } from "../common/IField"
+import { FenBoard } from "./FenBoard"
+import { FenError } from "./FenError"
 
 // TODO add a save from an abstract Board instance
 
@@ -9,33 +11,30 @@ export class Fen {
 
     fenBoard: FenBoard = new FenBoard()
     activeColor: color = color.white
-    canCastleShortWhite: boolean = true
-    canCastleLongWhite: boolean = true
-    canCastleShortBlack: boolean = true
-    canCastleLongBlack: boolean = true
-    enPassantField?: string
+    castleFlags: CastleFlags = new CastleFlags()
+    enPassantField?: fieldNotationType
     plyCount: number = NaN
     moveNumber: number = NaN
 
     // TODO allow call-back function
 
     constructor(fen?: string) {
-        this.clear()
         if (fen) this.load(fen)
     }
     isEnPassantPossible(): boolean {
         return typeof this.enPassantField !== 'undefined'
     }
-    clear() {
-        this.fenBoard.clear()
+    get canCastleShortWhite(): boolean { return this.castleFlags.canCastleShortWhite }
+    get canCastleLongWhite(): boolean { return this.castleFlags.canCastleLongWhite }
+    get canCastleShortBlack(): boolean { return this.castleFlags.canCastleShortBlack }
+    get canCastleLongBlack(): boolean { return this.castleFlags.canCastleLongBlack }
+    initialBoard() {
+        this.load(Fen.initialBoardFEN)
         this.activeColor = color.white
-        this.canCastleShortWhite = true
-        this.canCastleLongWhite = true
-        this.canCastleShortBlack = true
-        this.canCastleLongBlack = true
+        this.castleFlags.setAll(true)
         this.enPassantField = undefined
-        this.plyCount = NaN
-        this.moveNumber = NaN
+        this.plyCount = 0
+        this.moveNumber = 1
     }
     load(fen: string): void {
         let fenTokens = fen.split(/\s+/)
@@ -53,12 +52,11 @@ export class Fen {
 
         //3. castle options
         if (fenTokens[2].length < 1 || fenTokens[2].length > 4) throw new FenError('castle option invalid. length:' + fenTokens[2].length)
-        this.canCastleShortWhite = (fenTokens[2].indexOf('K') != -1)
-        this.canCastleLongWhite = (fenTokens[2].indexOf('Q') != -1)
-        this.canCastleShortBlack = (fenTokens[2].indexOf('k') != -1)
-        this.canCastleLongBlack = (fenTokens[2].indexOf('q') != -1)
-        let hasCastleOption = (this.canCastleShortWhite || this.canCastleLongWhite || this.canCastleShortBlack || this.canCastleLongBlack)
-        if (!hasCastleOption && fenTokens[2] != '-') throw new FenError('no castle option. Expected "-", got:' + fenTokens[2])
+        this.castleFlags.canCastleShortWhite = (fenTokens[2].indexOf('K') != -1)
+        this.castleFlags.canCastleLongWhite = (fenTokens[2].indexOf('Q') != -1)
+        this.castleFlags.canCastleShortBlack = (fenTokens[2].indexOf('k') != -1)
+        this.castleFlags.canCastleLongBlack = (fenTokens[2].indexOf('q') != -1)
+        if (this.castleFlags.hasNoCastleOption && fenTokens[2] != '-') throw new FenError('no castle option. Expected "-", got:' + fenTokens[2])
 
         //4. en passant
         if (fenTokens[3] !== '-') {

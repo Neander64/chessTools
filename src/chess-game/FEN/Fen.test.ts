@@ -1,12 +1,13 @@
 import { color } from "../common/chess-color"
+import { Field } from "../common/Field"
 import { Fen } from "./Fen"
 
 describe('Testing class Fen & FenBoard', () => {
 
     test('testing Fen', () => {
         let fen = new Fen(Fen.initialBoardFEN)
-        expect(fen.fenBoard.getPiece('e1')).toBe('K')
-        expect(fen.fenBoard.getPiece('d8')).toBe('q')
+        expect(fen.fenBoard.getPiece(Field.fromNotation('e1'))).toBe('K')
+        expect(fen.fenBoard.getPiece(Field.fromNotation('d8'))).toBe('q')
         expect(fen.activeColor).toBe(color.white)
         expect(fen.canCastleShortWhite).toBe(true)
         expect(fen.canCastleShortBlack).toBe(true)
@@ -18,8 +19,8 @@ describe('Testing class Fen & FenBoard', () => {
 
         fen = new Fen()
         fen.load(Fen.initialBoardFEN)
-        expect(fen.fenBoard.getPiece('e1')).toBe('K')
-        expect(fen.fenBoard.getPiece('d8')).toBe('q')
+        expect(fen.fenBoard.getPiece(Field.fromNotation('e1'))).toBe('K')
+        expect(fen.fenBoard.getPiece(Field.fromNotation('d8'))).toBe('q')
         expect(fen.activeColor).toBe(color.white)
         expect(fen.canCastleShortWhite).toBe(true)
         expect(fen.canCastleShortBlack).toBe(true)

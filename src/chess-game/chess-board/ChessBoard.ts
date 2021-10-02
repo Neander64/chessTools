@@ -74,9 +74,10 @@ export class ChessBoard {
         try {
             this.clearBoard()
             let fen_ = new Fen(fen)
+            // TODO use IBoard to be used in Fen class
             for (let rank of rankTypeDomain) {
                 for (let file of fileTypeDomain) {
-                    let fen_piece = fen_.fenBoard.getPiece(file + rank) || ''
+                    let fen_piece = fen_.fenBoard.getPiece(this.board.fieldFromNotation(file + rank))
                     let piece = charFENToPiece(fen_piece)
                     this.board.setPiece(piece, Field.fromNotation(file + rank))
                 }
@@ -190,8 +191,8 @@ export class ChessBoard {
             this._gameStatus.gameOver = this.isGameOver()
         }
         catch (err) {
-            this.clearBoard();
-            throw err;
+            this.clearBoard()
+            throw err
         }
     }
 
@@ -227,7 +228,7 @@ export class ChessBoard {
         fen += ' '
 
         //3. castle options
-        if (this._gameStatus.castleFlags.none())
+        if (this._gameStatus.castleFlags.hasNoCastleOption)
             fen += '-'
         else {
             if (this._gameStatus.castleFlags.canCastleShortWhite) fen += 'K'
@@ -336,18 +337,18 @@ export class ChessBoard {
     private drawByDeadPosition(): boolean { // insufficient material
         let spec = this.board.currentPieceSpectrum()
         // K vs K
-        if (spec.black.size == 1 && spec.white.size == 1) return true;
+        if (spec.black.size == 1 && spec.white.size == 1) return true
         if (spec.black.size + spec.white.size == 3) {
             // K vs K+B
-            if (spec.black.get(Piece.blackBishop()) == 1 || spec.white.get(Piece.whiteBishop()) == 1) return true;
+            if (spec.black.get(Piece.blackBishop()) == 1 || spec.white.get(Piece.whiteBishop()) == 1) return true
             // K vs K+N
-            if (spec.black.get(Piece.blackKnight()) == 1 || spec.white.get(Piece.whiteKnight()) == 1) return true;
+            if (spec.black.get(Piece.blackKnight()) == 1 || spec.white.get(Piece.whiteKnight()) == 1) return true
         }
         if (spec.black.size == 2 && spec.white.size == 1 &&
             spec.black.get(Piece.blackBishop()) == 1 && spec.white.get(Piece.whiteBishop()) == 1) {
             // K+B vs K+B, with Bishops on same color
             //TODO: check if both have the same colored field
-            return true;
+            return true
 
         }
         // TODO add check funtion for : almost certain draws

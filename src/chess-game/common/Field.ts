@@ -1,6 +1,6 @@
-import { offsetsEnum } from './offsetsEnum';
-import { fieldOffset } from './fieldOffset';
-import { IField, fileIdxType, rankIdxType, fileType, rankType, fieldNType, fieldNotationType, fieldIdxType, field063IdxType } from './IField';
+import { offsetsEnum } from './offsetsEnum'
+import { fieldOffset } from './fieldOffset'
+import { IField, fileIdxType, rankIdxType, fileType, rankType, fieldNType, fieldNotationType, fieldIdxType, field063IdxType } from './IField'
 
 function offset(offset_: offsetsEnum): fieldOffset {
     const mapOffsets: Map<offsetsEnum, fieldOffset> = new Map([
@@ -22,8 +22,8 @@ function offset(offset_: offsetsEnum): fieldOffset {
         [offsetsEnum.EEN, { d_file: 2, d_rank: -1 }],
         [offsetsEnum.EES, { d_file: 2, d_rank: 1 }],
         [offsetsEnum.none, { d_file: 0, d_rank: 0 }],
-    ]);
-    return mapOffsets.get(offset_) || { d_file: 0, d_rank: 0 };
+    ])
+    return mapOffsets.get(offset_) || { d_file: 0, d_rank: 0 }
 }
 
 export class Field implements IField {
@@ -71,39 +71,39 @@ export class Field implements IField {
     }
 
     shift(offset_: offsetsEnum, factor: number = 1): Field {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
-        let fieldOffset = offset(offset_);
-        return new Field(this._fileIdx! + fieldOffset.d_file * factor, this._rankIdx! + fieldOffset.d_rank * factor);
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
+        let fieldOffset = offset(offset_)
+        return new Field(this._fileIdx! + fieldOffset.d_file * factor, this._rankIdx! + fieldOffset.d_rank * factor)
     }
 
     get file(): fileType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return 'abcdefgh'[this._fileIdx!]
     }
     get rank(): rankType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return 8 - this._rankIdx!
     }
     get fieldN(): fieldNType {
         return { file: this.file, rank: this.rank }
     }
     get notation(): fieldNotationType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this.file + this.rank
     }
     get fileIdx(): fileIdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this._fileIdx!
     }
     get rankIdx(): rankIdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this._rankIdx!
     }
     get fieldIdx(): fieldIdxType {
         return { fileIdx: this.fileIdx, rankIdx: this.rankIdx }
     }
     get field063Idx(): field063IdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this._rankIdx! * 8 + this._fileIdx!
     }
     get isOnBoard(): boolean {
@@ -113,33 +113,33 @@ export class Field implements IField {
     }
 
     same(cf: Field): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this._fileIdx == cf._fileIdx && this._rankIdx == cf._rankIdx
     }
     sameFR(file: fileType, rank: rankType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return this.file == file && this.rank == rank
     }
     sameN(field: fieldNType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         let fieldN = this.fieldN
         return fieldN.file == field.file && fieldN.rank == field.rank
     }
     sameNotation(str: fieldNotationType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return str == this.notation
     }
     sameI(fileIdx: fileIdxType, rankIdx: rankIdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return fileIdx == this.fileIdx && rankIdx == this.rankIdx
     }
     sameIdx(field: fieldIdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         let fieldIdx = this.fieldIdx
         return fieldIdx.fileIdx == field.fileIdx && fieldIdx.rankIdx == field.rankIdx
     }
     same063I(fieldIdx: field063IdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got fileIdx:' + this._fileIdx + ', rankIdx:' + this._rankIdx)
         return fieldIdx == this.field063Idx
     }
 
@@ -147,38 +147,38 @@ export class Field implements IField {
         if (Math.abs(this.rankIdx - target.rankIdx) == Math.abs(this.fileIdx - target.fileIdx)) {
             if (this.fileIdx > target.fileIdx) {
                 if (this.rankIdx > target.rankIdx) // - -
-                    return offsetsEnum.NW;
+                    return offsetsEnum.NW
                 else // - +
-                    return offsetsEnum.SW;
+                    return offsetsEnum.SW
             }
             else {
                 if (this.rankIdx > target.rankIdx) // + -
-                    return offsetsEnum.NE;
+                    return offsetsEnum.NE
                 else // + +
-                    return offsetsEnum.SE;
+                    return offsetsEnum.SE
             }
         }
-        return undefined;
+        return undefined
     }
 
     isHorizontalVertical(target: Field): offsetsEnum | undefined {
         if ((this.rankIdx == target.rankIdx) || (this.fileIdx == target.fileIdx)) {
             if (this.fileIdx == target.fileIdx) {
                 if (this.rankIdx < target.rankIdx)
-                    return offsetsEnum.S; // 0 +
+                    return offsetsEnum.S // 0 +
 
                 else
-                    return offsetsEnum.N; // 0 -
+                    return offsetsEnum.N // 0 -
             }
             else { // source.rowIdx == target.rowIdx
                 if (this.fileIdx < target.fileIdx)
-                    return offsetsEnum.E; // + 0
+                    return offsetsEnum.E // + 0
 
                 else
-                    return offsetsEnum.W; // - 0
+                    return offsetsEnum.W // - 0
             }
         }
-        return undefined;
+        return undefined
     }
 }
 
@@ -217,39 +217,39 @@ export class FieldFR implements IField {
         return this.fromFieldIdx(fileIdx, rankIdx)
     }
     shift(offset_: offsetsEnum, factor: number = 1): FieldFR {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
-        let fieldOffset = offset(offset_);
-        return FieldFR.fromFieldIdx(this.fileIdx! + fieldOffset.d_file * factor, this.rankIdx! + fieldOffset.d_rank * factor);
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
+        let fieldOffset = offset(offset_)
+        return FieldFR.fromFieldIdx(this.fileIdx! + fieldOffset.d_file * factor, this.rankIdx! + fieldOffset.d_rank * factor)
     }
 
     get file(): fileType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._file!
     }
     get rank(): rankType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._rank!
     }
     get fieldN(): fieldNType {
         return { file: this.file, rank: this.rank }
     }
     get notation(): fieldNotationType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._file![0] + this._rank
     }
     get fileIdx(): fileIdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._file!.charCodeAt(0) - 'a'.charCodeAt(0)
     }
     get rankIdx(): rankIdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return 8 - this._rank!
     }
     get fieldIdx(): fieldIdxType {
         return { fileIdx: this.fileIdx, rankIdx: this.rankIdx }
     }
     get field063Idx(): field063IdxType {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this.rankIdx * 8 + this.fileIdx
     }
     get isOnBoard(): boolean {
@@ -259,33 +259,33 @@ export class FieldFR implements IField {
     }
 
     same(cf: FieldFR): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._file == cf._file && this._rank == cf._rank
     }
     sameFR(file: fileType, rank: rankType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return this._file == file && this._rank == rank
     }
     sameN(field: fieldNType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         let fieldN = this.fieldN
         return fieldN.file == field.file && fieldN.rank == field.rank
     }
     sameNotation(str: fieldNotationType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return str == this.notation
     }
     sameI(fileIdx: fileIdxType, rankIdx: rankIdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return fileIdx == this.fileIdx && rankIdx == this.rankIdx
     }
     sameIdx(field: fieldIdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         let fieldIdx = this.fieldIdx
         return fieldIdx.fileIdx == field.fileIdx && fieldIdx.rankIdx == field.rankIdx
     }
     same063I(fieldIdx: field063IdxType): boolean {
-        if (!this.isOnBoard) throw new Error('Field values not on Board')
+        if (!this.isOnBoard) throw new Error('Field values not on Board, got file:' + this._file + ', rank:' + this._rank)
         return fieldIdx == this.field063Idx
     }
 
@@ -294,38 +294,38 @@ export class FieldFR implements IField {
         if (Math.abs(this.rankIdx - target.rankIdx) == Math.abs(this.fileIdx - target.fileIdx)) {
             if (this.fileIdx > target.fileIdx) {
                 if (this.rankIdx > target.rankIdx) // - -
-                    return offsetsEnum.NW;
+                    return offsetsEnum.NW
                 else // - +
-                    return offsetsEnum.SW;
+                    return offsetsEnum.SW
             }
             else {
                 if (this.rankIdx > target.rankIdx) // + -
-                    return offsetsEnum.NE;
+                    return offsetsEnum.NE
                 else // + +
-                    return offsetsEnum.SE;
+                    return offsetsEnum.SE
             }
         }
-        return undefined;
+        return undefined
     }
 
     isHorizontalVertical(target: Field): offsetsEnum | undefined {
         if ((this.rankIdx == target.rankIdx) || (this.fileIdx == target.fileIdx)) {
             if (this.fileIdx == target.fileIdx) {
                 if (this.rankIdx < target.rankIdx)
-                    return offsetsEnum.S; // 0 +
+                    return offsetsEnum.S // 0 +
 
                 else
-                    return offsetsEnum.N; // 0 -
+                    return offsetsEnum.N // 0 -
             }
             else { // source.rowIdx == target.rowIdx
                 if (this.fileIdx < target.fileIdx)
-                    return offsetsEnum.E; // + 0
+                    return offsetsEnum.E // + 0
 
                 else
-                    return offsetsEnum.W; // - 0
+                    return offsetsEnum.W // - 0
             }
         }
-        return undefined;
+        return undefined
     }
 }
 

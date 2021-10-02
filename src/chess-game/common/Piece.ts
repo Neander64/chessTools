@@ -1,5 +1,7 @@
 import { color } from './chess-color'
 
+export type pieceFenType = string
+export type piecePgnType = string
 export type pieceKeyType = number
 
 export const pieceKey = {
@@ -153,6 +155,16 @@ export class Piece {
         }
         return Piece.none() // unreachable, but TS can't identify we handled none already and issues an error
     }
+
+    static isValidFenPiece(piece: pieceFenType): boolean {
+        if (piece.length != 1) return false
+        return 'rnbqkpRNBQKP'.indexOf(piece) != -1
+    }
+    static isValidPgnPiece(piece: pieceFenType): boolean {
+        if (piece.length != 1) return false
+        return 'RNBQKP'.indexOf(piece) != -1
+    }
+
 }
 
 const charFENtoPieceMap = new Map<string, Piece>([

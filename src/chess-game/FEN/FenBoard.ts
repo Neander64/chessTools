@@ -1,5 +1,6 @@
-import { Field } from "../common/Field"
-import { fieldNotationType, validateFieldNotation } from "../common/IField"
+import { IField } from "../common/IField"
+import { Piece, pieceFenType } from "../common/Piece"
+import { FenError } from "./FenError"
 
 // TODO create a Interface to a simple Board representation
 
@@ -7,12 +8,13 @@ export class FenBoard {
     static readonly EMPTY_FIELD = ' '
 
     //private _boardRows: string[] = []
-    private _board: string[][] = [];
+    private _board: pieceFenType[][] = [];
 
     constructor() {
         this.clear()
     }
     setBoard(fenBoard: string) {
+        this.clear()
         let boardRows = fenBoard.split('/')
         if (boardRows.length !== 8)
             throw new FenError('unexpected number of rows in position. Expected 8, got:' + boardRows.length)
@@ -29,7 +31,7 @@ export class FenBoard {
                 if (fileIdx >= 8)
                     throw new FenError('too many pieces/columns in row:' + fenRow)
                 if (isNaN(digit)) { // it's a piece
-                    if (!this.validatePiece(fenRow[p]))
+                    if (!Piece.isValidFenPiece(fenRow[p]))
                         throw new FenError('invalid piece, got:' + fenRow[p])
                     if (fenRow[p] == 'k')
                         kingCountBlack++
@@ -79,21 +81,13 @@ export class FenBoard {
         }
         return fen
     }
-    getPiece(field: fieldNotationType): string | undefined {
-        if (!validateFieldNotation(field))
-            return undefined
-        let f = Field.fromNotation(field)
-        let piece = this._board[f.rankIdx][f.fileIdx]
-        return piece
+    getPiece(field: IField): pieceFenType {
+        return this._board[field.rankIdx][field.fileIdx]
     }
-    setPiece(field: fieldNotationType, piece: string): boolean {
-        if (piece != FenBoard.EMPTY_FIELD && !this.validatePiece(piece))
-            return false
-        if (!validateFieldNotation(field))
-            return false
-        let f = Field.fromNotation(field)
-        this._board[f.rankIdx][f.fileIdx] = piece
-        return true
+    setPiece(field: IField, piece?: pieceFenType): boolean {
+        let emptyTarget = this._board[field.rankIdx][field.fileIdx] != FenBoard.EMPTY_FIELD
+        this._board[field.rankIdx][field.fileIdx] = piece ? piece : FenBoard.EMPTY_FIELD
+        return emptyTarget
     }
     clearBoard() {
         this.clear()
@@ -103,21 +97,10 @@ export class FenBoard {
             }
         }
     }
-    validatePiece(piece: string): boolean {
-        if (piece.length != 1)
-            return false
-        return 'rnbqkpRNBQKP'.indexOf(piece) != -1
-    }
     clear() {
         //this._boardRows = []
         for (let rankIdx = 0; rankIdx < 8; rankIdx++) {
             this._board[rankIdx] = []
         }
-    }
-}
-export class FenError extends Error {
-    constructor(message: any) {
-        super(message)
-        this.name = "FenError"
     }
 }

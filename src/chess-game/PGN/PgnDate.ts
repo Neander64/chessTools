@@ -42,4 +42,21 @@ export class PgnDate {
         this.month = undefined
         this.day = undefined
     }
+    compare(date: PgnDate): number {
+        // This field is sorted by ascending numeric value
+        // first with the year, then the month, and finally the day of the month.
+        // Query characters used for unknown date digit values will be treated as zero digit characters for ordering comparison.
+        // <0 : this < date
+        // >0 : this > date
+        // 0 : this = date
+        let y1 = this.year || 0
+        let y2 = date.year || 0
+        if (y1 != y2) return (y1 - y2)
+        let m1 = this.month || 0
+        let m2 = date.month || 0
+        if (m1 != m2) return (m1 - m2)
+        let d1 = this.day || 0
+        let d2 = date.day || 0
+        return (d1 - d2)
+    }
 }

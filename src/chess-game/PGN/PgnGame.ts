@@ -14,4 +14,7 @@ export class PgnGame {
         this._fen = this.header.fen || new Fen(Fen.initialBoardFEN)
         return this._fen
     }
+    get mainLine(): string {
+        return this.moves.reduce((p, a) => { return p + a.move + ' ' }, '')
+    }
 }

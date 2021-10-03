@@ -66,7 +66,6 @@ export class PgnLines {
     }
 }
 
-// TODO merge pgn databases
 // TODO filter pgn by tag values
 // TODO re-number moves
 // TODO validate with board

@@ -8,6 +8,7 @@ import { Pgn } from "./chess-game/PGN/Pgn"
 import { PgnDatabase } from "./chess-game/PGN/PgnDatabase"
 import { PgnDate } from "./chess-game/PGN/PgnDate"
 import { PgnTimeControl } from "./chess-game/PGN/PgnTimeControl"
+import { PgnLines, PgnLinesStr } from "./chess-game/PGN/Tools/PgnLines"
 //import * as os from "os"
 //import * as path from "path"
 //import * as chessGame from "./chess-game"
@@ -26,8 +27,15 @@ import { StringUtil } from "./util/string/string"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let s = StringUtil.chopString('123456789 aaaaa aaa', 5)
-console.log(s)
+let data = [
+    '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
+    '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
+    '',
+]
+let pgn = Pgn.load(data)
+let lines = PgnLines.generateLinesForDatabase(pgn)
+//let lines = PgnLines.generateLinesForGame(pgn.games[0])
+console.log(lines)
 
 
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)

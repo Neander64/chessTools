@@ -2,10 +2,11 @@ import { Move, MoveOptionals } from "./Move"
 import { IField } from "./IField"
 import { Piece } from "./Piece"
 import { color } from "./chess-color"
+import { CastleFlags } from "./CastleFlags"
 
 export class MoveX extends Move {
-    constructor(piece: Piece, source: IField, target: IField, optionals: MoveOptionals) {
-        super(piece, source, target, optionals)
+    constructor(piece: Piece, source: IField, target: IField, castleFlags: CastleFlags, optionals: MoveOptionals) {
+        super(piece, source, target, castleFlags, optionals)
     }
     get moveColor(): color {
         return this.piece.color

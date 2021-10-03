@@ -299,15 +299,15 @@ export class Pgn {
                         parseData.currentMove = new PgnMoveElement(numSplit.groups.move)
                     }
                     if (moveNumber) { // got a value from seperate number token
-                        parseData.currentMove!.moveNumber = moveNumber
+                        //parseData.currentMove!.moveNumber = moveNumber
                         if (numSplit?.groups.move && numSplit?.groups.number) { // double number specification? (allow if not in strict mode)
                             throw new PgnError('doubled move numbers:' + numSplit.groups.move + ' and from token ' + moveNumber)
                         }
                         moveNumber = undefined
                     }
-                    else if (numSplit?.groups.move && numSplit?.groups.number) { // <number>.<move>
-                        parseData.currentMove!.moveNumber = +numSplit.groups.number
-                    }
+                    //else if (numSplit?.groups.move && numSplit?.groups.number) { // <number>.<move>
+                    //parseData.currentMove!.moveNumber = +numSplit.groups.number
+                    //}
                     if (closingVariantWithMove) {
                         this.pushCurrentMove(parseData)
                         let tmp = parseData.variantTargetMoves.pop()

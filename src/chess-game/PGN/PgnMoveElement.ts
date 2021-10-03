@@ -1,6 +1,6 @@
 
 export class PgnMoveElement {
-    moveNumber?: number
+    //moveNumber?: number
     move: string
     annotation: string[]
     comment: string[]

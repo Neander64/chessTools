@@ -17,6 +17,18 @@ describe('Testing class Fen & FenBoard', () => {
         expect(fen.plyCount).toBe(0)
         expect(fen.moveNumber).toBe(1)
 
+        fen.initialBoard()
+        expect(fen.fenBoard.getPiece(Field.fromNotation('e1'))).toBe('K')
+        expect(fen.fenBoard.getPiece(Field.fromNotation('d8'))).toBe('q')
+        expect(fen.activeColor).toBe(color.white)
+        expect(fen.canCastleShortWhite).toBe(true)
+        expect(fen.canCastleShortBlack).toBe(true)
+        expect(fen.canCastleLongWhite).toBe(true)
+        expect(fen.canCastleLongBlack).toBe(true)
+        expect(fen.isEnPassantPossible()).toBe(false)
+        expect(fen.plyCount).toBe(0)
+        expect(fen.moveNumber).toBe(1)
+
         fen = new Fen()
         fen.load(Fen.initialBoardFEN)
         expect(fen.fenBoard.getPiece(Field.fromNotation('e1'))).toBe('K')

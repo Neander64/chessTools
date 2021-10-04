@@ -1,175 +1,293 @@
 import { Pgn } from "./Pgn"
 import { PgnDatabase } from "./PgnDatabase"
+import { PgnLinesStr } from "./Tools/PgnLines"
 
 describe('Testing PgnDatabase', () => {
 
-    test('testing sorting Database ', () => {
-        let data = [
-            '[Date "1971.11.22"][Event "XYZ"][Site "XYZ"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "CDEF"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "CDEF"]',
-            '',
-            '1.d4 *',
-            '',
+  test('testing merge Games ', () => {
+    let data = [
+      '1.d4 *',
+      '1.d4 e4 *',
+    ]
+    let pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 e4 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 e4 ",
+]
+`)
 
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black XYZV"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD2"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black ABC"]',
-            '',
-            '1.d4 *',
-            '',
+    data = [
+      '1.d4 e4 *',
+      '1.d4 *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 e4 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 ",
+]
+`)
 
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 0-1',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 1/2-1/2',
-            '',
+    data = [
+      '1.d4 d5 *',
+      '1.e4 (1. c4 e5) *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 d5 ",
+  "e4 ",
+  "c4 e5 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "e4 ",
+  "c4 e5 ",
+]
+`)
 
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "XYZEF"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CDA"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "ABC"]',
-            '',
-            '1.d4 *',
-            '',
 
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "XYZEF"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD2"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "ABC"]',
-            '',
-            '1.d4 *',
-            '',
+    data = [
+      '1.e4 (1. c3 e5) e5 Nf3 Nf6 *',
+      '1.d4 d5 c4 *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "e4 e5 Nf3 Nf6 ",
+  "c3 e5 ",
+  "d4 d5 c4 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 d5 c4 ",
+]
+`)
 
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4   d5 2.c4 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 d5 2.c4 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 d5  2.c4 e6 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 d5 2.c4  c6 1-0',
-            '',
-            '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
-            '',
-            '1.d4 1-0',
-            '',
+    data = [
+      '1.d4 e5 *',
+      '1.d4 (1.e4 e5 2.f4) d5 2. c4 *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 e5 ",
+  "e4 e5 f4 ",
+  "d4 d5 c4 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 d5 c4 ",
+  "e4 e5 f4 ",
+]
+`)
 
-            '[Date "1971.11.22"][Event "XYZ"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "ABC"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "CDEF"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"][Event "CDEF"]',
-            '',
-            '1.d4 *',
-            '',
+    data = [
+      '1.d4 e5  *',
+      '1.d4 (1.e4 e5 2.f4) d5 (1...e5 2.dxe5 Qxe5) 2. c4 *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 e5 dxe5 Qxe5 ",
+  "e4 e5 f4 ",
+  "d4 d5 c4 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 d5 c4 ",
+  "e4 e5 f4 ",
+  "d4 e5 dxe5 Qxe5 ",
+]
+`)
+  })
 
-            '[Date "1971.11.22"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1973.??.??"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.??.??"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1973.12.30"]',
-            '',
-            '1.d4 *',
-            '',
-            '[Date "1971.11.22"]',
-            '',
-            '1.d4 *',
-            '',
-        ]
-        let pgnDb = Pgn.load(data)
-        pgnDb.sort()
-        let sortValues = pgnDb.games.map((game) => {
-            return [
-                game.header.Date.year,
-                game.header.Date.month,
-                game.header.Date.day,
-                game.header.Event,
-                game.header.Site,
-                game.header.Round,
-                game.header.White,
-                game.header.Black,
-                game.header.Result.result,
-                game.mainLine,
-            ]
-        })
-        expect(sortValues).toMatchInlineSnapshot(`
+  test('testing sorting Database ', () => {
+    let data = [
+      '[Date "1971.11.22"][Event "XYZ"][Site "XYZ"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "CDEF"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "CDEF"]',
+      '',
+      '1.d4 *',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black XYZV"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD2"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black ABC"]',
+      '',
+      '1.d4 *',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 0-1',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 1/2-1/2',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "XYZEF"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CDA"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "ABC"]',
+      '',
+      '1.d4 *',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "XYZEF"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD2"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "ABC"]',
+      '',
+      '1.d4 *',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4   d5 2.c4 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 d5 2.c4 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 d5  2.c4 e6 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 d5 2.c4  c6 1-0',
+      '',
+      '[Date "1971.11.22"][Event "XYZ"][Site "ABC"][Round "CD"][White "CD"][Black "Black CD"]',
+      '',
+      '1.d4 1-0',
+      '',
+
+      '[Date "1971.11.22"][Event "XYZ"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "ABC"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "CDEF"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"][Event "CDEF"]',
+      '',
+      '1.d4 *',
+      '',
+
+      '[Date "1971.11.22"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1973.??.??"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.??.??"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1973.12.30"]',
+      '',
+      '1.d4 *',
+      '',
+      '[Date "1971.11.22"]',
+      '',
+      '1.d4 *',
+      '',
+    ]
+    let pgnDb = Pgn.load(data)
+    pgnDb.sort()
+    let sortValues = pgnDb.games.map((game) => {
+      return [
+        game.header.Date.year,
+        game.header.Date.month,
+        game.header.Date.day,
+        game.header.Event,
+        game.header.Site,
+        game.header.Round,
+        game.header.White,
+        game.header.Black,
+        game.header.Result.result,
+        game.mainLine,
+      ]
+    })
+    expect(sortValues).toMatchInlineSnapshot(`
 Array [
   Array [
     1971,
@@ -593,18 +711,18 @@ Array [
   ],
 ]
 `)
-    })
+  })
 
-    test('testing addGame, merge Database ', () => {
-        let data = [
-            '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
-            '',
-        ]
-        let pgn = Pgn.load(data)
-        let pdb = new PgnDatabase()
-        pdb.merge(pgn)
-        pdb.merge(pgn)
-        expect(pdb).toMatchInlineSnapshot(`
+  test('testing addGame, merge Database ', () => {
+    let data = [
+      '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
+      '',
+    ]
+    let pgn = Pgn.load(data)
+    let pdb = new PgnDatabase()
+    pdb.merge(pgn)
+    pdb.merge(pgn)
+    expect(pdb).toMatchInlineSnapshot(`
 PgnDatabase {
   "games": Array [
     PgnGame {
@@ -731,5 +849,5 @@ PgnDatabase {
 }
 `)
 
-    })
+  })
 })

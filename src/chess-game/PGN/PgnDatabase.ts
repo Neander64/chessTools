@@ -1,6 +1,10 @@
 import { clone } from "../../util/objects/clone"
 import { PgnGame } from "./PgnGame"
 
+// TODO merge games by criteria
+// TODO create position index
+// TODO filter for positons
+// TODO split game into games per line
 
 export class PgnDatabase {
     games: PgnGame[]
@@ -14,14 +18,12 @@ export class PgnDatabase {
         let pgnGameCopy = clone.deepCopy(pgnGame)
         this.games.push(pgnGameCopy)
     }
+    deleteGame(idx: number) {
+        this.games.splice(idx, 1)
+    }
     sort(sortFct: ((g1: PgnGame, g2: PgnGame) => number) = PgnDatabase.pgnSortCompare) {
         this.games.sort(sortFct)
     }
-    // TODO create position index
-    // TODO filter for positons
-    // TODO split game into games per line
-    // TODO delete game from db
-    // TODO merge games by criteria
     static pgnSortCompare(game1: PgnGame, game2: PgnGame): number {
         // <0 : game1 < game2
         // >0 : game1 > game2
@@ -41,23 +43,15 @@ export class PgnDatabase {
         // *** To me it makes more sense to use the main-line moves for sorting. yah, letz do it that way.
         // The eighth key is the movetext itself.This is sorted in ascending ASCII order with the entire text including spaces and newline characters.
         // I'll create seperate function for each key allowing user to define their prefered way of combining them.
-        let cmp = PgnDatabase.pgnSortCompareDate(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareEvent(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareSite(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareRound(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareWhite(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareBlack(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareResult(game1, game2)
-        if (cmp != 0) return cmp
-        cmp = PgnDatabase.pgnSortCompareMoves(game1, game2)
-        if (cmp != 0) return cmp
-        return 0
+
+        return PgnDatabase.pgnSortCompareDate(game1, game2) ||
+            PgnDatabase.pgnSortCompareEvent(game1, game2) ||
+            PgnDatabase.pgnSortCompareSite(game1, game2) ||
+            PgnDatabase.pgnSortCompareRound(game1, game2) ||
+            PgnDatabase.pgnSortCompareWhite(game1, game2) ||
+            PgnDatabase.pgnSortCompareBlack(game1, game2) ||
+            PgnDatabase.pgnSortCompareResult(game1, game2) ||
+            PgnDatabase.pgnSortCompareMoves(game1, game2)
     }
     static pgnSortCompareDate(game1: PgnGame, game2: PgnGame): number {
         return game1.header.Date.compare(game2.header.Date)

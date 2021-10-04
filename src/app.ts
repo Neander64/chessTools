@@ -28,13 +28,16 @@ import { StringUtil } from "./util/string/string"
 //console.log(JSON.stringify(args));
 
 let data = [
-    '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
-    '1.d4 Nf6 2.c4 ( d5 ( e4 e5 ) Nh6 ) *',
-    '',
+    '1.d4 d5 *',
+    '1.e4 (1. c4 e5) *',
 ]
-let pgn = Pgn.load(data)
-let lines = PgnLines.generateLinesForDatabase(pgn)
+let pgnDb = Pgn.load(data)
+pgnDb.games[0].mergeGame(pgnDb.games[1])
+
+let lines = PgnLinesStr.generateLinesForGame(pgnDb.games[0])
 //let lines = PgnLines.generateLinesForGame(pgn.games[0])
+console.log(lines)
+lines = PgnLinesStr.generateLinesForGame(pgnDb.games[1])
 console.log(lines)
 
 

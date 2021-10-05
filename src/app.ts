@@ -1,6 +1,7 @@
 //import * as yargs from 'yargs'
 //import * as fsp from "fs/promises"
 import { writeFile } from "fs"
+import { VariantMove, VariantTree } from "./chess-game/common/VariantTree"
 import { Fen } from "./chess-game/FEN/Fen"
 import { FenBoard } from "./chess-game/FEN/FenBoard"
 import { ChessGamePgn } from "./chess-game/PGN/ChessGame-PGN"
@@ -21,24 +22,43 @@ import { PgnLines, PgnLinesStr } from "./chess-game/PGN/Tools/PgnLines"
 //import { parseChessable } from "./fromText/parseChessable"
 import { chessable } from "./fromText/chessable"
 import { StringUtil } from "./util/string/string"
+import { Tree, TreeNode } from "./util/tree/tree"
 // import { readdir } from "fs/promises"
 // import { resolve } from "path"
 
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let data = [
-    '1.d4 d5 *',
-    '1.e4 (1. c4 e5) *',
-]
-let pgnDb = Pgn.load(data)
-pgnDb.games[0].mergeGame(pgnDb.games[1])
+let tree = new VariantTree()
+let cur = tree.getCursor()
+cur.addMove(new VariantMove('e4'))
+console.log(tree, cur.data)
+cur.addMove(new VariantMove('e5'))
+console.log(tree, cur.data)
+cur.addMove(new VariantMove('Nf3'))
+console.log(tree, cur.data)
+cur.addMove(new VariantMove('Nc7'))
+console.log(tree, cur.data)
+cur.addMove(new VariantMove('Bb6'))
+console.log(tree, cur.data)
+console.log(cur.line)
 
-let lines = PgnLinesStr.generateLinesForGame(pgnDb.games[0])
-//let lines = PgnLines.generateLinesForGame(pgn.games[0])
-console.log(lines)
-lines = PgnLinesStr.generateLinesForGame(pgnDb.games[1])
-console.log(lines)
+//cur.back()
+//cur.back()
+//console.log(cur.line)
+
+// let data = [
+//     '1.d4 d5 *',
+//     '1.e4 (1. c4 e5) *',
+// ]
+// let pgnDb = Pgn.load(data)
+// pgnDb.games[0].mergeGame(pgnDb.games[1])
+
+// let lines = PgnLinesStr.generateLinesForGame(pgnDb.games[0])
+// //let lines = PgnLines.generateLinesForGame(pgn.games[0])
+// console.log(lines)
+// lines = PgnLinesStr.generateLinesForGame(pgnDb.games[1])
+// console.log(lines)
 
 
 //chessable.generateEmptyTextFiles2("Sam Black Semi-Slav", 18, "Cambridge Springs (7.Nd2 Bb4)", 1, 28)

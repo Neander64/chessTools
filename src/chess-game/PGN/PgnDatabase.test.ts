@@ -119,6 +119,33 @@ Array [
   "d4 e5 dxe5 Qxe5 ",
 ]
 `)
+
+    data = [
+      '1.d4 (1.e4 c5) c5 (1...e5 (1...d5 2.Nf3) 2.e4) 2. dxc5  *',
+      '1.d4 (1.e4 e5 2.f4) d5 (1...e5 2.dxe5 Qxe5) 2. c4 *',
+    ]
+    pgnDb = Pgn.load(data)
+    pgnDb.games[0].mergeGame(pgnDb.games[1])
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[0])).toMatchInlineSnapshot(`
+Array [
+  "d4 c5 dxc5 ",
+  "e4 c5 ",
+  "e5 f4 ",
+  "d4 e5 e4 ",
+  "d4 d5 Nf3 ",
+  "d4 d5 c4 ",
+  "d4 e5 dxe5 Qxe5 ",
+]
+`)
+    expect(PgnLinesStr.generateLinesForGame(pgnDb.games[1])).toMatchInlineSnapshot(`
+Array [
+  "d4 d5 c4 ",
+  "e4 e5 f4 ",
+  "d4 e5 dxe5 Qxe5 ",
+]
+`)
+
+
   })
 
   test('testing sorting Database ', () => {

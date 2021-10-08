@@ -1,5 +1,4 @@
 import { Fen } from "../FEN/Fen"
-import { Pgn } from "./Pgn"
 import { PgnGame } from "./PgnGame"
 
 describe('Testing PgnGame', () => {

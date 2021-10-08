@@ -42,11 +42,19 @@ export class Tree<K, T> {
         this.forEach((n) => { if (n.isTerminalNode) result.push(n) })
         return result
     }
-    getAllTerminalNodePaths(): Array<K>[] {
+    getAllTerminalNodeKeyPaths(): Array<K>[] {
         let result: Array<K>[] = []
         let nodes = this.getAllTerminalNodes()
         for (let n of nodes) {
             result.push(n.keyPath())
+        }
+        return result
+    }
+    getAllTerminalNodePaths(): Array<TreeNode<K, T>>[] {
+        let result: Array<TreeNode<K, T>>[] = []
+        let nodes = this.getAllTerminalNodes()
+        for (let n of nodes) {
+            result.push(n.path())
         }
         return result
     }
@@ -108,6 +116,15 @@ export class TreeNode<K, T> {
         let tmp = includeMe ? this : this.prev
         while (tmp) {
             result.unshift(tmp.key)
+            tmp = tmp.prev
+        }
+        return result
+    }
+    path(includeMe = true): Array<TreeNode<K, T>> {
+        let result: Array<TreeNode<K, T>> = []
+        let tmp = includeMe ? this : this.prev
+        while (tmp) {
+            result.unshift(tmp)
             tmp = tmp.prev
         }
         return result

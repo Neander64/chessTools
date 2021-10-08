@@ -8,7 +8,10 @@ import { ChessGamePgn } from "./chess-game/PGN/ChessGame-PGN"
 import { Pgn } from "./chess-game/PGN/Pgn"
 import { PgnDatabase } from "./chess-game/PGN/PgnDatabase"
 import { PgnDate } from "./chess-game/PGN/PgnDate"
+import { PgnMoveCursor } from "./chess-game/PGN/PgnMoveCursor"
+import { PgnMoveElement } from "./chess-game/PGN/PgnMoveElement"
 import { PgnTimeControl } from "./chess-game/PGN/PgnTimeControl"
+import { PgnVariantTree } from "./chess-game/PGN/PgnVariantTree"
 import { PgnLines, PgnLinesStr } from "./chess-game/PGN/Tools/PgnLines"
 //import * as os from "os"
 //import * as path from "path"
@@ -29,19 +32,29 @@ import { Tree, TreeNode } from "./util/tree/tree"
 //let args = yargs.option('input', { alias: 'i', demand: true }).argv;
 //console.log(JSON.stringify(args));
 
-let tree = new VariantTree()
-let cur = tree.getCursor()
-cur.addMove(new VariantMove('e4'))
-console.log(tree, cur.data)
-cur.addMove(new VariantMove('e5'))
-console.log(tree, cur.data)
-cur.addMove(new VariantMove('Nf3'))
-console.log(tree, cur.data)
-cur.addMove(new VariantMove('Nc7'))
-console.log(tree, cur.data)
-cur.addMove(new VariantMove('Bb6'))
-console.log(tree, cur.data)
-console.log(cur.line)
+
+let data = [
+    '1.e4 e5 2.f4 exf4 3.Nf3 *',
+    '1.d4 (1.e4 (1.c4 g6) e5 (2...d5 (2...g6 ) 3.exd5) 2.Nf3 Nc6 (2...Nf6 ) 3.Bb5) d5 2.c4 d6 *',
+]
+let pgnDb = Pgn.load(data)
+let tree = PgnVariantTree.fromPgnGame(pgnDb.games[1])
+let pgnMoves = PgnVariantTree.toPgnGameMoves(tree)
+console.log(pgnMoves.map(x => x.move))
+
+// let tree = new VariantTree()
+// let cur = tree.getCursor()
+// cur.addMove(new VariantMove('e4'))
+// console.log(tree, cur.data)
+// cur.addMove(new VariantMove('e5'))
+// console.log(tree, cur.data)
+// cur.addMove(new VariantMove('Nf3'))
+// console.log(tree, cur.data)
+// cur.addMove(new VariantMove('Nc7'))
+// console.log(tree, cur.data)
+// cur.addMove(new VariantMove('Bb6'))
+// console.log(tree, cur.data)
+// console.log(cur.line)
 
 //cur.back()
 //cur.back()

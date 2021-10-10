@@ -145,6 +145,9 @@ Array [
 ]
 `)
 
+    expect(pgnDb.games.length).toBe(2)
+    pgnDb.deleteGame(1)
+    expect(pgnDb.games.length).toBe(1)
 
   })
 
